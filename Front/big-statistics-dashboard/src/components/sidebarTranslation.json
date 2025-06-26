@@ -1,0 +1,24 @@
+{
+  "en": {
+    "logo_alt": "BIG STATISTICS",
+    "chart_alt": "Chart",
+    "home": "Dashboard",
+    "orders": "Orders",
+    "plan": "Plan",
+    "kpi": "KPI",
+    "mes": "MES",
+    "tasks": "Tasks",
+    "notifications": "Notif"
+  },
+  "cn": {
+    "logo_alt": "BIG STATISTICS",
+    "chart_alt": "图表",
+    "home": "仪表盘",
+    "orders": "客户订单",
+    "plan": "计划",
+    "kpi": "KPI",
+    "mes": "MES",
+    "tasks": "任务",
+    "notifications": "通知"
+  }
+} 

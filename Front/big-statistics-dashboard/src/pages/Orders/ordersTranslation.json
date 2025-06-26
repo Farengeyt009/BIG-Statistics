@@ -1,0 +1,82 @@
+{
+  "en": {
+    "title": "Orders",
+    "filter": "Filter",
+    "region": "Region",
+    "customer": "Customer",
+    "status": "Status",
+    "tableHeaders": {
+      "Article_number": "Article No.",
+      "Delay": "Delay",
+      "Displacement": "Capacity (L)",
+      "FACT_QTY": "Done Qty",
+      "Firmware": "Firmware",
+      "GroupName": "Group",
+      "HeadAndOther": "Ctrl Box etc.",
+      "Name_CN": "Prod. Name",
+      "OrderConformDay": "Confirm Date",
+      "OrderDate": "Order Date",
+      "OrderShipmentDay_Svod": "Ship Date",
+      "Order_No": "Order No.",
+      "Order_QTY": "Order Qty",
+      "Power": "Power",
+      "Prod_Group": "Prod Group",
+      "ProductionOrder": "Prod Order",
+      "RunOrderDay": "Run Day",
+      "ShipmentMonth": "Ship Mon.",
+      "ShipmentYear": "Ship Year",
+      "Total_Order_QTY": "Total Qty",
+      "Uncompleted_QTY": "Uncomp. Qty"
+    },
+    "fieldGroups": {
+      "orderInfo": "Order Info",
+      "productInfo": "Product Info",
+      "quantity": "Quantity",
+      "uncategorized": "Uncategorized"
+    }
+  },
+  "zh": {
+    "title": "客户订单",
+    "filter": "筛选",
+    "region": "地区",
+    "customer": "客户",
+    "status": "状态",
+    "tableHeaders": {
+      "Article_number": "成品编码",
+      "Delay": "延期",
+      "Displacement": "容量",
+      "FACT_QTY": "完成量",
+      "Firmware": "固件",
+      "GroupName": "组别",
+      "HeadAndOther": "控制盒等等",
+      "Name_CN": "产品名",
+      "OrderConformDay": "确认日",
+      "OrderDate": "下单日",
+      "OrderShipmentDay_Svod": "发货日",
+      "Order_No": "订单号",
+      "Order_QTY": "订单量",
+      "Power": "功率",
+      "Prod_Group": "产品组",
+      "ProductionOrder": "生产单",
+      "RunOrderDay": "下需求",
+      "ShipmentMonth": "发货月",
+      "ShipmentYear": "发货年",
+      "Total_Order_QTY": "总订单量",
+      "Uncompleted_QTY": "未完量"
+    },
+    "fieldGroups": {
+      "orderInfo": "订单信息",
+      "productInfo": "产品信息",
+      "quantity": "数量",
+      "uncategorized": "未分类"
+    }
+  },
+  "ru": {
+    "fieldGroups": {
+      "orderInfo": "Информация о заказе",
+      "productInfo": "Информация о продукте",
+      "quantity": "Кол-во",
+      "uncategorized": "Не определено"
+    }
+  }
+} 

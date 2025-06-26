@@ -1,0 +1,12 @@
+{
+  "en": {
+    "selectAll": "Select All",
+    "clear": "Clear",
+    "search": "Search..."
+  },
+  "zh": {
+    "selectAll": "全选",
+    "clear": "清除",
+    "search": "搜索..."
+  }
+} 
