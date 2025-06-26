@@ -1,17 +1,11 @@
 # Run_Server.py
 
-from flask import Flask
-from flask_cors import CORS
+from BIG_STATISTICS import create_app
 
-from routes.uncompleted_orders_views import uncompleted_orders_views_bp
-from routes.uncompleted_orders_table import uncompleted_orders_table_bp
-
-app = Flask(__name__)
-CORS(app)  # Разрешаем кросс-доменные запросы (CORS) от фронтенда
-
-# Регистрация маршрутов
-app.register_blueprint(uncompleted_orders_views_bp)
-app.register_blueprint(uncompleted_orders_table_bp)
+# Создаем приложение
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    print("Запуск сервера BIG_STATISTICS...")
+    print("Сервер будет доступен по адресу: http://127.0.0.1:5000/")
+    app.run(debug=True, host='127.0.0.1', port=5000)
