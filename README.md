@@ -122,10 +122,10 @@ npm run dev
 ### Переменные окружения (.env)
 
 ```env
-DB_SERVER=192.168.110.105
-DB_NAME=WeChat_APP
-DB_USER=db_user
-DB_PASSWORD=db_pass
+DB_SERVER=your_server_ip
+DB_NAME=your_database_name
+DB_USER=your_username
+DB_PASSWORD=your_password
 ```
 
 ### Структура базы данных
