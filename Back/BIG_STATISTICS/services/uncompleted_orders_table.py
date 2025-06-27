@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
-from database.db_connector import get_connection
+from ..database.db_connector import get_connection
 from cachetools import cached, TTLCache
 
 def try_convert_value(value):
@@ -21,7 +21,7 @@ def try_convert_value(value):
 
         # Число?
         try:
-            return float(v.replace(",", ".").replace(" ", ""))
+            return float(v.replace(",", ".").replace(" ", ""))
         except ValueError:
             pass
 

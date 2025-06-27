@@ -1,4 +1,4 @@
-from database.db_connector import get_connection
+from ..database.db_connector import get_connection
 from collections import defaultdict
 from cachetools import cached, TTLCache
 import datetime

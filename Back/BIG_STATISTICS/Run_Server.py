@@ -1,6 +1,7 @@
 # Run_Server.py
 
-from BIG_STATISTICS import create_app
+# Используем относительный импорт
+from . import create_app
 
 # Создаем приложение
 app = create_app()
