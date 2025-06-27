@@ -1,0 +1,25 @@
+[project]
+name = "big_statistics_backend"
+version = "0.1.0"
+description = "API for BIG STATISTICS"
+requires-python = ">=3.12,<4.0"
+
+[tool.poetry]            # блок нужен Poetry для поиска пакетов
+packages = [{ include = "backend" }]
+
+[tool.poetry.group.dev.dependencies]  # dev-зависимости добавим позже
+ruff = "^0.12.1"
+black = "^25.1.0"
+isort = "^6.0.1"
+pytest = "^8.4.1"
+pytest-asyncio = "^1.0.0"
+
+
+[tool.poetry.dependencies]
+fastapi = "^0.115.14"
+uvicorn = {extras = ["standard"], version = "^0.34.3"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.41"}
+pyodbc = "^5.2.0"
+pydantic-settings = "^2.10.1"
+structlog = "^25.4.0"
+aioodbc = "^0.5.0"
