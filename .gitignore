@@ -27,6 +27,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
 # Environment Variables
 .env
@@ -50,6 +51,11 @@ yarn-error.log*
 .pnp
 .pnp.js
 
+# React/Vite specific
+Front/big-statistics-dashboard/dist/
+Front/big-statistics-dashboard/.vite/
+Front/big-statistics-dashboard/coverage/
+
 # Testing
 coverage/
 .nyc_output
@@ -71,4 +77,19 @@ logs/
 *.sqlite3
 
 # Poetry
-poetry.lock 
+poetry.lock
+
+# Flask specific
+instance/
+.webassets-cache
+
+# SQLAlchemy
+*.db
+
+# Alembic
+alembic/versions/*.py
+!alembic/versions/__init__.py
+
+# Temporary files
+*.tmp
+*.temp 
