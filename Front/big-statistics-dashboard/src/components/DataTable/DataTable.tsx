@@ -1,115 +1,125 @@
+// Front/big-statistics-dashboard/src/components/DataTable.tsx
 import { useState, useMemo, useEffect } from "react";
 import {
-  ColumnDef, useReactTable, getCoreRowModel, flexRender, RowData,
+  ColumnDef,
+  Table,
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  RowData,
 } from "@tanstack/react-table";
-import ColumnToggle  from "./ColumnToggle";
 import FilterPopover from "./FilterPopover";
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
+/** ---------- props ---------- */
 export interface DataTableProps<T extends RowData> {
+  /** данные для отображения */
   data: T[];
+  /** точечная пере‑настройка колонок */
   columnsOverrides?: Record<string, Partial<ColumnDef<T>>>;
+  /** жёсткий порядок колонок (по id) */
   columnsOrder?: string[];
+  /** изначально видимые колонки */
   defaultVisible?: string[];
+  /** callback ↑ — отдаём наружу готовый экземпляр таблицы */
+  onTableInit?: (table: Table<T>) => void;
 }
 
+/** ---------- компонент ---------- */
 export function DataTable<T extends Record<string, any>>({
   data,
   columnsOverrides = {},
   columnsOrder,
   defaultVisible,
+  onTableInit,
 }: DataTableProps<T>) {
+  /* ------------ фильтрация ------------ */
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
-  // Вычисляем уникальные значения для каждого столбца
   const uniqueValuesByKey = useMemo(() => {
     const result: Record<string, string[]> = {};
     if (!data.length) return result;
-    
-    const keys = Object.keys(data[0]);
-    keys.forEach(key => {
+    Object.keys(data[0]).forEach((key) => {
       const values = new Set<string>();
-      data.forEach(row => {
+      data.forEach((row) => {
         const val = (row as Record<string, any>)[key];
-        values.add(val === undefined || val === null ? '' : String(val));
+        values.add(val === undefined || val === null ? "" : String(val));
       });
       result[key] = Array.from(values).sort();
     });
     return result;
   }, [data]);
 
-  // Фильтрация данных
   const filteredData = useMemo(() => {
     if (!data.length) return [];
-    return data.filter(row => {
-      return Object.keys(row as Record<string, any>).every(key => {
-        const selectedVals = filters[key];
-        if (!selectedVals || selectedVals.length === 0) return true;
-        const cellValue = (row as Record<string, any>)[key];
-        const cellStr = cellValue === undefined || cellValue === null ? '' : String(cellValue);
-        return selectedVals.includes(cellStr);
-      });
-    });
+    return data.filter((row) =>
+      Object.keys(row).every((key) => {
+        const selected = filters[key];
+        if (!selected?.length) return true;
+        const cell = (row as Record<string, any>)[key];
+        const str = cell === undefined || cell === null ? "" : String(cell);
+        return selected.includes(str);
+      })
+    );
   }, [data, filters]);
 
-  // DRAG & DROP: порядок колонок
+  /* ------------ порядок колонок (DnD) ------------ */
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
 
   const columns = useMemo<ColumnDef<T>[]>(() => {
     if (!filteredData.length) return [];
-    // 1. База без header
-    const base = Object.keys(filteredData[0] as Record<string, any>)
-      .map((key) => ({
-        id: key,
-        accessorKey: key,
-      }));
-    // 2. Сливаем overrides
-    let merged = base.map((col) => ({
-      ...col,
-      ...(columnsOverrides[col.id as string] ?? {}),
+    // 1. базовые колонки
+    const base = Object.keys(filteredData[0]).map((k) => ({
+      id: k,
+      accessorKey: k,
     }));
-    // 3. Сортировка, если нужно
+    // 2. merge overrides
+    let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
+    // 3. сортировка по columnsOrder
     if (columnsOrder?.length) {
-      merged.sort((a, b) =>
-        (columnsOrder.indexOf(a.id as string) === -1 ? Infinity : columnsOrder.indexOf(a.id as string)) -
-        (columnsOrder.indexOf(b.id as string) === -1 ? Infinity : columnsOrder.indexOf(b.id as string))
+      merged.sort(
+        (a, b) =>
+          (columnsOrder.indexOf(a.id) === -1
+            ? Infinity
+            : columnsOrder.indexOf(a.id)) -
+          (columnsOrder.indexOf(b.id) === -1
+            ? Infinity
+            : columnsOrder.indexOf(b.id))
       );
     }
-    // 4. Добавляем header с фильтром
-    const final = merged.map((col) => ({
+    // 4. добавляем header‑фильтр
+    return merged.map((col) => ({
       ...col,
       header: () => {
-        const label = typeof col.header === 'string' ? col.header : col.id;
+        const label = typeof col.header === "string" ? col.header : col.id;
         return (
           <>
             {label}
             <FilterPopover
-              columnId={col.id as string}
+              columnId={col.id}
               data={filteredData}
-              uniqueValues={uniqueValuesByKey[col.id as string] || []}
-              selectedValues={filters[col.id as string] || []}
+              uniqueValues={uniqueValuesByKey[col.id] || []}
+              selectedValues={filters[col.id] || []}
               onFilterChange={(sel) =>
-                setFilters((p) => ({ ...p, [col.id as string]: sel }))
+                setFilters((prev) => ({ ...prev, [col.id]: sel }))
               }
             />
           </>
         );
       },
-    }));
-    return final as ColumnDef<T>[];
+    })) as ColumnDef<T>[];
   }, [filteredData, columnsOverrides, columnsOrder, uniqueValuesByKey, filters]);
 
-  // DRAG & DROP: инициализация columnOrder после columns
-  useEffect(() => {
-    setColumnOrder(columns.map(c => c.id as string));
-  }, [columns]);
+  /* ------------ columnOrder init ------------ */
+  useEffect(() => setColumnOrder(columns.map((c) => c.id!).filter(Boolean)), [columns]);
 
-  const [visible, setVisible] = useState<string[]>(
-    defaultVisible ?? columns.map((c) => c.id as string)
-  );
-
+  /* ------------ create table ------------ */
   const table = useReactTable({
     data: filteredData,
     columns,
@@ -118,49 +128,73 @@ export function DataTable<T extends Record<string, any>>({
     getCoreRowModel: getCoreRowModel(),
   });
 
+  /* ----- отдаём экземпляр вверх, когда он готов ----- */
+  useEffect(() => {
+    onTableInit?.(table);
+  }, [table, onTableInit]);
+
+  /* ------------ (не использовано, но оставлено на будущее) ------------ */
+  const [visible, setVisible] = useState<string[]>(
+    defaultVisible ?? columns.map((c) => c.id!).filter(Boolean)
+  );
+  /* -------------------------------------------------------------------- */
+
   return (
-    <>
-      <table className="min-w-full text-sm border">
-        <thead className="bg-gray-100">
-          <DndContext
-            onDragEnd={({ active, over }: DragEndEvent) => {
-              if (!over || active.id === over.id) return;
-              setColumnOrder((prev) =>
-                arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string))
-              );
-            }}
-          >
-            <SortableContext items={columnOrder}>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((h) => (
-                    <SortableTh key={h.id} id={h.id}>
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </SortableTh>
-                  ))}
-                </tr>
-              ))}
-            </SortableContext>
-          </DndContext>
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="border px-2 py-1">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+    <table className="min-w-full text-sm border">
+      {/* ---------- шапка ---------- */}
+      <thead className="bg-gray-100">
+        <DndContext
+          onDragEnd={({ active, over }: DragEndEvent) => {
+            if (!over || active.id === over.id) return;
+            setColumnOrder((prev) =>
+              arrayMove(
+                prev,
+                prev.indexOf(active.id as string),
+                prev.indexOf(over.id as string)
+              )
+            );
+          }}
+        >
+          <SortableContext items={columnOrder}>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id}>
+                {hg.headers.map((h) => (
+                  <SortableTh key={h.id} id={h.id}>
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                  </SortableTh>
+                ))}
+              </tr>
+            ))}
+          </SortableContext>
+        </DndContext>
+      </thead>
+
+      {/* ---------- данные ---------- */}
+      <tbody>
+        {table.getRowModel().rows.map((row) => (
+          <tr key={row.id}>
+            {row.getVisibleCells().map((cell) => (
+              <td key={cell.id} className="border px-2 py-1">
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
-function SortableTh({ id, children }: { id: string; children: React.ReactNode }) {
-  const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id });
+/* ---------------------------- util ---------------------------- */
+function SortableTh({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, transform, transition, attributes, listeners } =
+    useSortable({ id });
 
   return (
     <th
@@ -176,4 +210,4 @@ function SortableTh({ id, children }: { id: string; children: React.ReactNode })
       </div>
     </th>
   );
-} 
+}

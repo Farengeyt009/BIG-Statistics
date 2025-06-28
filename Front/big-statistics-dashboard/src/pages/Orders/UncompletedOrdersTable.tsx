@@ -7,9 +7,10 @@ import {
     getCoreRowModel,
     flexRender,
     ColumnDef,
+    Table,
 } from "@tanstack/react-table";
-import PageHeaderWithTabs from "../../components/PageHeaderWithTabs";
 import { useTranslation } from 'react-i18next';
+import ExportButton from "../../components/ExportButton";
 
 type Order = Record<string, any>;
 
@@ -108,32 +109,41 @@ export default function UncompletedOrdersTable() {
                             </li>
                         ))}
                     </ul>
-                    {/* Кнопка Create – только на Custom */}
-                    {activeTab === 'custom' && (
-                        <FieldsSelectorPopover
-                            allColumns={allColumns}
-                            selectedKeys={selectedKeys}
-                            onToggle={handleToggle}
-                            t={t}
-                            anchorRef={anchorRef}
-                            buttonProps={{
-                                className: [
-                                    'self-end',
-                                    'bg-gradient-to-r',
-                                    'from-blue-600 via-sky-500 to-cyan-400',
-                                    'text-white font-semibold',
-                                    'shadow-md shadow-sky-500/30',
-                                    'hover:brightness-110',
-                                    'active:scale-95',
-                                    'transition-all duration-150',
-                                    'rounded-lg',
-                                    'h-8',
-                                    'px-5',
-                                    'text-sm'
-                                ].join(' ')
-                            }}
-                        />
-                    )}
+                    <div className="flex gap-3">
+                        {/* Export всегда доступен */}
+                        {table && (
+                            <ExportButton
+                                table={table as Table<Order>}
+                                fileName="uncompleted_orders.xlsx"
+                            />
+                        )}
+                        {/* Кнопка выбора столбцов – только на Custom */}
+                        {activeTab === 'custom' && (
+                            <FieldsSelectorPopover
+                                allColumns={allColumns}
+                                selectedKeys={selectedKeys}
+                                onToggle={handleToggle}
+                                t={t}
+                                anchorRef={anchorRef}
+                                buttonProps={{
+                                    className: [
+                                        'self-end',
+                                        'bg-gradient-to-r',
+                                        'from-blue-600 via-sky-500 to-cyan-400',
+                                        'text-white font-semibold',
+                                        'shadow-md shadow-sky-500/30',
+                                        'hover:brightness-110',
+                                        'active:scale-95',
+                                        'transition-all duration-150',
+                                        'rounded-lg',
+                                        'h-8',
+                                        'px-5',
+                                        'text-sm'
+                                    ].join(' ')
+                                }}
+                            />
+                        )}
+                    </div>
                 </div>
                 {/* Серая «полка» сразу под табами  – ровно 1 px */}
                 <div className="-mt-px h-px bg-gray-300" />
