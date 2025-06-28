@@ -7,17 +7,20 @@
 ```
 BIG_STATISTICS/
 ├── Back/                    # Python Flask backend
-│   ├── routes/             # API endpoints
-│   │   ├── uncompleted_orders_views.py
-│   │   └── uncompleted_orders_table.py
-│   ├── services/           # Бизнес-логика
-│   │   ├── uncompleted_orders_views.py
-│   │   └── uncompleted_orders_table.py
-│   ├── database/           # Подключение к БД
+│   ├── orders/
+│   │   ├── api/             # API endpoints (CustomerOrdersInformation)
+│   │   │   ├── CustomerOrdersInformation_views.py
+│   │   │   └── CustomerOrdersInformation_table.py
+│   │   ├── service/         # Бизнес-логика
+│   │   │   ├── CustomerOrdersInformation_views.py
+│   │   │   └── CustomerOrdersInformation_table.py
+│   │   ├── repository/      # (зарезервировано под слой данных)
+│   │   └── __init__.py
+│   ├── database/            # Подключение к БД
 │   │   └── db_connector.py
-│   ├── config.py           # Конфигурация
-│   ├── Run_Server.py       # Точка входа
-│   └── requirements.txt    # Python зависимости
+│   ├── config.py            # Конфигурация
+│   ├── Run_Server.py        # Точка входа
+│   └── requirements.txt     # Python зависимости
 ├── Front/                   # React TypeScript frontend
 │   └── big-statistics-dashboard/
 │       ├── src/
@@ -27,7 +30,7 @@ BIG_STATISTICS/
 │       ├── public/
 │       └── package.json
 ├── requirements.txt         # Основные Python зависимости
-├── alembic.ini             # Конфигурация миграций
+├── alembic.ini              # Конфигурация миграций
 └── README.md
 ```
 
@@ -68,12 +71,12 @@ npm run dev
 
 ## 📊 API Endpoints
 
-### Невыполненные заказы
+### Информация о заказах клиента
 
-- **GET** `/api/uncompleted-orders/views` - Данные для графиков и аналитики
-- **GET** `/api/uncompleted-orders/table` - Полные данные для таблицы
+- **GET** `/api/CustomerOrdersInformation/views` — Данные для графиков и аналитики
+- **GET** `/api/CustomerOrdersInformation/table` — Полные данные для таблицы
 
-### Пример ответа `/api/uncompleted-orders/views`:
+### Пример ответа `/api/CustomerOrdersInformation/views`:
 
 ```json
 {
@@ -98,24 +101,24 @@ npm run dev
 
 ### Backend
 - **Python 3.11+**
-- **Flask 3.1.1** - Веб-фреймворк
-- **Flask-CORS 6.0.1** - CORS поддержка
-- **PyODBC 5.2.0** - Подключение к SQL Server
-- **SQLAlchemy 2.0.41** - ORM
-- **Python-dotenv 1.1.0** - Переменные окружения
-- **Cachetools** - Кэширование данных
+- **Flask 3.1.1** — Веб-фреймворк
+- **Flask-CORS 6.0.1** — CORS поддержка
+- **PyODBC 5.2.0** — Подключение к SQL Server
+- **SQLAlchemy 2.0.41** — ORM
+- **Python-dotenv 1.1.0** — Переменные окружения
+- **Cachetools** — Кэширование данных
 
 ### Frontend
-- **React 18** - UI библиотека
-- **TypeScript** - Типизация
-- **Vite** - Сборщик
-- **Tailwind CSS** - Стилизация
-- **React Router** - Маршрутизация
-- **Chart.js** - Графики
+- **React 18** — UI библиотека
+- **TypeScript** — Типизация
+- **Vite** — Сборщик
+- **Tailwind CSS** — Стилизация
+- **React Router** — Маршрутизация
+- **Chart.js** — Графики
 
 ### База данных
-- **Microsoft SQL Server** - Основная БД
-- **ODBC Driver 18** - Драйвер подключения
+- **Microsoft SQL Server** — Основная БД
+- **ODBC Driver 18** — Драйвер подключения
 
 ## 🔧 Конфигурация
 
@@ -130,14 +133,14 @@ DB_PASSWORD=your_password
 
 ### Структура базы данных
 
-Основная таблица: `dbo.Uncompleted_Orders`
+Основная таблица: `dbo.CustomerOrdersInformation` (или аналогичная, см. код)
 
 ## 📝 Разработка
 
 ### Добавление новых API endpoints
 
-1. Создайте новый файл в `Back/routes/`
-2. Добавьте сервис в `Back/services/`
+1. Создайте новый файл в `Back/orders/api/`
+2. Добавьте сервис в `Back/orders/service/`
 3. Зарегистрируйте blueprint в `Run_Server.py`
 
 ### Добавление новых компонентов

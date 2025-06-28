@@ -1,5 +1,5 @@
+from ..service.uncompleted_orders_table import get_all_uncompleted_orders_table
 from flask import Blueprint, jsonify
-from services.uncompleted_orders_table import get_all_uncompleted_orders_table
 
 uncompleted_orders_table_bp = Blueprint('uncompleted_orders_table', __name__)
 

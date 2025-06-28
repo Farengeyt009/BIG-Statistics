@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from services.uncompleted_orders_views import get_uncompleted_orders_views
+from ..service.uncompleted_orders_views import get_uncompleted_orders_views
 
 uncompleted_orders_views_bp = Blueprint('uncompleted_orders_views', __name__)
 
