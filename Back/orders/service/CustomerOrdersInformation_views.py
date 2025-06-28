@@ -7,7 +7,7 @@ import decimal
 cache = TTLCache(maxsize=1, ttl=60)
 
 @cached(cache)
-def get_uncompleted_orders_views():
+def get_CustomerOrdersInformation_views():
     query_main = """
         SELECT
             ShipmentYear AS [year],

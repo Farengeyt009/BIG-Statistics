@@ -24,12 +24,12 @@ import {
     PropsWithChildren,
     useRef,
 } from "react";
-import LanguageSwitcher from "./LanguageSwitcher";
+import LanguageSwitcher from "../LanguageSwitcher";
 import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
 
-import chart from "../assets/chart.png";
-import logo from "../assets/logo_big_statistics.png";
+import chart from "../../assets/chart.png";
+import logo from "../../assets/logo_big_statistics.png";
 
 export const SidebarWidthCtx = createContext<MotionValue<number> | null>(null);
 

@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 // Import translation files
-import sidebarTranslation from './components/sidebarTranslation.json';
+import sidebarTranslation from './components/Sidebar/sidebarTranslation.json';
 import ordersTranslation from './pages/Orders/ordersTranslation.json';
 import dataTableTranslation from './components/DataTable/dataTableTranslation.json';
 

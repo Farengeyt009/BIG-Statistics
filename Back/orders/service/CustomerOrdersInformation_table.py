@@ -40,7 +40,7 @@ def try_convert_value(value):
 
 
 @cached(TTLCache(maxsize=1, ttl=60))
-def get_all_uncompleted_orders_table():
+def get_all_CustomerOrdersInformation_table():
     conn = get_connection()
     cursor = conn.cursor()
 
