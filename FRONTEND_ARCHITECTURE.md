@@ -5,7 +5,7 @@
 - **pages/** — каждая папка внутри соответствует отдельной странице приложения (например, Orders).
   - Внутри страницы могут быть свои утилиты (`utils/`), специфичные для этой страницы.
   - Все бизнес-компоненты, относящиеся только к этой странице, хранятся здесь же.
-- **components/** — общие переиспользуемые компоненты, которые можно использовать на разных страницах (например, DataTable, Sidebar, PageHeaderWithTabs).
+- **components/** — общие переиспользуемые компоненты, которые можно использовать на разных страницах (например, DataTable, ExportButton, Sidebar).
 - **assets/** — статические файлы (картинки, иконки и т.д.).
 - **utils/** — общие утилиты (если появятся, на уровне всего приложения).
 
@@ -22,12 +22,15 @@ src/
 │   ├── DataTable/
 │   │   ├── DataTable.tsx
 │   │   ├── FilterPopover.tsx
-│   │   ├── ColumnToggle.tsx
-│   │   └── ...
-│   ├── Sidebar.tsx
-│   ├── SidebarIcon.tsx
-│   ├── PageHeaderWithTabs.tsx
-│   └── ...
+│   │   ├── dataTableTranslation.json
+│   │   └── index.ts
+│   ├── ExportButton.tsx
+│   ├── LanguageSwitcher.tsx
+│   └── Sidebar/
+│       ├── Sidebar.tsx
+│       ├── SidebarIcon.tsx
+│       ├── sidebarTranslation.json
+│       └── sidebar.d.ts
 ├── pages/
 │   └── Orders/
 │       ├── UncompletedOrdersTable.tsx
@@ -53,7 +56,7 @@ src/
   - Использует:
     - `CustomTableBuilder` (для кастомных таблиц)
     - `FieldsSelectorPopover` (для выбора полей)
-    - `PageHeaderWithTabs` (шапка с табами)
+    - `ExportButton` (экспорт таблицы в Excel)
     - Утилиты из `utils/` (например, для агрегации данных)
     - Локализацию через `ordersTranslation.json`
 
@@ -67,13 +70,20 @@ src/
 - **components/DataTable/**
   - `DataTable.tsx` — универсальный компонент таблицы
   - `FilterPopover.tsx` — фильтрация данных
-  - `ColumnToggle.tsx` — управление видимостью колонок
+  - `dataTableTranslation.json` — переводы для таблицы
+  - `index.ts` — экспорт DataTable
 
-- **components/Sidebar.tsx**
-  - Боковое меню, используется во всём приложении
+- **components/ExportButton.tsx**
+  - Кнопка экспорта таблицы в Excel (использует библиотеки xlsx и file-saver, SVG-иконка, фирменный цвет Excel)
 
-- **components/PageHeaderWithTabs.tsx**
-  - Заголовок страницы с табами
+- **components/Sidebar/**
+  - `Sidebar.tsx` — боковое меню, используется во всём приложении
+  - `SidebarIcon.tsx` — иконки для Sidebar
+  - `sidebarTranslation.json` — переводы для Sidebar
+  - `sidebar.d.ts` — типы для Sidebar
+
+- **components/LanguageSwitcher.tsx**
+  - Переключатель языков
 
 ## Принципы расширения
 
