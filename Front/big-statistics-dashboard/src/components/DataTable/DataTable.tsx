@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 /** ---------- props ---------- */
 export interface DataTableProps<T extends RowData> {
   /** данные для отображения */
-  data: T[];
+  data?: T[];
   /** точечная пере‑настройка колонок */
   columnsOverrides?: Record<string, Partial<ColumnDef<T>>>;
   /** жёсткий порядок колонок (по id) */
@@ -29,15 +29,18 @@ export interface DataTableProps<T extends RowData> {
   defaultVisible?: string[];
   /** callback ↑ — отдаём наружу готовый экземпляр таблицы */
   onTableInit?: (table: Table<T>) => void;
+  /** внешний экземпляр таблицы (если есть) */
+  table?: Table<T>;
 }
 
 /** ---------- компонент ---------- */
 export function DataTable<T extends Record<string, any>>({
-  data,
+  data = [],
   columnsOverrides = {},
   columnsOrder,
   defaultVisible,
   onTableInit,
+  table: externalTable,
 }: DataTableProps<T>) {
   /* ------------ фильтрация ------------ */
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -120,7 +123,7 @@ export function DataTable<T extends Record<string, any>>({
   useEffect(() => setColumnOrder(columns.map((c) => c.id!).filter(Boolean)), [columns]);
 
   /* ------------ create table ------------ */
-  const table = useReactTable({
+  const table = externalTable ?? useReactTable({
     data: filteredData,
     columns,
     state: { columnOrder },

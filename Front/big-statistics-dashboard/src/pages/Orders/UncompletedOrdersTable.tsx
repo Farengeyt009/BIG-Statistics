@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import CustomTableBuilder from "./CustomTableBuilder";
+import CustomTableBuilder, { CustomTableHandle } from "./CustomTableBuilder";
 import FieldsSelectorPopover from "./FieldsSelectorPopover";
 import mockData from "../../Test/uncompleted_orders.json";
 import {
@@ -21,6 +21,7 @@ export default function UncompletedOrdersTable() {
     const [activeTab, setActiveTab] = useState("main");
     const { t } = useTranslation('ordersTranslation');
     const anchorRef = useRef<HTMLButtonElement>(null);
+    const customRef = useRef<CustomTableHandle<Order>>(null);
 
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const allColumns = useMemo(() => {
@@ -110,13 +111,6 @@ export default function UncompletedOrdersTable() {
                         ))}
                     </ul>
                     <div className="flex gap-3">
-                        {/* Export всегда доступен */}
-                        {table && (
-                            <ExportButton
-                                table={table as Table<Order>}
-                                fileName="uncompleted_orders.xlsx"
-                            />
-                        )}
                         {/* Кнопка выбора столбцов – только на Custom */}
                         {activeTab === 'custom' && (
                             <FieldsSelectorPopover
@@ -141,6 +135,13 @@ export default function UncompletedOrdersTable() {
                                         'text-sm'
                                     ].join(' ')
                                 }}
+                            />
+                        )}
+                        {/* Export всегда доступен */}
+                        {table && (
+                            <ExportButton
+                                table={activeTab === 'main' ? table : customRef.current?.table || null}
+                                fileName="uncompleted_orders.xlsx"
                             />
                         )}
                     </div>
@@ -182,6 +183,7 @@ export default function UncompletedOrdersTable() {
             )}
             {activeTab === 'custom' && (
                 <CustomTableBuilder
+                    ref={customRef}
                     initialData={data}
                     selectedKeys={selectedKeys}
                     allColumns={allColumns}
