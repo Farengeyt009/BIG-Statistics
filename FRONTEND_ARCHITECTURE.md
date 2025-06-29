@@ -5,7 +5,7 @@
 - **pages/** — каждая папка внутри соответствует отдельной странице приложения (например, Orders).
   - Внутри страницы могут быть свои утилиты (`utils/`), специфичные для этой страницы.
   - Все бизнес-компоненты, относящиеся только к этой странице, хранятся здесь же.
-- **components/** — общие переиспользуемые компоненты, которые можно использовать на разных страницах (например, DataTable, ExportButton, Sidebar).
+- **components/** — общие переиспользуемые компоненты, которые можно использовать на разных страницах (например, DataTable, Sidebar, PageHeaderWithTabs).
 - **assets/** — статические файлы (картинки, иконки и т.д.).
 - **utils/** — общие утилиты (если появятся, на уровне всего приложения).
 
@@ -22,15 +22,12 @@ src/
 │   ├── DataTable/
 │   │   ├── DataTable.tsx
 │   │   ├── FilterPopover.tsx
-│   │   ├── dataTableTranslation.json
-│   │   └── index.ts
-│   ├── ExportButton.tsx
-│   ├── LanguageSwitcher.tsx
-│   └── Sidebar/
-│       ├── Sidebar.tsx
-│       ├── SidebarIcon.tsx
-│       ├── sidebarTranslation.json
-│       └── sidebar.d.ts
+│   │   ├── ColumnToggle.tsx
+│   │   └── ...
+│   ├── Sidebar.tsx
+│   ├── SidebarIcon.tsx
+│   ├── PageHeaderWithTabs.tsx
+│   └── ...
 ├── pages/
 │   └── Orders/
 │       ├── UncompletedOrdersTable.tsx
@@ -56,7 +53,7 @@ src/
   - Использует:
     - `CustomTableBuilder` (для кастомных таблиц)
     - `FieldsSelectorPopover` (для выбора полей)
-    - `ExportButton` (экспорт таблицы в Excel)
+    - `PageHeaderWithTabs` (шапка с табами)
     - Утилиты из `utils/` (например, для агрегации данных)
     - Локализацию через `ordersTranslation.json`
 
@@ -70,20 +67,13 @@ src/
 - **components/DataTable/**
   - `DataTable.tsx` — универсальный компонент таблицы
   - `FilterPopover.tsx` — фильтрация данных
-  - `dataTableTranslation.json` — переводы для таблицы
-  - `index.ts` — экспорт DataTable
+  - `ColumnToggle.tsx` — управление видимостью колонок
 
-- **components/ExportButton.tsx**
-  - Кнопка экспорта таблицы в Excel (использует библиотеки xlsx и file-saver, SVG-иконка, фирменный цвет Excel)
+- **components/Sidebar.tsx**
+  - Боковое меню, используется во всём приложении
 
-- **components/Sidebar/**
-  - `Sidebar.tsx` — боковое меню, используется во всём приложении
-  - `SidebarIcon.tsx` — иконки для Sidebar
-  - `sidebarTranslation.json` — переводы для Sidebar
-  - `sidebar.d.ts` — типы для Sidebar
-
-- **components/LanguageSwitcher.tsx**
-  - Переключатель языков
+- **components/PageHeaderWithTabs.tsx**
+  - Заголовок страницы с табами
 
 ## Принципы расширения
 

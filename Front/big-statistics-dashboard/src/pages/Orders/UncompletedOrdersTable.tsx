@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import CustomTableBuilder, { CustomTableHandle } from "./CustomTableBuilder";
+import CustomTableBuilder from "./CustomTableBuilder";
 import FieldsSelectorPopover from "./FieldsSelectorPopover";
 import mockData from "../../Test/uncompleted_orders.json";
 import {
@@ -7,10 +7,8 @@ import {
     getCoreRowModel,
     flexRender,
     ColumnDef,
-    Table,
 } from "@tanstack/react-table";
 import { useTranslation } from 'react-i18next';
-import ExportButton from "../../components/ExportButton";
 
 type Order = Record<string, any>;
 
@@ -21,7 +19,6 @@ export default function UncompletedOrdersTable() {
     const [activeTab, setActiveTab] = useState("main");
     const { t } = useTranslation('ordersTranslation');
     const anchorRef = useRef<HTMLButtonElement>(null);
-    const customRef = useRef<CustomTableHandle<Order>>(null);
 
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const allColumns = useMemo(() => {
@@ -110,41 +107,32 @@ export default function UncompletedOrdersTable() {
                             </li>
                         ))}
                     </ul>
-                    <div className="flex gap-3">
-                        {/* Кнопка выбора столбцов – только на Custom */}
-                        {activeTab === 'custom' && (
-                            <FieldsSelectorPopover
-                                allColumns={allColumns}
-                                selectedKeys={selectedKeys}
-                                onToggle={handleToggle}
-                                t={t}
-                                anchorRef={anchorRef}
-                                buttonProps={{
-                                    className: [
-                                        'self-end',
-                                        'bg-gradient-to-r',
-                                        'from-blue-600 via-sky-500 to-cyan-400',
-                                        'text-white font-semibold',
-                                        'shadow-md shadow-sky-500/30',
-                                        'hover:brightness-110',
-                                        'active:scale-95',
-                                        'transition-all duration-150',
-                                        'rounded-lg',
-                                        'h-8',
-                                        'px-5',
-                                        'text-sm'
-                                    ].join(' ')
-                                }}
-                            />
-                        )}
-                        {/* Export всегда доступен */}
-                        {table && (
-                            <ExportButton
-                                table={activeTab === 'main' ? table : customRef.current?.table || null}
-                                fileName="uncompleted_orders.xlsx"
-                            />
-                        )}
-                    </div>
+                    {/* Кнопка Create – только на Custom */}
+                    {activeTab === 'custom' && (
+                        <FieldsSelectorPopover
+                            allColumns={allColumns}
+                            selectedKeys={selectedKeys}
+                            onToggle={handleToggle}
+                            t={t}
+                            anchorRef={anchorRef}
+                            buttonProps={{
+                                className: [
+                                    'self-end',
+                                    'bg-gradient-to-r',
+                                    'from-blue-600 via-sky-500 to-cyan-400',
+                                    'text-white font-semibold',
+                                    'shadow-md shadow-sky-500/30',
+                                    'hover:brightness-110',
+                                    'active:scale-95',
+                                    'transition-all duration-150',
+                                    'rounded-lg',
+                                    'h-8',
+                                    'px-5',
+                                    'text-sm'
+                                ].join(' ')
+                            }}
+                        />
+                    )}
                 </div>
                 {/* Серая «полка» сразу под табами  – ровно 1 px */}
                 <div className="-mt-px h-px bg-gray-300" />
@@ -183,7 +171,6 @@ export default function UncompletedOrdersTable() {
             )}
             {activeTab === 'custom' && (
                 <CustomTableBuilder
-                    ref={customRef}
                     initialData={data}
                     selectedKeys={selectedKeys}
                     allColumns={allColumns}
