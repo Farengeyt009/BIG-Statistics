@@ -190,7 +190,7 @@ export function DataTable<T extends Record<string, any>>({
       }}
     >
       <div ref={parentRef} data-testid="scroll-area" className="max-h-96 overflow-auto">
-        <table className="min-w-full text-sm border table-fixed w-full">
+      <table className="min-w-max text-sm border table-auto">
           <thead className="bg-gray-100">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
