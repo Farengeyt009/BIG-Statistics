@@ -190,7 +190,7 @@ export function DataTable<T extends Record<string, any>>({
       }}
     >
       <div ref={parentRef} data-testid="scroll-area" className="max-h-96 overflow-auto">
-      <table className="min-w-max text-sm border table-fixed w-max">
+      <table className="min-w-max w-full text-sm border table-fixed">
           <thead className="bg-gray-100">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
@@ -213,8 +213,13 @@ export function DataTable<T extends Record<string, any>>({
                 <tr
                   key={row.id}
                   data-index={virtualRow.index}
-                  ref={(el) => rowVirtualizer.measureElement(el)}
-                  style={{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)` }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const key = cell.column.id;
