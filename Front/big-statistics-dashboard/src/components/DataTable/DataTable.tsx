@@ -212,7 +212,7 @@ export function DataTable<T extends Record<string, any>>({
               return (
                 <tr
                   key={row.id}
-                  ref={virtualRow.measureElement}
+                  ref={rowVirtualizer.measureElement}
                   style={{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)` }}
                 >
                   {row.getVisibleCells().map((cell) => {
