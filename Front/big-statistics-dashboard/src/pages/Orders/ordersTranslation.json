@@ -26,6 +26,7 @@
       "ShipmentMonth": "Ship Mon.",
       "ShipmentYear": "Ship Year",
       "Total_Order_QTY": "Total Qty",
+      "Market": "Market",
       "Uncompleted_QTY": "Uncomp. Qty"
     },
     "fieldGroups": {
@@ -33,7 +34,8 @@
       "productInfo": "Product Info",
       "quantity": "Quantity",
       "uncategorized": "Uncategorized"
-    }
+    },
+    "customTab": "Custom Table"
   },
   "zh": {
     "title": "客户订单",
@@ -47,21 +49,22 @@
       "Displacement": "容量",
       "FACT_QTY": "完成量",
       "Firmware": "固件",
-      "GroupName": "组别",
+      "GroupName": "成品组",
       "HeadAndOther": "控制盒等等",
-      "Name_CN": "产品名",
+      "Name_CN": "成品名称",
       "OrderConformDay": "确认日",
       "OrderDate": "下单日",
-      "OrderShipmentDay_Svod": "发货日",
+      "OrderShipmentDay_Svod": "交期",
       "Order_No": "订单号",
       "Order_QTY": "订单量",
       "Power": "功率",
-      "Prod_Group": "产品组",
+      "Prod_Group": "成品分类",
       "ProductionOrder": "生产单",
       "RunOrderDay": "下需求",
-      "ShipmentMonth": "发货月",
-      "ShipmentYear": "发货年",
+      "ShipmentMonth": "交期（月）",
+      "ShipmentYear": "交期（年）",
       "Total_Order_QTY": "总订单量",
+      "Market": "市场",
       "Uncompleted_QTY": "未完量"
     },
     "fieldGroups": {
@@ -69,7 +72,8 @@
       "productInfo": "产品信息",
       "quantity": "数量",
       "uncategorized": "未分类"
-    }
+    },
+    "customTab": "自定义表格"
   },
   "ru": {
     "fieldGroups": {

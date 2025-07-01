@@ -1,14 +1,17 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import CustomTableBuilder from "./CustomTableBuilder";
+import CustomTableBuilder, { CustomTableHandle } from "./CustomTableBuilder";
 import FieldsSelectorPopover from "./FieldsSelectorPopover";
+import ExportButton from "../../components/ExportButton";
 import mockData from "../../Test/uncompleted_orders.json";
 import {
     useReactTable,
     getCoreRowModel,
     flexRender,
     ColumnDef,
+    Table,
 } from "@tanstack/react-table";
 import { useTranslation } from 'react-i18next';
+import OrdersCustomTrainingOverlay from './utils/OrdersCustomTrainingOverlay';
 
 type Order = Record<string, any>;
 
@@ -17,6 +20,7 @@ const isMock = true;
 export default function UncompletedOrdersTable() {
     const [data, setData] = useState<Order[]>([]);
     const [activeTab, setActiveTab] = useState("main");
+    const [customTable, setCustomTable] = useState<Table<Order> | null>(null);
     const { t } = useTranslation('ordersTranslation');
     const anchorRef = useRef<HTMLButtonElement>(null);
 
@@ -90,7 +94,7 @@ export default function UncompletedOrdersTable() {
                         {[
                             { label: 'Main Table', key: 'main' },
                             { label: 'Gantt Chart', key: 'gantt' },
-                            { label: 'Custom',     key: 'custom' },
+                            { label: t('customTab'), key: 'custom' },
                         ].map(tab => (
                             <li key={tab.key}>
                                 <button
@@ -99,7 +103,7 @@ export default function UncompletedOrdersTable() {
                                         `px-4 h-8 flex items-center rounded-t-md text-sm select-none ` +
                                         (activeTab === tab.key
                                             ? 'bg-white text-gray-900 border border-b-transparent'
-                                            : 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-transparent')
+                                            : 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-300')
                                     }
                                 >
                                     {tab.label}
@@ -107,31 +111,37 @@ export default function UncompletedOrdersTable() {
                             </li>
                         ))}
                     </ul>
-                    {/* Кнопка Create – только на Custom */}
+                    {/* Кнопки действий – только на Custom */}
                     {activeTab === 'custom' && (
-                        <FieldsSelectorPopover
-                            allColumns={allColumns}
-                            selectedKeys={selectedKeys}
-                            onToggle={handleToggle}
-                            t={t}
-                            anchorRef={anchorRef}
-                            buttonProps={{
-                                className: [
-                                    'self-end',
-                                    'bg-gradient-to-r',
-                                    'from-blue-600 via-sky-500 to-cyan-400',
-                                    'text-white font-semibold',
-                                    'shadow-md shadow-sky-500/30',
-                                    'hover:brightness-110',
-                                    'active:scale-95',
-                                    'transition-all duration-150',
-                                    'rounded-lg',
-                                    'h-8',
-                                    'px-5',
-                                    'text-sm'
-                                ].join(' ')
-                            }}
-                        />
+                        <div className="flex gap-3">
+                            <FieldsSelectorPopover
+                                allColumns={allColumns}
+                                selectedKeys={selectedKeys}
+                                onToggle={handleToggle}
+                                t={t}
+                                anchorRef={anchorRef}
+                                buttonProps={{
+                                    className: [
+                                        'self-end',
+                                        'bg-gradient-to-r',
+                                        'from-blue-600 via-sky-500 to-cyan-400',
+                                        'text-white font-semibold',
+                                        'shadow-md shadow-sky-500/30',
+                                        'hover:brightness-110',
+                                        'active:scale-95',
+                                        'transition-all duration-150',
+                                        'rounded-lg',
+                                        'h-8',
+                                        'px-5',
+                                        'text-sm'
+                                    ].join(' ')
+                                }}
+                            />
+                            <ExportButton
+                                table={customTable}
+                                fileName="uncompleted_orders.xlsx"
+                            />
+                        </div>
                     )}
                 </div>
                 {/* Серая «полка» сразу под табами  – ровно 1 px */}
@@ -170,12 +180,19 @@ export default function UncompletedOrdersTable() {
                 </div>
             )}
             {activeTab === 'custom' && (
-                <CustomTableBuilder
-                    initialData={data}
-                    selectedKeys={selectedKeys}
-                    allColumns={allColumns}
-                    onToggle={handleToggle}
-                />
+                <>
+                    <OrdersCustomTrainingOverlay
+                        anchorRef={anchorRef}
+                        visible={selectedKeys.length === 0}
+                    />
+                    <CustomTableBuilder
+                        initialData={data}
+                        selectedKeys={selectedKeys}
+                        allColumns={allColumns}
+                        onToggle={handleToggle}
+                        onTableReady={setCustomTable}
+                    />
+                </>
             )}
         </div>
     );

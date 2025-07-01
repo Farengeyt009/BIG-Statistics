@@ -1,0 +1,10 @@
+{
+    "en": {
+      "title": "Custom Table Builder",
+      "message": "Curious how many orders are still open for Russia?\nOr how many stainless steel water heaters we produced in 2024?\n\nClick **Create+** and customize your table:\npick the fields, group the data, and sum up what matters to you.\n\nFilters are available in every column header. You can download your custom table after setup."
+    },
+    "zh": {
+      "title": "自定义表格",
+      "message": "想知道还有多少俄罗斯市场的订单我们未完成吗？\n或者你想了解在2024年我们生产了多少不锈钢热水器？\n\n点击 **Create+** 自定义你的表格：\n选择字段、分组数据，并汇总你关心的内容。\n\n每个表头都可以进行筛选。自定义表格后可以下载。"
+    }
+  }

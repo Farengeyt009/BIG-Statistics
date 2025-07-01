@@ -5,17 +5,20 @@ import { initReactI18next } from 'react-i18next';
 import sidebarTranslation from './components/Sidebar/sidebarTranslation.json';
 import ordersTranslation from './pages/Orders/ordersTranslation.json';
 import dataTableTranslation from './components/DataTable/dataTableTranslation.json';
+import ordersCustomTrainingTranslation from './pages/Orders/utils/ordersCustomTrainingTranslation.json';
 
 const resources = {
   en: {
     sidebar: sidebarTranslation.en,
     ordersTranslation: ordersTranslation.en,
-    dataTable: dataTableTranslation.en
+    dataTable: dataTableTranslation.en,
+    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.en
   },
   zh: {
-    sidebar: sidebarTranslation.cn,
+    sidebar: sidebarTranslation.zh,
     ordersTranslation: ordersTranslation.zh,
-    dataTable: dataTableTranslation.zh
+    dataTable: dataTableTranslation.zh,
+    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.zh
   }
 };
 
