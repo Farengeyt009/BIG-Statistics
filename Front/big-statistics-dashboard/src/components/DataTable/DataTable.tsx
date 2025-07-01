@@ -190,7 +190,7 @@ export function DataTable<T extends Record<string, any>>({
       }}
     >
       <div ref={parentRef} data-testid="scroll-area" className="max-h-96 overflow-auto">
-      <table className="min-w-max text-sm border table-auto">
+      <table className="min-w-max w-full text-sm border table-auto">
           <thead className="bg-gray-100">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
@@ -212,7 +212,8 @@ export function DataTable<T extends Record<string, any>>({
               return (
                 <tr
                   key={row.id}
-                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  ref={(el) => rowVirtualizer.measureElement(el)}
                   style={{ position: 'absolute', top: 0, transform: `translateY(${virtualRow.start}px)` }}
                 >
                   {row.getVisibleCells().map((cell) => {
