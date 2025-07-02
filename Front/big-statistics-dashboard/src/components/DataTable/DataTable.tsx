@@ -13,7 +13,7 @@ import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
-  useSortable,          // ← добавили пропавший импорт
+  useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -165,30 +165,29 @@ export function DataTable<T extends Record<string, any>>({
     if (!filteredData.length) return {};
     const pxPerChar = 8;
     const basePadding = 16;
-  
+
     const res: Record<string, number> = {};
-  
+
     columns.forEach((col) => {
-      /* PATCH: жёстко приводим к string */
       const colId = col.id as string;
-  
+
       const headerLen =
         typeof col.header === 'string' ? col.header.length : colId.length;
-  
+
       const cellLen = filteredData.reduce(
         (m, r) =>
           Math.max(m, String((r as Record<string, any>)[colId] ?? '').length),
         0,
       );
-  
+
       const px = Math.min(
         Math.max(Math.max(headerLen, cellLen) * pxPerChar + basePadding, 80),
         400,
       );
-  
-      res[colId] = px; // ← PATCH: используем colId, а не col.id
+
+      res[colId] = px;
     });
-  
+
     return res;
   }, [columns, filteredData]);
 
@@ -212,8 +211,9 @@ export function DataTable<T extends Record<string, any>>({
         );
       }}
     >
+      {/* скролл-контейнер для virtualizer: по Y и по X */}
       <div ref={parentRef} className="max-h-[80vh] overflow-auto">
-        <table className="min-w-max w-full text-sm border table-fixed">
+        <table className="min-w-max w-max text-sm border table-auto">
           {/* --------- colgroup ---------- */}
           <colgroup>
             {table
@@ -326,7 +326,7 @@ function SortableTh({
       className="px-2 py-1 text-left"
     >
       <div className="flex items-center gap-1">
-        <span {...listeners} className="cursor-move font-medium">
+      <span {...listeners} className="cursor-move font-medium whitespace-nowrap">
           {children}
         </span>
       </div>
