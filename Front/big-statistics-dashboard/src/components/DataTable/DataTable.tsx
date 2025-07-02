@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useLayoutEffect,
-} from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ColumnDef,
   useReactTable,
@@ -16,18 +10,14 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,          // ← добавили пропавший импорт
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 import FilterPopover from './FilterPopover';
-
-/* ------------------------------------------------------------------ */
-/*                             CONSTS                                 */
-/* ------------------------------------------------------------------ */
-const MIN_WIDTH = 80;   // px, колонка уже не станет
-const MAX_WIDTH = 400;  // px, колонка шире не станет
-const PX_PER_CHAR = 8;  // грубый коэффициент для Inter
-const PADDING = 16;     // px, padding слева+справа
 
 /* ------------------------------------------------------------------ */
 /*                               TYPES                                */
@@ -66,7 +56,7 @@ export function DataTable<T extends Record<string, any>>({
     );
   }, [data, filters]);
 
-  /** уникальные значения для FilterPopover */
+  /** уникальные значения для FilterPopover (каскадно) */
   const uniqueValuesByKey = useMemo(() => {
     const res: Record<string, string[]> = {};
     if (!data.length) return res;
@@ -110,10 +100,10 @@ export function DataTable<T extends Record<string, any>>({
     // 1 базовые
     const base = Object.keys(data[0]).map((k) => ({ id: k, accessorKey: k }));
 
-    // 2 overrides
+    // 2 слияние overrides
     let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
 
-    // 3 custom order
+    // 3 ручной порядок
     if (columnsOrder?.length) {
       merged.sort(
         (a, b) =>
@@ -147,11 +137,11 @@ export function DataTable<T extends Record<string, any>>({
   /* ------------------- virtualizer ------------------- */
   const rowHeight = 34;
   const overscan = typeof virtualized === 'object' ? virtualized.overscan ?? 10 : 10;
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: filteredData.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan,
   });
@@ -165,71 +155,44 @@ export function DataTable<T extends Record<string, any>>({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  useEffect(() => onTableReady?.(table), [table, onTableReady]);
+  /* -------------------- notify parent ---------------- */
+  useEffect(() => {
+    onTableReady?.(table);
+  }, [table, onTableReady]);
 
-  /* ------------------------------------------------------------------ */
-  /*          1) базовая ширина (по контенту)                            */
-  /* ------------------------------------------------------------------ */
-  const contentWidths = useMemo<Record<string, number>>(() => {
+  /* -------------- <colgroup> widths ----------------- */
+  const columnWidths = useMemo<Record<string, number>>(() => {
     if (!filteredData.length) return {};
+    const pxPerChar = 8;
+    const basePadding = 16;
+  
     const res: Record<string, number> = {};
+  
     columns.forEach((col) => {
+      /* PATCH: жёстко приводим к string */
       const colId = col.id as string;
-
+  
       const headerLen =
         typeof col.header === 'string' ? col.header.length : colId.length;
-
+  
       const cellLen = filteredData.reduce(
         (m, r) =>
           Math.max(m, String((r as Record<string, any>)[colId] ?? '').length),
         0,
       );
-
+  
       const px = Math.min(
-        Math.max(Math.max(headerLen, cellLen) * PX_PER_CHAR + PADDING, MIN_WIDTH),
-        MAX_WIDTH,
+        Math.max(Math.max(headerLen, cellLen) * pxPerChar + basePadding, 80),
+        400,
       );
-
-      res[colId] = px;
+  
+      res[colId] = px; // ← PATCH: используем colId, а не col.id
     });
+  
     return res;
   }, [columns, filteredData]);
 
-  /* ------------------------------------------------------------------ */
-  /*          2) итоговая ширина (stretch / shrink)                      */
-  /* ------------------------------------------------------------------ */
-  const [colWidths, setColWidths] = useState<Record<string, number>>(contentWidths);
-  const containerRef = scrollRef; // используем тот же ref
-
-  // пересчитываем при resize и при смене contentWidths
-  useLayoutEffect(() => {
-    function recalc(viewport: number) {
-      const totalContent = Object.values(contentWidths).reduce((a, b) => a + b, 0);
-
-      // начинаем с базовых
-      let next: Record<string, number> = { ...contentWidths };
-
-      if (totalContent < viewport) {
-        // распределяем extra пропорционально
-        const extra = viewport - totalContent;
-        const ratio = extra / totalContent;
-
-        next = Object.fromEntries(
-          Object.entries(contentWidths).map(([k, w]) => [k, w + w * ratio]),
-        );
-      }
-      setColWidths(next);
-    }
-
-    if (!containerRef.current) return;
-    recalc(containerRef.current.clientWidth);
-
-    const ro = new ResizeObserver(([entry]) => recalc(entry.contentRect.width));
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, [contentWidths, containerRef]);
-
-  /* -------------- virtual paddings -------------- */
+  /* -------------- virtual row paddings -------------- */
   const virtualRows = rowVirtualizer.getVirtualItems();
   const paddingTop = virtualRows[0]?.start ?? 0;
   const paddingBottom =
@@ -249,19 +212,22 @@ export function DataTable<T extends Record<string, any>>({
         );
       }}
     >
-      <div ref={scrollRef} className="max-h-96 overflow-auto">
+      <div ref={parentRef} className="max-h-[80vh] overflow-auto">
         <table className="min-w-max w-full text-sm border table-fixed">
-          {/* ---------- colgroup ---------- */}
+          {/* --------- colgroup ---------- */}
           <colgroup>
-            {columns.map((c) => (
-              <col
-              key={c.id}
-              style={{ width: `${colWidths[c.id as string] ?? MIN_WIDTH}px` }}
-            />
-            ))}
+            {table
+              .getHeaderGroups()[0]
+              ?.headers.filter((h) => typeof h.id === 'string')
+              .map((h) => (
+                <col
+                  key={h.id}
+                  style={{ width: `${columnWidths[h.id as string]}px` }}
+                />
+              ))}
           </colgroup>
 
-          {/* ---------- thead ---------- */}
+          {/* -------- thead -------- */}
           <thead className="bg-gray-100 select-none">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
@@ -276,8 +242,9 @@ export function DataTable<T extends Record<string, any>>({
             </SortableContext>
           </thead>
 
-          {/* ---------- tbody ---------- */}
+          {/* -------- tbody -------- */}
           <tbody>
+            {/* верхний паддинг */}
             {paddingTop > 0 && (
               <tr style={{ height: `${paddingTop}px` }}>
                 <td colSpan={columns.length} />
@@ -309,6 +276,7 @@ export function DataTable<T extends Record<string, any>>({
               );
             })}
 
+            {/* нижний паддинг */}
             {paddingBottom > 0 && (
               <tr style={{ height: `${paddingBottom}px` }}>
                 <td colSpan={columns.length} />
@@ -316,7 +284,7 @@ export function DataTable<T extends Record<string, any>>({
             )}
           </tbody>
 
-          {/* ---------- tfoot ---------- */}
+          {/* -------- tfoot (итоги) -------- */}
           {filteredData.length && numericColumns.length ? (
             <tfoot>
               <tr>
