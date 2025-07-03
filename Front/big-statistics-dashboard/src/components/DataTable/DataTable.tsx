@@ -100,16 +100,15 @@ export function DataTable<T extends Record<string, any>>({
     /* 2. merge overrides */
     let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
 
+    /* 2a. фильтруем лишние колонки */
+    if (columnsOrder?.length) {
+      merged = merged.filter((c) => columnsOrder.includes(c.id as string));
+    }
+
     /* 3. custom order */
     if (columnsOrder?.length) {
-      merged.sort(
-        (a, b) =>
-          (columnsOrder.indexOf(a.id) === -1
-            ? Infinity
-            : columnsOrder.indexOf(a.id)) -
-          (columnsOrder.indexOf(b.id) === -1
-            ? Infinity
-            : columnsOrder.indexOf(b.id)),
+      merged.sort((a, b) =>
+        columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
       );
     }
 
@@ -133,7 +132,7 @@ export function DataTable<T extends Record<string, any>>({
             />
           </>
         ),
-      };
+      } as ColumnDef<T>;
     });
   }, [data, columnsOverrides, columnsOrder, filteredData, filters, uniqueValuesByKey]);
 
