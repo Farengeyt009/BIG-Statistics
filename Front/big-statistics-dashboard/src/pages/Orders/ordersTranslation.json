@@ -35,7 +35,8 @@
       "quantity": "Quantity",
       "uncategorized": "Uncategorized"
     },
-    "customTab": "Custom Table"
+    "customTab": "Custom Table",
+    "chartTab": "Chart"
   },
   "zh": {
     "title": "客户订单",
@@ -73,7 +74,8 @@
       "quantity": "数量",
       "uncategorized": "未分类"
     },
-    "customTab": "自定义表格"
+    "customTab": "自定义表格",
+    "chartTab": "图表"
   },
   "ru": {
     "fieldGroups": {

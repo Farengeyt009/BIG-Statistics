@@ -5,7 +5,7 @@ import { initReactI18next } from 'react-i18next';
 import sidebarTranslation from './components/Sidebar/sidebarTranslation.json';
 import ordersTranslation from './pages/Orders/ordersTranslation.json';
 import dataTableTranslation from './components/DataTable/dataTableTranslation.json';
-import ordersCustomTrainingTranslation from './pages/Orders/utils/ordersCustomTrainingTranslation.json';
+import ordersCustomTrainingTranslation from './pages/Orders/utils/CustomTableBuilder/ordersCustomTrainingTranslation.json';
 
 const resources = {
   en: {

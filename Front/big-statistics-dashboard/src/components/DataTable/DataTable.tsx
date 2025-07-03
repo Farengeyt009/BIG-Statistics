@@ -278,13 +278,13 @@ export function DataTable<T extends Record<string, any>>({
           {!!filteredData.length && !!numericColumns.length && (
             <tfoot>
               <tr>
-                {columns.map((c) =>
-                  numericColumns.includes(c.id as string) ? (
-                    <td key={c.id} className="font-bold text-[#0d1c3d]">
-                      {numericSums[c.id as string].toLocaleString('ru-RU')}
+                {table.getVisibleLeafColumns().map((col) =>
+                  numericColumns.includes(col.id as string) ? (
+                    <td key={col.id} className="font-bold text-[#0d1c3d]">
+                      {numericSums[col.id as string].toLocaleString('ru-RU')}
                     </td>
                   ) : (
-                    <td key={c.id} />
+                    <td key={col.id} />
                   ),
                 )}
               </tr>

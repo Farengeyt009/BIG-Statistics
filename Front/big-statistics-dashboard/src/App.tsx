@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
-import UncompletedOrdersTable from './pages/Orders/UncompletedOrdersTable';
+import CustomerOrdersInformation from './pages/Orders/CustomerOrdersInformation';
 
 function App() {
     const [expanded, setExpanded] = useState<boolean>(() =>
@@ -27,7 +27,7 @@ function App() {
                 <Sidebar expanded={expanded} toggleSidebar={toggle} />
                 <main className="flex-1 p-4 overflow-auto bg-gray-100">
                     <Routes>
-                        <Route path="/uncompleted-orders" element={<UncompletedOrdersTable />} />
+                        <Route path="/uncompleted-orders" element={<CustomerOrdersInformation />} />
                     </Routes>
                 </main>
             </div>

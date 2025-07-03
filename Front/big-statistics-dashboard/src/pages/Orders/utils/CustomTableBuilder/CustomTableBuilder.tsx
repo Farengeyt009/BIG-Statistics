@@ -1,3 +1,4 @@
+import React from 'react';
 import {
     useState,
     useEffect,
@@ -7,8 +8,8 @@ import {
   import { ColumnDef, Table } from '@tanstack/react-table';
   import { useTranslation } from 'react-i18next';
   
-  import { groupAndAggregate } from './utils/groupAndAggregate';
-  import { DataTable } from '../../components/DataTable/DataTable';
+  import { groupAndAggregate } from './groupAndAggregate';
+  import { DataTable } from '../../../../components/DataTable/DataTable';
   
   type Order = Record<string, any>;
   

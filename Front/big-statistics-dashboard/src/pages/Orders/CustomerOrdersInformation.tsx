@@ -1,23 +1,27 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import mockData from "../../Test/uncompleted_orders.json";
+import {
+    useReactTable,
+    getCoreRowModel,
+    flexRender,
+    ColumnDef,
+    Table,
+} from "@tanstack/react-table";
 import { useTranslation } from 'react-i18next';
 import CustomTableTab from './tabs/CustomTableTab';
 import FieldsSelectorPopover from "./FieldsSelectorPopover";
 import ExportButton from "../../components/ExportButton";
 import Chart from './tabs/Chart';
 import MainTableTab from './tabs/MainTableTab';
-import { Table } from '@tanstack/react-table';
 
 type Order = Record<string, any>;
 
 const isMock = true;
 
-export default function UncompletedOrdersTable() {
+export default function CustomerOrdersInformation() {
     const [data, setData] = useState<Order[]>([]);
     const [activeTab, setActiveTab] = useState("main");
-    const [customTable, setCustomTable] = useState<Table<Record<string, any>> | null>(null);
     const { t } = useTranslation('ordersTranslation');
-    const anchorRef = useRef<HTMLButtonElement>(null);
 
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const allColumns = useMemo(() => {
@@ -33,6 +37,10 @@ export default function UncompletedOrdersTable() {
                 : [...prev, key]
         );
     };
+
+    // Новые состояния для кнопок
+    const anchorRef = useRef<HTMLButtonElement>(null);
+    const [customTable, setCustomTable] = useState<Table<Order> | null>(null);
 
     useEffect(() => {
         if (isMock) {
@@ -59,7 +67,7 @@ export default function UncompletedOrdersTable() {
                     <ul className="flex gap-0.5 h-9">
                         {[
                             { label: 'Main Table', key: 'main' },
-                            { label: 'Gantt Chart', key: 'gantt' },
+                            { label: t('chartTab'), key: 'gantt' },
                             { label: t('customTab'), key: 'custom' },
                         ].map(tab => (
                             <li key={tab.key}>
@@ -114,13 +122,11 @@ export default function UncompletedOrdersTable() {
                 <div className="-mt-px h-px bg-gray-300" />
             </header>
             {/* Содержимое вкладок */}
-            {activeTab === 'main' && (
+            {activeTab === 'main'   && (
                 <MainTableTab data={data} />
             )}
             {activeTab === 'gantt'  && (
-                <div className="text-gray-600 italic p-4 border rounded bg-gray-50">
-                    📊 Gantt Chart (в разработке)
-                </div>
+                <Chart />
             )}
             {activeTab === 'custom' && (
                 <CustomTableTab
