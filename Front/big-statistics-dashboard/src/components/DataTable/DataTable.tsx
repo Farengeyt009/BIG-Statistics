@@ -1,20 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ColumnDef,
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
   RowData,
   Table,
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-} from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 import FilterPopover from './FilterPopover';
@@ -49,14 +44,14 @@ export function DataTable<T extends Record<string, any>>({
     if (!data.length) return [];
     return data.filter((row) =>
       Object.keys(row).every((k) => {
-        const selected = filters[k];
-        if (!selected?.length) return true;
-        return selected.includes(String(row[k] ?? ''));
+        const sel = filters[k];
+        if (!sel?.length) return true;
+        return sel.includes(String(row[k] ?? ''));
       }),
     );
   }, [data, filters]);
 
-  /** уникальные значения для FilterPopover (каскадно) */
+  /* уникальные значения для FilterPopover (каскадно) */
   const uniqueValuesByKey = useMemo(() => {
     const res: Record<string, string[]> = {};
     if (!data.length) return res;
@@ -79,7 +74,9 @@ export function DataTable<T extends Record<string, any>>({
   const numericColumns = useMemo<string[]>(() => {
     if (!filteredData.length) return [];
     const keys = Object.keys(filteredData[0]);
-    return keys.filter((k) => filteredData.every((r) => r[k] === '' || !isNaN(Number(r[k]))));
+    return keys.filter((k) =>
+      filteredData.every((r) => r[k] === '' || !isNaN(Number(r[k]))),
+    );
   }, [filteredData]);
 
   const numericSums = useMemo<Record<string, number>>(() => {
@@ -97,37 +94,47 @@ export function DataTable<T extends Record<string, any>>({
   const columns = useMemo<ColumnDef<T>[]>(() => {
     if (!data.length) return [];
 
-    // 1 базовые
+    /* 1. базовые */
     const base = Object.keys(data[0]).map((k) => ({ id: k, accessorKey: k }));
 
-    // 2 слияние overrides
+    /* 2. merge overrides */
     let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
 
-    // 3 ручной порядок
+    /* 3. custom order */
     if (columnsOrder?.length) {
       merged.sort(
         (a, b) =>
-          (columnsOrder.indexOf(a.id) === -1 ? Infinity : columnsOrder.indexOf(a.id)) -
-          (columnsOrder.indexOf(b.id) === -1 ? Infinity : columnsOrder.indexOf(b.id)),
+          (columnsOrder.indexOf(a.id) === -1
+            ? Infinity
+            : columnsOrder.indexOf(a.id)) -
+          (columnsOrder.indexOf(b.id) === -1
+            ? Infinity
+            : columnsOrder.indexOf(b.id)),
       );
     }
 
-    // 4 header + FilterPopover
-    return merged.map((c) => ({
-      ...c,
-      header: () => (
-        <>
-          {typeof c.header === 'string' ? c.header : c.id}
-          <FilterPopover
-            columnId={c.id}
-            data={filteredData}
-            uniqueValues={uniqueValuesByKey[c.id] ?? []}
-            selectedValues={filters[c.id] ?? []}
-            onFilterChange={(sel) => setFilters((p) => ({ ...p, [c.id]: sel }))}
-          />
-        </>
-      ),
-    }));
+    /* 4. header + FilterPopover + meta.excelHeader */
+    return merged.map((c) => {
+      const rawHeader =
+        typeof c.header === 'string' ? c.header : (columnsOverrides[c.id]?.header as string) ?? c.id;
+
+      return {
+        ...c,
+        meta: { ...c.meta, excelHeader: c.meta?.excelHeader ?? rawHeader },
+        header: () => (
+          <>
+            {rawHeader}
+            <FilterPopover
+              columnId={c.id}
+              data={filteredData}
+              uniqueValues={uniqueValuesByKey[c.id] ?? []}
+              selectedValues={filters[c.id] ?? []}
+              onFilterChange={(sel) => setFilters((p) => ({ ...p, [c.id]: sel }))}
+            />
+          </>
+        ),
+      };
+    });
   }, [data, columnsOverrides, columnsOrder, filteredData, filters, uniqueValuesByKey]);
 
   useEffect(() => {
@@ -155,12 +162,11 @@ export function DataTable<T extends Record<string, any>>({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  /* -------------------- notify parent ---------------- */
   useEffect(() => {
     onTableReady?.(table);
   }, [table, onTableReady]);
 
-  /* -------------- <colgroup> widths ----------------- */
+  /* -------------- colgroup widths ----------------- */
   const columnWidths = useMemo<Record<string, number>>(() => {
     if (!filteredData.length) return {};
     const pxPerChar = 8;
@@ -170,13 +176,9 @@ export function DataTable<T extends Record<string, any>>({
 
     columns.forEach((col) => {
       const colId = col.id as string;
-
-      const headerLen =
-        typeof col.header === 'string' ? col.header.length : colId.length;
-
+      const headerLen = (col.meta?.excelHeader ?? colId).length;
       const cellLen = filteredData.reduce(
-        (m, r) =>
-          Math.max(m, String((r as Record<string, any>)[colId] ?? '').length),
+        (m, r) => Math.max(m, String((r as Record<string, any>)[colId] ?? '').length),
         0,
       );
 
@@ -184,7 +186,6 @@ export function DataTable<T extends Record<string, any>>({
         Math.max(Math.max(headerLen, cellLen) * pxPerChar + basePadding, 80),
         400,
       );
-
       res[colId] = px;
     });
 
@@ -194,8 +195,7 @@ export function DataTable<T extends Record<string, any>>({
   /* -------------- virtual row paddings -------------- */
   const virtualRows = rowVirtualizer.getVirtualItems();
   const paddingTop = virtualRows[0]?.start ?? 0;
-  const paddingBottom =
-    rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0);
+  const paddingBottom = rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0);
 
   /* ----------------------- render ----------------------- */
   return (
@@ -203,31 +203,23 @@ export function DataTable<T extends Record<string, any>>({
       onDragEnd={({ active, over }: DragEndEvent) => {
         if (!over || active.id === over.id) return;
         setColumnOrder((prev) =>
-          arrayMove<string>(
-            prev,
-            prev.indexOf(active.id as string),
-            prev.indexOf(over.id as string),
-          ),
+          arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string)),
         );
       }}
     >
-      {/* скролл-контейнер для virtualizer: по Y и по X */}
       <div ref={parentRef} className="max-h-[80vh] overflow-auto">
         <table className="min-w-max w-max text-sm border table-auto">
-          {/* --------- colgroup ---------- */}
+          {/* colgroup */}
           <colgroup>
             {table
               .getHeaderGroups()[0]
               ?.headers.filter((h) => typeof h.id === 'string')
               .map((h) => (
-                <col
-                  key={h.id}
-                  style={{ width: `${columnWidths[h.id as string]}px` }}
-                />
+                <col key={h.id} style={{ width: `${columnWidths[h.id as string]}px` }} />
               ))}
           </colgroup>
 
-          {/* -------- thead -------- */}
+          {/* thead */}
           <thead className="bg-gray-100 select-none sticky top-0 z-20">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
@@ -242,9 +234,8 @@ export function DataTable<T extends Record<string, any>>({
             </SortableContext>
           </thead>
 
-          {/* -------- tbody -------- */}
+          {/* tbody */}
           <tbody>
-            {/* верхний паддинг */}
             {paddingTop > 0 && (
               <tr style={{ height: `${paddingTop}px` }}>
                 <td colSpan={columns.length} />
@@ -276,7 +267,6 @@ export function DataTable<T extends Record<string, any>>({
               );
             })}
 
-            {/* нижний паддинг */}
             {paddingBottom > 0 && (
               <tr style={{ height: `${paddingBottom}px` }}>
                 <td colSpan={columns.length} />
@@ -284,8 +274,8 @@ export function DataTable<T extends Record<string, any>>({
             )}
           </tbody>
 
-          {/* -------- tfoot (итоги) -------- */}
-          {filteredData.length && numericColumns.length ? (
+          {/* tfoot */}
+          {!!filteredData.length && !!numericColumns.length && (
             <tfoot>
               <tr>
                 {columns.map((c) =>
@@ -299,7 +289,7 @@ export function DataTable<T extends Record<string, any>>({
                 )}
               </tr>
             </tfoot>
-          ) : null}
+          )}
         </table>
       </div>
     </DndContext>
@@ -326,7 +316,7 @@ function SortableTh({
       className="px-2 py-1 text-left"
     >
       <div className="flex items-center gap-1">
-      <span {...listeners} className="cursor-move font-medium whitespace-nowrap">
+        <span {...listeners} className="cursor-move font-medium whitespace-nowrap">
           {children}
         </span>
       </div>
