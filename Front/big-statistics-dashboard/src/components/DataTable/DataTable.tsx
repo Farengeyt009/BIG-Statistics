@@ -1,4 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+} from 'react';
 import {
   ColumnDef,
   RowData,
@@ -24,6 +29,12 @@ export interface DataTableProps<T extends RowData> {
   defaultVisible?: string[];
   onTableReady?: (table: Table<T>) => void;
   virtualized?: boolean | { overscan?: number };
+  /**
+   * Список колонок, которые нужно суммировать в <tfoot>.
+   * Если проп не передан, DataTable использует автоматический детектор
+   * (колонка считается числовой, если во всех строках либо число, либо '').
+   */
+  numericKeys?: string[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -36,6 +47,7 @@ export function DataTable<T extends Record<string, any>>({
   defaultVisible,
   onTableReady,
   virtualized = true,
+  numericKeys,
 }: DataTableProps<T>) {
   /* --------------------------- filters --------------------------- */
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -73,11 +85,13 @@ export function DataTable<T extends Record<string, any>>({
   /* -------------------- numeric totals -------------------- */
   const numericColumns = useMemo<string[]>(() => {
     if (!filteredData.length) return [];
-    const keys = Object.keys(filteredData[0]);
-    return keys.filter((k) =>
-      filteredData.every((r) => r[k] === '' || !isNaN(Number(r[k]))),
+
+    const candidateKeys = numericKeys ?? Object.keys(filteredData[0]);
+
+    return candidateKeys.filter((k) =>
+      filteredData.every((r) => r[k] === '' || r[k] === null || !isNaN(Number(r[k]))),
     );
-  }, [filteredData]);
+  }, [filteredData, numericKeys]);
 
   const numericSums = useMemo<Record<string, number>>(() => {
     const sums: Record<string, number> = {};
@@ -107,15 +121,17 @@ export function DataTable<T extends Record<string, any>>({
 
     /* 3. custom order */
     if (columnsOrder?.length) {
-      merged.sort((a, b) =>
-        columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
+      merged.sort(
+        (a, b) => columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
       );
     }
 
     /* 4. header + FilterPopover + meta.excelHeader */
     return merged.map((c) => {
       const rawHeader =
-        typeof c.header === 'string' ? c.header : (columnsOverrides[c.id]?.header as string) ?? c.id;
+        typeof c.header === 'string'
+          ? (c.header as string)
+          : (columnsOverrides[c.id]?.header as string) ?? (c.id as string);
 
       return {
         ...c,
@@ -219,7 +235,7 @@ export function DataTable<T extends Record<string, any>>({
           </colgroup>
 
           {/* thead */}
-          <thead className="bg-gray-100 select-none sticky top-0 z-20">
+          <thead style={{ background: '#3a4266' }} className="select-none sticky top-0 z-20">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
@@ -243,8 +259,14 @@ export function DataTable<T extends Record<string, any>>({
 
             {virtualRows.map((vRow) => {
               const row = table.getRowModel().rows[vRow.index];
+
+              /* подсветка строк с Delay */
+              const rawDelay = (row.original as Record<string, any>)['Delay'];
+              const hasDelay =
+                rawDelay !== undefined && rawDelay !== null && String(rawDelay).trim() !== '' && String(rawDelay) !== '0';
+
               return (
-                <tr key={row.id} style={{ height: rowHeight }}>
+                <tr key={row.id} style={{ height: rowHeight }} className={hasDelay ? 'bg-red-100' : ''}>
                   {row.getVisibleCells().map((cell) => {
                     const colId = cell.column.id as string;
                     const raw = cell.getValue();
@@ -273,7 +295,7 @@ export function DataTable<T extends Record<string, any>>({
             )}
           </tbody>
 
-          {/* tfoot */}
+          {/* tfoot: sums of numeric columns */}
           {!!filteredData.length && !!numericColumns.length && (
             <tfoot>
               <tr>
@@ -298,13 +320,7 @@ export function DataTable<T extends Record<string, any>>({
 /* ------------------------------------------------------------------ */
 /*                        DRAGGABLE <TH>                              */
 /* ------------------------------------------------------------------ */
-function SortableTh({
-  id,
-  children,
-}: {
-  id: string;
-  children: React.ReactNode;
-}) {
+function SortableTh({ id, children }: { id: string; children: React.ReactNode }) {
   const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id });
 
   return (
@@ -312,9 +328,9 @@ function SortableTh({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
-      className="px-2 py-1 text-left"
+      className="px-2 py-1 text-center text-white"
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 justify-center w-full">
         <span {...listeners} className="cursor-move font-medium whitespace-nowrap">
           {children}
         </span>

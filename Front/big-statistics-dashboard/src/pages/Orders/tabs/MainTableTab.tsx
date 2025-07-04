@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DataTable } from '../../../components/DataTable/DataTable';
+import { NUMERIC_KEYS } from '../utils/CustomTableBuilder/numericFields';
 
-// Порядок отображения колонок в таблице
+/* ------------------ порядок отображения ------------------ */
 const columnsOrder = [
   'OrderDate',
   'OrderConformDay',
@@ -18,53 +20,76 @@ const columnsOrder = [
   'Delay',
 ];
 
-// Переопределения заголовков колонок
-const columnsOverrides = {
-  OrderDate: { header: 'Order Date' },
-  OrderConformDay: { header: 'Confirm Date' },
-  RunOrderDay: { header: 'Run Day' },
-  OrderShipmentDay_Svod: { header: 'Ship Date' },
-  Market: { header: 'Market' },
-  Prod_Group: { header: 'Prod Group' },
-  Order_No: { header: 'Order No.' },
-  Article_number: { header: 'Article No.' },
-  Name_CN: { header: 'Prod. Name' },
-  Order_QTY: { header: 'Order Qty' },
-  FACT_QTY: { header: 'Done Qty' },
-  Uncompleted_QTY: { header: 'Uncomp. Qty' },
-  Delay: { header: 'Delay' },
-};
+// Мультиязычные заголовки колонок
+function useColumnsOverrides(t: (key: string) => string): Record<string, { header: string }> {
+  return useMemo(() => {
+    const overrides: Record<string, { header: string }> = {};
+    columnsOrder.forEach((key) => {
+      overrides[key] = { header: t(`tableHeaders.${key}`) };
+    });
+    return overrides;
+  }, [t]);
+}
 
 interface MainTableTabProps {
   data: any[];
+  onTableReady?: (table: any) => void;
 }
 
-/**
- * Рендерит главную таблицу с уменьшенным масштабом содержимого (95 %).
- * Зачем именно «zoom»: в DataTable ячейки стилизованы через классы Tailwind
- * с фиксированными rem‑значениями (text-sm, text-xs). Проценты для
- * font-size на wrapper не влияют на rem, поэтому применяем zoom.
- *
- * Chrome, Edge и Safari поддерживают zoom; в Firefox добавлен fallback
- * через transform:scale.
- */
-const MainTableTab: React.FC<MainTableTabProps> = ({ data }) => (
-  <div
-    style={{
-      zoom: 0.98,
-      // Fallback для браузеров без zoom (например, старый Firefox)
-      transform: 'scale(1)',
-      transformOrigin: 'top left',
-      width: '105%',
-      height: '105%',
-    }}
-  >
-    <DataTable
-      data={data}
-      columnsOverrides={columnsOverrides}
-      columnsOrder={columnsOrder}
-    />
-  </div>
-);
+/* --------- подсветка строк, где Delay не пустой --------- */
+function highlightRows(container: HTMLElement) {
+  const delayIdx = columnsOrder.indexOf('Delay');
+  if (delayIdx === -1) return;
+
+  container.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((tr) => {
+    const cell = tr.cells[delayIdx];
+    if (!cell) return;
+
+    const txt = cell.textContent?.trim() ?? '';
+    tr.style.backgroundColor = txt && txt !== '0' ? '#FEE2E2' : '';
+  });
+}
+
+const MainTableTab: React.FC<MainTableTabProps> = ({ data, onTableReady }) => {
+  const { t } = useTranslation('ordersTranslation');
+  const columnsOverrides = useColumnsOverrides(t);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const handleTableReady = useCallback(
+    (table: any) => {
+      if (wrapperRef.current) highlightRows(wrapperRef.current);
+      onTableReady?.(table);
+    },
+    [onTableReady],
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (wrapperRef.current) highlightRows(wrapperRef.current);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [data]);
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={{
+        zoom: 0.98,
+        transform: 'scale(1)',  // fallback для Firefox
+        transformOrigin: 'top left',
+        width: '105%',
+        height: '105%',
+      }}
+    >
+      <DataTable
+        data={data}
+        columnsOverrides={columnsOverrides}
+        columnsOrder={columnsOrder}
+        numericKeys={NUMERIC_KEYS}        /* ← передаём список числовых полей */
+        onTableReady={handleTableReady}
+      />
+    </div>
+  );
+};
 
 export default MainTableTab;

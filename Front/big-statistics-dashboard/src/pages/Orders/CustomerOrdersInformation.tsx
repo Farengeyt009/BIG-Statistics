@@ -41,6 +41,7 @@ export default function CustomerOrdersInformation() {
     // Новые состояния для кнопок
     const anchorRef = useRef<HTMLButtonElement>(null);
     const [customTable, setCustomTable] = useState<Table<Order> | null>(null);
+    const [mainTable, setMainTable] = useState<Table<Order> | null>(null);
 
     useEffect(() => {
         if (isMock) {
@@ -66,7 +67,7 @@ export default function CustomerOrdersInformation() {
                 <div className="flex items-end justify-between">
                     <ul className="flex gap-0.5 h-9">
                         {[
-                            { label: 'Main Table', key: 'main' },
+                            { label: t('mainTab'), key: 'main' },
                             { label: t('chartTab'), key: 'gantt' },
                             { label: t('customTab'), key: 'custom' },
                         ].map(tab => (
@@ -85,7 +86,15 @@ export default function CustomerOrdersInformation() {
                             </li>
                         ))}
                     </ul>
-                    {/* Кнопки действий – только на Custom */}
+                    {/* Кнопки действий – на Main и Custom */}
+                    {activeTab === 'main' && (
+                        <div className="flex gap-3">
+                            <ExportButton
+                                table={mainTable}
+                                fileName="main_table.xlsx"
+                            />
+                        </div>
+                    )}
                     {activeTab === 'custom' && (
                         <div className="flex gap-3">
                             <FieldsSelectorPopover
@@ -123,7 +132,7 @@ export default function CustomerOrdersInformation() {
             </header>
             {/* Содержимое вкладок */}
             {activeTab === 'main'   && (
-                <MainTableTab data={data} />
+                <MainTableTab data={data} onTableReady={setMainTable} />
             )}
             {activeTab === 'gantt'  && (
                 <Chart />
