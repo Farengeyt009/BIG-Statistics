@@ -1,0 +1,20 @@
+{
+  "pageTitle": {
+    "en": "Plan",
+    "zh": "计划"
+  },
+  "tabs": {
+    "month": {
+      "en": "Month Plan",
+      "zh": "月计划"
+    },
+    "week": {
+      "en": "Weekly Plan",
+      "zh": "周计划"
+    },
+    "day": {
+      "en": "Daily Plan",
+      "zh": "日计划"
+    }
+  }
+} 

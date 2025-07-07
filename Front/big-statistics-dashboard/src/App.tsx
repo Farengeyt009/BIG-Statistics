@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import CustomerOrdersInformation from './pages/Orders/CustomerOrdersInformation';
+import Plan from './pages/Plan/Plan';
 
 function App() {
     const [expanded, setExpanded] = useState<boolean>(() =>
@@ -27,7 +28,9 @@ function App() {
                 <Sidebar expanded={expanded} toggleSidebar={toggle} />
                 <main className="flex-1 p-4 overflow-auto bg-gray-100">
                     <Routes>
+                        <Route path="/" element={<CustomerOrdersInformation />} />
                         <Route path="/uncompleted-orders" element={<CustomerOrdersInformation />} />
+                        <Route path="/plan" element={<Plan />} />
                     </Routes>
                 </main>
             </div>
