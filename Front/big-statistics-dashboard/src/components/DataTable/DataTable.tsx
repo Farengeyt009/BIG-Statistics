@@ -222,8 +222,9 @@ export function DataTable<T extends Record<string, any>>({
         );
       }}
     >
-      <div ref={parentRef} className="max-h-[80vh] overflow-auto">
-        <table className="min-w-max w-max text-sm border table-auto">
+      <div ref={parentRef} className="max-h-[80vh] overflow-auto rounded-t-lg bg-white border border-slate-200">
+        <table
+          className="min-w-max w-max text-sm table-auto bg-white border-collapse -mt-px">
           {/* colgroup */}
           <colgroup>
             {table
@@ -235,7 +236,9 @@ export function DataTable<T extends Record<string, any>>({
           </colgroup>
 
           {/* thead */}
-          <thead style={{ background: '#3a4266' }} className="select-none sticky top-0 z-20">
+          <thead className="select-none sticky top-0 z-20
+                         bg-[color:var(--tbl-head-bg)] text-[color:var(--tbl-head-text)]
+                         text-[11px] font-semibold uppercase tracking-wide">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
@@ -266,7 +269,13 @@ export function DataTable<T extends Record<string, any>>({
                 rawDelay !== undefined && rawDelay !== null && String(rawDelay).trim() !== '' && String(rawDelay) !== '0';
 
               return (
-                <tr key={row.id} style={{ height: rowHeight }} className={hasDelay ? 'bg-red-100' : ''}>
+                <tr
+                  key={row.id}
+                  style={{ height: rowHeight }}
+                  className={`${hasDelay ? 'bg-red-100' :
+                                    vRow.index%2 ? 'bg-[color:var(--tbl-row-zebra)]' : ''}
+                             hover:bg-[color:var(--tbl-row-hover)] transition-colors`}
+                >
                   {row.getVisibleCells().map((cell) => {
                     const colId = cell.column.id as string;
                     const raw = cell.getValue();
@@ -278,7 +287,8 @@ export function DataTable<T extends Record<string, any>>({
                     return (
                       <td
                         key={cell.id}
-                        className="border px-2 py-1 whitespace-nowrap overflow-hidden text-ellipsis"
+                        className={`border-t px-3 py-1 whitespace-nowrap overflow-hidden text-ellipsis
+                                   ${numericColumns.includes(colId) ? 'text-right tabular-nums' : ''}`}
                       >
                         {display}
                       </td>
@@ -297,11 +307,11 @@ export function DataTable<T extends Record<string, any>>({
 
           {/* tfoot: sums of numeric columns */}
           {!!filteredData.length && !!numericColumns.length && (
-            <tfoot>
+            <tfoot className="bg-slate-50">
               <tr>
                 {table.getVisibleLeafColumns().map((col) =>
                   numericColumns.includes(col.id as string) ? (
-                    <td key={col.id} className="font-bold text-[#0d1c3d]">
+                    <td key={col.id} className="font-semibold text-right text-[color:var(--tbl-head-bg)] bg-gray-50 border-t">
                       {numericSums[col.id as string].toLocaleString('ru-RU')}
                     </td>
                   ) : (
@@ -328,10 +338,11 @@ function SortableTh({ id, children }: { id: string; children: React.ReactNode })
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
-      className="px-2 py-1 text-center text-white"
+      className="px-3 py-[10px] text-center whitespace-nowrap
+                 first:rounded-tl-lg last:rounded-tr-lg"
     >
       <div className="flex items-center gap-1 justify-center w-full">
-        <span {...listeners} className="cursor-move font-medium whitespace-nowrap">
+        <span {...listeners} className="cursor-move font-medium whitespace-nowrap flex items-center gap-1">
           {children}
         </span>
       </div>

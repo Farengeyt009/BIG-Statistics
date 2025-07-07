@@ -1,24 +1,876 @@
 {
   "data": [
     {
-      "article_number": "9.80.01.01185",
+      "article_number": "9.80.01.01179",
       "daily": {
-        "2025-07-31": {
+        "2025-07-01": {
+          "fact": 120,
+          "plan": 87
+        }
+      },
+      "fact_finish": "2025-07-01",
+      "fact_start": "2025-07-01",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3(CA)",
+      "order_no": "BIG-D2501",
+      "order_qty": 300,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 120,
+      "total_fact_qty": 0,
+      "total_plan": 87
+    },
+    {
+      "article_number": "9.80.01.01179",
+      "daily": {
+        "2025-07-01": {
+          "fact": 501,
+          "plan": 501
+        }
+      },
+      "fact_finish": "2025-07-01",
+      "fact_start": "2025-07-01",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3(CA)",
+      "order_no": "BIG-D2502",
+      "order_qty": 501,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 501,
+      "total_fact_qty": 0,
+      "total_plan": 501
+    },
+    {
+      "article_number": "9.80.01.01179",
+      "daily": {
+        "2025-07-01": {
+          "fact": 55,
+          "plan": 91
+        },
+        "2025-07-02": {
+          "fact": 420,
+          "plan": 384
+        }
+      },
+      "fact_finish": "2025-07-02",
+      "fact_start": "2025-07-01",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3(CA)",
+      "order_no": "BIG-D2503",
+      "order_qty": 475,
+      "plan_finish": "2025-07-02",
+      "plan_start": "2025-07-01",
+      "total_fact": 475,
+      "total_fact_qty": 0,
+      "total_plan": 475
+    },
+    {
+      "article_number": "9.00.03.00034",
+      "daily": {
+        "2025-07-01": {
           "fact": 0,
-          "plan": 20
+          "plan": 195
+        },
+        "2025-07-02": {
+          "fact": 0,
+          "plan": 805
+        },
+        "2025-07-03": {
+          "fact": 1000,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-03",
+      "fact_start": "2025-07-03",
+      "large_group": "SF to transformers (head)",
+      "name": "\u63a7\u5236\u76d2 ECH/TUM3_MF3.0 Electrolux",
+      "order_no": "CSA-M2512",
+      "order_qty": 1000,
+      "plan_finish": "2025-07-02",
+      "plan_start": "2025-07-01",
+      "total_fact": 1000,
+      "total_fact_qty": 0,
+      "total_plan": 1000
+    },
+    {
+      "article_number": "9.80.01.00218",
+      "daily": {
+        "2025-07-01": {
+          "fact": 0,
+          "plan": 720
+        },
+        "2025-07-05": {
+          "fact": 18,
+          "plan": 0
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-05",
+      "large_group": "Convector / Body",
+      "name": " \u5bf9\u6d41\u5f0f\u7535\u6696\u5668 AirGate2_NCD -T 10 / Electrolux WH HH",
+      "order_no": "CSA-M2512",
+      "order_qty": 720,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 18,
+      "total_fact_qty": 0,
+      "total_plan": 720
+    },
+    {
+      "article_number": "9.50.00.00041",
+      "daily": {
+        "2025-07-01": {
+          "fact": 264,
+          "plan": 264
+        }
+      },
+      "fact_finish": "2025-07-01",
+      "fact_start": "2025-07-01",
+      "large_group": "Purifier (other)",
+      "name": "OCA-INV-HT-W",
+      "order_no": "RK-M2515",
+      "order_qty": 972,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 264,
+      "total_fact_qty": 708,
+      "total_plan": 264
+    },
+    {
+      "article_number": "9.00.00.00012",
+      "daily": {
+        "2025-07-01": {
+          "fact": 0,
+          "plan": 1640
+        },
+        "2025-07-05": {
+          "fact": 1640,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Other FG",
+      "name": "\u6210\u54c1\u914d\u4ef6 \u652f\u6491\u811a BFT/AT_NCA1-FT Ballu",
+      "order_no": "RK-M2519",
+      "order_qty": 1640,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 1640,
+      "total_fact_qty": 0,
+      "total_plan": 1640
+    },
+    {
+      "article_number": "9.00.03.00053",
+      "daily": {
+        "2025-07-01": {
+          "fact": 420,
+          "plan": 600
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-01",
+      "large_group": "SF to transformers (head)",
+      "name": "B-EF-T4.0",
+      "order_no": "RK-M2519",
+      "order_qty": 5460,
+      "plan_finish": "2025-07-01",
+      "plan_start": "2025-07-01",
+      "total_fact": 420,
+      "total_fact_qty": 3900,
+      "total_plan": 600
+    },
+    {
+      "article_number": "9.50.00.00041",
+      "daily": {
+        "2025-07-01": {
+          "fact": 100,
+          "plan": 265
+        },
+        "2025-07-02": {
+          "fact": 276,
+          "plan": 529
+        },
+        "2025-07-03": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-04": {
+          "fact": 0,
+          "plan": 127
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-01",
+      "large_group": "Purifier (other)",
+      "name": "OCA-INV-HT-W",
+      "order_no": "RK-M2520",
+      "order_qty": 1450,
+      "plan_finish": "2025-07-04",
+      "plan_start": "2025-07-01",
+      "total_fact": 376,
+      "total_fact_qty": 0,
+      "total_plan": 1450
+    },
+    {
+      "article_number": "9.80.01.01181",
+      "daily": {
+        "2025-07-02": {
+          "fact": 245,
+          "plan": 295
+        },
+        "2025-07-03": {
+          "fact": 670,
+          "plan": 679
+        },
+        "2025-07-04": {
+          "fact": 670,
+          "plan": 679
+        },
+        "2025-07-05": {
+          "fact": 174,
+          "plan": 397
+        },
+        "2025-07-07": {
+          "fact": 291,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-07",
+      "fact_start": "2025-07-02",
+      "large_group": "Heater Assembly",
+      "name": " \u5bf9\u6d41\u5f0f\u7535\u6696\u5668 Apollo_NCA1 EF4.3.1 1.5kW US / Ballu WM HH ",
+      "order_no": "BIG-D2501",
+      "order_qty": 2050,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-02",
+      "total_fact": 2050,
+      "total_fact_qty": 0,
+      "total_plan": 2050
+    },
+    {
+      "article_number": "9.00.03.00054",
+      "daily": {
+        "2025-07-02": {
+          "fact": 0,
+          "plan": 1240
+        },
+        "2025-07-03": {
+          "fact": 562,
+          "plan": 1760
+        },
+        "2025-07-04": {
+          "fact": 1838,
+          "plan": 0
+        },
+        "2025-07-05": {
+          "fact": 600,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-03",
+      "large_group": "SF to transformers (head)",
+      "name": "\u63a7\u5236\u76d2 ECH/TUI4_INV4.0 Electrolux",
+      "order_no": "CSA-M2512",
+      "order_qty": 3000,
+      "plan_finish": "2025-07-03",
+      "plan_start": "2025-07-02",
+      "total_fact": 3000,
+      "total_fact_qty": 0,
+      "total_plan": 3000
+    },
+    {
+      "article_number": "9.80.01.01181",
+      "daily": {
+        "2025-07-03": {
+          "fact": 0,
+          "plan": 82
+        },
+        "2025-07-04": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-05": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-07": {
+          "fact": 128,
+          "plan": 679
+        },
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-09": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 223
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-07",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3\uff08US\uff09",
+      "order_no": "BIG-D2503",
+      "order_qty": 3700,
+      "plan_finish": "2025-07-10",
+      "plan_start": "2025-07-03",
+      "total_fact": 128,
+      "total_fact_qty": 0,
+      "total_plan": 3700
+    },
+    {
+      "article_number": "9.50.00.00040",
+      "daily": {
+        "2025-07-02": {
+          "fact": 250,
+          "plan": 0
+        },
+        "2025-07-03": {
+          "fact": 525,
+          "plan": 0
+        },
+        "2025-07-04": {
+          "fact": 524,
+          "plan": 406
+        },
+        "2025-07-05": {
+          "fact": 401,
+          "plan": 529
+        },
+        "2025-07-06": {
+          "fact": 100,
+          "plan": 0
+        },
+        "2025-07-07": {
+          "fact": 318,
+          "plan": 529
+        },
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-09": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-11": {
+          "fact": 0,
+          "plan": 149
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-02",
+      "large_group": "Purifier (other)",
+      "name": "OCA-INV-HT-G",
+      "order_no": "RK-M2520",
+      "order_qty": 3200,
+      "plan_finish": "2025-07-11",
+      "plan_start": "2025-07-04",
+      "total_fact": 2118,
+      "total_fact_qty": 0,
+      "total_plan": 3200
+    },
+    {
+      "article_number": "9.80.01.01181",
+      "daily": {
+        "2025-07-05": {
+          "fact": 0,
+          "plan": 284
+        },
+        "2025-07-07": {
+          "fact": 71,
+          "plan": 679
+        },
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-09": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-11": {
+          "fact": 0,
+          "plan": 679
+        },
+        "2025-07-12": {
+          "fact": 0,
+          "plan": 172
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-07",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3\uff08US\uff09",
+      "order_no": "BIG-D2502",
+      "order_qty": 3851,
+      "plan_finish": "2025-07-12",
+      "plan_start": "2025-07-05",
+      "total_fact": 71,
+      "total_fact_qty": 0,
+      "total_plan": 3851
+    },
+    {
+      "article_number": "9.30.00.00309",
+      "daily": {
+        "2025-07-05": {
+          "fact": 0,
+          "plan": 10
         }
       },
       "fact_finish": "",
       "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCR MFE 2.0kW",
-      "order_no": "20250523\u8bd5\u4ea7\u5355",
-      "order_qty": 20,
-      "plan_finish": "2025-07-31",
-      "plan_start": "2025-07-31",
+      "large_group": "Water heater",
+      "name": "BWH/S 50 Level PRO",
+      "order_no": "RK-M2517",
+      "order_qty": 100,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-05",
+      "total_fact": 0,
+      "total_fact_qty": 96,
+      "total_plan": 10
+    },
+    {
+      "article_number": "9.30.00.00310",
+      "daily": {
+        "2025-07-05": {
+          "fact": 73,
+          "plan": 82
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-05",
+      "large_group": "Water heater",
+      "name": "BWH/S 80 Level PRO",
+      "order_no": "RK-M2517",
+      "order_qty": 142,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-05",
+      "total_fact": 73,
+      "total_fact_qty": 67,
+      "total_plan": 82
+    },
+    {
+      "article_number": "9.30.00.00311",
+      "daily": {
+        "2025-07-05": {
+          "fact": 0,
+          "plan": 95
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "BWH/S 100 Level PRO",
+      "order_no": "RK-M2517",
+      "order_qty": 95,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-05",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 20
+      "total_plan": 95
+    },
+    {
+      "article_number": "9.30.00.00432",
+      "daily": {
+        "2025-07-05": {
+          "fact": 50,
+          "plan": 50
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Water heater",
+      "name": "BWH/S 80 Azurro Inverter",
+      "order_no": "RK-M2517",
+      "order_qty": 50,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-05",
+      "total_fact": 50,
+      "total_fact_qty": 0,
+      "total_plan": 50
+    },
+    {
+      "article_number": "9.30.00.00435",
+      "daily": {
+        "2025-07-05": {
+          "fact": 0,
+          "plan": 15
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "RWH 50 Splendore Dry Enamel",
+      "order_no": "RK-M2518",
+      "order_qty": 352,
+      "plan_finish": "2025-07-05",
+      "plan_start": "2025-07-05",
+      "total_fact": 0,
+      "total_fact_qty": 337,
+      "total_plan": 15
+    },
+    {
+      "article_number": "9.30.00.00444",
+      "daily": {
+        "2025-07-05": {
+          "fact": 160,
+          "plan": 92
+        },
+        "2025-07-06": {
+          "fact": 0,
+          "plan": 68
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Water heater",
+      "name": "RWH 80 Smalto Inverter",
+      "order_no": "RK-M2518",
+      "order_qty": 160,
+      "plan_finish": "2025-07-06",
+      "plan_start": "2025-07-05",
+      "total_fact": 160,
+      "total_fact_qty": 0,
+      "total_plan": 160
+    },
+    {
+      "article_number": "9.30.00.00436",
+      "daily": {
+        "2025-07-05": {
+          "fact": 8,
+          "plan": 0
+        },
+        "2025-07-06": {
+          "fact": 272,
+          "plan": 272
+        },
+        "2025-07-07": {
+          "fact": 20,
+          "plan": 28
+        }
+      },
+      "fact_finish": "2025-07-07",
+      "fact_start": "2025-07-05",
+      "large_group": "Water heater",
+      "name": "RWH 80 Splendore Dry Enamel",
+      "order_no": "RK-M2518",
+      "order_qty": 300,
+      "plan_finish": "2025-07-07",
+      "plan_start": "2025-07-06",
+      "total_fact": 300,
+      "total_fact_qty": 0,
+      "total_plan": 300
+    },
+    {
+      "article_number": "9.30.00.00535",
+      "daily": {
+        "2025-07-07": {
+          "fact": 0,
+          "plan": 67
+        },
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 42
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 30 Cameo",
+      "order_no": "CSA-C2510",
+      "order_qty": 109,
+      "plan_finish": "2025-07-08",
+      "plan_start": "2025-07-07",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 109
+    },
+    {
+      "article_number": "9.30.00.00228",
+      "daily": {
+        "2025-07-07": {
+          "fact": 0,
+          "plan": 100
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 30 SI BE EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 100,
+      "plan_finish": "2025-07-07",
+      "plan_start": "2025-07-07",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
+      "article_number": "9.30.00.00229",
+      "daily": {
+        "2025-07-07": {
+          "fact": 0,
+          "plan": 100
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 50 SI BE EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 100,
+      "plan_finish": "2025-07-07",
+      "plan_start": "2025-07-07",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
+      "article_number": "9.30.00.00341",
+      "daily": {
+        "2025-07-07": {
+          "fact": 0,
+          "plan": 100
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 50 SI EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 100,
+      "plan_finish": "2025-07-07",
+      "plan_start": "2025-07-07",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
+      "article_number": "9.30.00.00536",
+      "daily": {
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 129
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 50 Cameo",
+      "order_no": "CSA-C2510",
+      "order_qty": 129,
+      "plan_finish": "2025-07-08",
+      "plan_start": "2025-07-08",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 129
+    },
+    {
+      "article_number": "9.30.00.00537",
+      "daily": {
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 119
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 80 Cameo",
+      "order_no": "CSA-C2510",
+      "order_qty": 119,
+      "plan_finish": "2025-07-08",
+      "plan_start": "2025-07-08",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 119
+    },
+    {
+      "article_number": "9.30.00.00538",
+      "daily": {
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 36
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 100 Cameo",
+      "order_no": "CSA-C2510",
+      "order_qty": 36,
+      "plan_finish": "2025-07-08",
+      "plan_start": "2025-07-08",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 36
+    },
+    {
+      "article_number": "9.30.00.00342",
+      "daily": {
+        "2025-07-07": {
+          "fact": 164,
+          "plan": 0
+        },
+        "2025-07-08": {
+          "fact": 0,
+          "plan": 39
+        },
+        "2025-07-09": {
+          "fact": 0,
+          "plan": 161
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-07",
+      "large_group": "Water heater",
+      "name": "EWH 80 SI EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 200,
+      "plan_finish": "2025-07-09",
+      "plan_start": "2025-07-08",
+      "total_fact": 164,
+      "total_fact_qty": 0,
+      "total_plan": 200
+    },
+    {
+      "article_number": "9.30.00.00230",
+      "daily": {
+        "2025-07-09": {
+          "fact": 0,
+          "plan": 179
+        },
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 71
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 80 SI BE EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 250,
+      "plan_finish": "2025-07-10",
+      "plan_start": "2025-07-09",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 250
+    },
+    {
+      "article_number": "9.30.00.00231",
+      "daily": {
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 100
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 100 SI BE EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 100,
+      "plan_finish": "2025-07-10",
+      "plan_start": "2025-07-10",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
+      "article_number": "9.30.00.00343",
+      "daily": {
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 100
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH 100 SI EEC",
+      "order_no": "CSA-EU2510",
+      "order_qty": 100,
+      "plan_finish": "2025-07-10",
+      "plan_start": "2025-07-10",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
+      "article_number": "9.30.00.00368",
+      "daily": {
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 1
+        },
+        "2025-07-14": {
+          "fact": 0,
+          "plan": 259
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH  30 Royal Flash ",
+      "order_no": "CSA-M2513",
+      "order_qty": 260,
+      "plan_finish": "2025-07-14",
+      "plan_start": "2025-07-10",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 260
+    },
+    {
+      "article_number": "9.50.00.00040",
+      "daily": {
+        "2025-07-10": {
+          "fact": 0,
+          "plan": 356
+        },
+        "2025-07-11": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-12": {
+          "fact": 0,
+          "plan": 529
+        },
+        "2025-07-13": {
+          "fact": 0,
+          "plan": 424
+        },
+        "2025-07-14": {
+          "fact": 0,
+          "plan": 262
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Purifier (other)",
+      "name": "OCA-INV-HT-G",
+      "order_no": "RK-M2521",
+      "order_qty": 2100,
+      "plan_finish": "2025-07-14",
+      "plan_start": "2025-07-10",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 2100
     },
     {
       "article_number": "9.90.10.00030",
@@ -61,56 +913,92 @@
       "total_plan": 7
     },
     {
-      "article_number": "9.80.01.01179",
+      "article_number": "9.80.01.01167",
       "daily": {
-        "2025-07-01": {
+        "2025-07-11": {
           "fact": 0,
-          "plan": 87
+          "plan": 615
+        },
+        "2025-07-12": {
+          "fact": 0,
+          "plan": 521
         }
       },
       "fact_finish": "",
       "fact_start": "",
       "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3(CA)",
-      "order_no": "BIG-D2501",
-      "order_qty": 300,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
+      "name": "NCA20-1WM-EF 4.3\uff08DE\uff09",
+      "order_no": "BIG-D2512",
+      "order_qty": 1136,
+      "plan_finish": "2025-07-12",
+      "plan_start": "2025-07-11",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 87
+      "total_plan": 1136
     },
     {
-      "article_number": "9.80.01.01181",
+      "article_number": "9.40.00.00025",
       "daily": {
-        "2025-07-02": {
-          "fact": 0,
-          "plan": 295
+        "2025-07-01": {
+          "fact": 124,
+          "plan": 0
         },
-        "2025-07-03": {
+        "2025-07-11": {
           "fact": 0,
-          "plan": 679
+          "plan": 188
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "2025-07-01",
+      "large_group": "Hand dryer",
+      "name": "HNA-2",
+      "order_no": "RK-M2512",
+      "order_qty": 800,
+      "plan_finish": "2025-07-11",
+      "plan_start": "2025-07-11",
+      "total_fact": 124,
+      "total_fact_qty": 612,
+      "total_plan": 188
+    },
+    {
+      "article_number": "9.50.00.00043",
+      "daily": {
+        "2025-07-11": {
+          "fact": 0,
+          "plan": 248
         },
-        "2025-07-04": {
+        "2025-07-12": {
           "fact": 0,
-          "plan": 679
+          "plan": 514
         },
-        "2025-07-05": {
+        "2025-07-13": {
           "fact": 0,
-          "plan": 397
+          "plan": 411
+        },
+        "2025-07-14": {
+          "fact": 0,
+          "plan": 514
+        },
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 514
+        },
+        "2025-07-16": {
+          "fact": 0,
+          "plan": 499
         }
       },
       "fact_finish": "",
       "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3\uff08US\uff09",
-      "order_no": "BIG-D2501",
-      "order_qty": 2050,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-02",
+      "large_group": "Purifier (other)",
+      "name": "\u7a7a\u6c14\u51c0\u5316\u5668 OCA2",
+      "order_no": "RK-M2514",
+      "order_qty": 2700,
+      "plan_finish": "2025-07-16",
+      "plan_start": "2025-07-11",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 2050
+      "total_plan": 2700
     },
     {
       "article_number": "9.80.01.01183",
@@ -141,68 +1029,96 @@
       "total_plan": 800
     },
     {
-      "article_number": "9.80.01.01179",
+      "article_number": "9.80.01.01168",
       "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 501
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3(CA)",
-      "order_no": "BIG-D2502",
-      "order_qty": 501,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 501
-    },
-    {
-      "article_number": "9.80.01.01181",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 284
-        },
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-09": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 679
-        },
         "2025-07-12": {
           "fact": 0,
-          "plan": 172
+          "plan": 95
+        },
+        "2025-07-13": {
+          "fact": 0,
+          "plan": 331
         }
       },
       "fact_finish": "",
       "fact_start": "",
       "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3\uff08US\uff09",
-      "order_no": "BIG-D2502",
-      "order_qty": 3851,
-      "plan_finish": "2025-07-12",
-      "plan_start": "2025-07-05",
+      "name": "NCA20-1BM-EF 4.3\uff08DE\uff09",
+      "order_no": "BIG-D2512",
+      "order_qty": 426,
+      "plan_finish": "2025-07-13",
+      "plan_start": "2025-07-12",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 3851
+      "total_plan": 426
+    },
+    {
+      "article_number": "9.80.01.01199",
+      "daily": {
+        "2025-07-12": {
+          "fact": 0,
+          "plan": 300
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1G-INV4.0 \u5fb7\u56fd \u5305\u5e03",
+      "order_no": "ESD-EG2502",
+      "order_qty": 300,
+      "plan_finish": "2025-07-12",
+      "plan_start": "2025-07-12",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 300
+    },
+    {
+      "article_number": "9.80.01.01200",
+      "daily": {
+        "2025-07-12": {
+          "fact": 0,
+          "plan": 300
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA20-1G-INV4.0 \u5fb7\u56fd \u5305\u5e03",
+      "order_no": "ESD-EG2502",
+      "order_qty": 300,
+      "plan_finish": "2025-07-12",
+      "plan_start": "2025-07-12",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 300
+    },
+    {
+      "article_number": "9.80.01.01169",
+      "daily": {
+        "2025-07-13": {
+          "fact": 0,
+          "plan": 157
+        },
+        "2025-07-14": {
+          "fact": 0,
+          "plan": 600
+        },
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 379
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3\uff08DE\uff09",
+      "order_no": "BIG-D2512",
+      "order_qty": 1136,
+      "plan_finish": "2025-07-15",
+      "plan_start": "2025-07-13",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 1136
     },
     {
       "article_number": "9.80.01.01183",
@@ -229,72 +1145,52 @@
       "total_plan": 1001
     },
     {
-      "article_number": "9.80.01.01179",
+      "article_number": "9.30.00.00419",
       "daily": {
-        "2025-07-01": {
+        "2025-07-14": {
           "fact": 0,
-          "plan": 91
+          "plan": 141
         },
-        "2025-07-02": {
+        "2025-07-15": {
           "fact": 0,
-          "plan": 384
+          "plan": 109
         }
       },
       "fact_finish": "",
       "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3(CA)",
-      "order_no": "BIG-D2503",
-      "order_qty": 475,
-      "plan_finish": "2025-07-02",
-      "plan_start": "2025-07-01",
+      "large_group": "Water heater",
+      "name": "EWH  50 Royal Flash Silver   ",
+      "order_no": "CSA-M2513",
+      "order_qty": 250,
+      "plan_finish": "2025-07-15",
+      "plan_start": "2025-07-14",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 475
+      "total_plan": 250
     },
     {
-      "article_number": "9.80.01.01181",
+      "article_number": "9.50.00.00033",
       "daily": {
-        "2025-07-03": {
+        "2025-07-14": {
           "fact": 0,
-          "plan": 82
+          "plan": 204
         },
-        "2025-07-04": {
+        "2025-07-15": {
           "fact": 0,
-          "plan": 679
-        },
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-09": {
-          "fact": 0,
-          "plan": 679
-        },
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 223
+          "plan": 146
         }
       },
       "fact_finish": "",
       "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3\uff08US\uff09",
-      "order_no": "BIG-D2503",
-      "order_qty": 3700,
-      "plan_finish": "2025-07-10",
-      "plan_start": "2025-07-03",
+      "large_group": "Purifier OCK",
+      "name": "OCK-INV-HT2.0",
+      "order_no": "RK-M2520",
+      "order_qty": 350,
+      "plan_finish": "2025-07-15",
+      "plan_start": "2025-07-14",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 3700
+      "total_plan": 350
     },
     {
       "article_number": "9.80.01.01183",
@@ -325,6 +1221,118 @@
       "total_plan": 1000
     },
     {
+      "article_number": "9.80.01.01170",
+      "daily": {
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 221
+        },
+        "2025-07-16": {
+          "fact": 0,
+          "plan": 205
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1BM-EF 4.3\uff08DE\uff09",
+      "order_no": "BIG-D2512",
+      "order_qty": 426,
+      "plan_finish": "2025-07-16",
+      "plan_start": "2025-07-15",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 426
+    },
+    {
+      "article_number": "9.30.00.00371",
+      "daily": {
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 138
+        },
+        "2025-07-16": {
+          "fact": 0,
+          "plan": 42
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH  100 Royal Flash",
+      "order_no": "CSA-M2513",
+      "order_qty": 180,
+      "plan_finish": "2025-07-16",
+      "plan_start": "2025-07-15",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 180
+    },
+    {
+      "article_number": "9.30.00.00420",
+      "daily": {
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 110
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Water heater",
+      "name": "EWH  80 Royal Flash Silver   ",
+      "order_no": "CSA-M2513",
+      "order_qty": 110,
+      "plan_finish": "2025-07-15",
+      "plan_start": "2025-07-15",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 110
+    },
+    {
+      "article_number": "9.50.00.00032",
+      "daily": {
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 250
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Purifier OCK",
+      "name": "OCK-INV-P2.0",
+      "order_no": "RK-M2520",
+      "order_qty": 250,
+      "plan_finish": "2025-07-15",
+      "plan_start": "2025-07-15",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 250
+    },
+    {
+      "article_number": "9.50.00.00043",
+      "daily": {
+        "2025-07-15": {
+          "fact": 0,
+          "plan": 8
+        },
+        "2025-07-16": {
+          "fact": 0,
+          "plan": 92
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Purifier (other)",
+      "name": "OCA-2",
+      "order_no": "RK-M2520",
+      "order_qty": 100,
+      "plan_finish": "2025-07-16",
+      "plan_start": "2025-07-15",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 100
+    },
+    {
       "article_number": "9.80.01.01180",
       "daily": {
         "2025-07-16": {
@@ -347,110 +1355,6 @@
       "total_fact": 0,
       "total_fact_qty": 0,
       "total_plan": 576
-    },
-    {
-      "article_number": "9.80.01.01182",
-      "daily": {
-        "2025-07-17": {
-          "fact": 0,
-          "plan": 65
-        },
-        "2025-07-18": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-19": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-21": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-22": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-23": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-24": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-25": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-26": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-27": {
-          "fact": 0,
-          "plan": 493
-        },
-        "2025-07-28": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-29": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-30": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-31": {
-          "fact": 0,
-          "plan": 562
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA2 EF4.3.1 1.5kW US / Ballu WM HH ",
-      "order_no": "BIG-D2504",
-      "order_qty": 7951,
-      "plan_finish": "2025-07-31",
-      "plan_start": "2025-07-17",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 7951
-    },
-    {
-      "article_number": "9.80.01.01184",
-      "daily": {
-        "2025-07-25": {
-          "fact": 0,
-          "plan": 367
-        },
-        "2025-07-26": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-27": {
-          "fact": 0,
-          "plan": 497
-        },
-        "2025-07-28": {
-          "fact": 0,
-          "plan": 291
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA2 EF4.3.1 1.5kW US / Ballu BM HH ",
-      "order_no": "BIG-D2504",
-      "order_qty": 1776,
-      "plan_finish": "2025-07-28",
-      "plan_start": "2025-07-25",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1776
     },
     {
       "article_number": "9.80.01.01162",
@@ -493,198 +1397,6 @@
       "total_plan": 3101
     },
     {
-      "article_number": "9.80.01.01163",
-      "daily": {
-        "2025-07-22": {
-          "fact": 0,
-          "plan": 419
-        },
-        "2025-07-23": {
-          "fact": 0,
-          "plan": 632
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1B-INV 4.6\uff08US\uff09\u5305\u5e03",
-      "order_no": "BIG-D2505",
-      "order_qty": 1051,
-      "plan_finish": "2025-07-23",
-      "plan_start": "2025-07-22",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1051
-    },
-    {
-      "article_number": "9.80.01.01161",
-      "daily": {
-        "2025-07-19": {
-          "fact": 0,
-          "plan": 463
-        },
-        "2025-07-21": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-22": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-23": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-24": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-25": {
-          "fact": 0,
-          "plan": 254
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-2WM-INV 4.6\uff08US\uff09",
-      "order_no": "BIG-D2506",
-      "order_qty": 3201,
-      "plan_finish": "2025-07-25",
-      "plan_start": "2025-07-19",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 3201
-    },
-    {
-      "article_number": "9.80.01.01164",
-      "daily": {
-        "2025-07-17": {
-          "fact": 0,
-          "plan": 449
-        },
-        "2025-07-18": {
-          "fact": 0,
-          "plan": 621
-        },
-        "2025-07-19": {
-          "fact": 0,
-          "plan": 156
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-2BM-INV 4.6\uff08US\uff09",
-      "order_no": "BIG-D2506",
-      "order_qty": 1226,
-      "plan_finish": "2025-07-19",
-      "plan_start": "2025-07-17",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1226
-    },
-    {
-      "article_number": "9.80.01.01167",
-      "daily": {
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 615
-        },
-        "2025-07-12": {
-          "fact": 0,
-          "plan": 521
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA20-1WM-EF 4.3\uff08DE\uff09",
-      "order_no": "BIG-D2512",
-      "order_qty": 1136,
-      "plan_finish": "2025-07-12",
-      "plan_start": "2025-07-11",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1136
-    },
-    {
-      "article_number": "9.80.01.01168",
-      "daily": {
-        "2025-07-12": {
-          "fact": 0,
-          "plan": 95
-        },
-        "2025-07-13": {
-          "fact": 0,
-          "plan": 331
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA20-1BM-EF 4.3\uff08DE\uff09",
-      "order_no": "BIG-D2512",
-      "order_qty": 426,
-      "plan_finish": "2025-07-13",
-      "plan_start": "2025-07-12",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 426
-    },
-    {
-      "article_number": "9.80.01.01169",
-      "daily": {
-        "2025-07-13": {
-          "fact": 0,
-          "plan": 157
-        },
-        "2025-07-14": {
-          "fact": 0,
-          "plan": 600
-        },
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 379
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3\uff08DE\uff09",
-      "order_no": "BIG-D2512",
-      "order_qty": 1136,
-      "plan_finish": "2025-07-15",
-      "plan_start": "2025-07-13",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1136
-    },
-    {
-      "article_number": "9.80.01.01170",
-      "daily": {
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 221
-        },
-        "2025-07-16": {
-          "fact": 0,
-          "plan": 205
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1BM-EF 4.3\uff08DE\uff09",
-      "order_no": "BIG-D2512",
-      "order_qty": 426,
-      "plan_finish": "2025-07-16",
-      "plan_start": "2025-07-15",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 426
-    },
-    {
       "article_number": "9.80.01.01173",
       "daily": {
         "2025-07-16": {
@@ -711,58 +1423,6 @@
       "total_fact": 0,
       "total_fact_qty": 0,
       "total_plan": 821
-    },
-    {
-      "article_number": "9.80.01.01174",
-      "daily": {
-        "2025-07-18": {
-          "fact": 0,
-          "plan": 360
-        },
-        "2025-07-19": {
-          "fact": 0,
-          "plan": 450
-        },
-        "2025-07-21": {
-          "fact": 0,
-          "plan": 11
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-EF 4.3\uff08UK\uff09",
-      "order_no": "BIG-D2513",
-      "order_qty": 821,
-      "plan_finish": "2025-07-21",
-      "plan_start": "2025-07-18",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 821
-    },
-    {
-      "article_number": "9.80.01.01175",
-      "daily": {
-        "2025-07-21": {
-          "fact": 0,
-          "plan": 439
-        },
-        "2025-07-22": {
-          "fact": 0,
-          "plan": 17
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1WM-MF 3.0\uff08UK\uff09",
-      "order_no": "BIG-D2514",
-      "order_qty": 456,
-      "plan_finish": "2025-07-22",
-      "plan_start": "2025-07-21",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 456
     },
     {
       "article_number": "9.80.01.00066",
@@ -863,238 +1523,6 @@
       "total_fact": 0,
       "total_fact_qty": 0,
       "total_plan": 200
-    },
-    {
-      "article_number": "9.30.00.00535",
-      "daily": {
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 67
-        },
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 42
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 30 Cameo",
-      "order_no": "CSA-C2510",
-      "order_qty": 109,
-      "plan_finish": "2025-07-08",
-      "plan_start": "2025-07-07",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 109
-    },
-    {
-      "article_number": "9.30.00.00536",
-      "daily": {
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 129
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 50 Cameo",
-      "order_no": "CSA-C2510",
-      "order_qty": 129,
-      "plan_finish": "2025-07-08",
-      "plan_start": "2025-07-08",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 129
-    },
-    {
-      "article_number": "9.30.00.00537",
-      "daily": {
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 119
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 80 Cameo",
-      "order_no": "CSA-C2510",
-      "order_qty": 119,
-      "plan_finish": "2025-07-08",
-      "plan_start": "2025-07-08",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 119
-    },
-    {
-      "article_number": "9.30.00.00538",
-      "daily": {
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 36
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 100 Cameo",
-      "order_no": "CSA-C2510",
-      "order_qty": 36,
-      "plan_finish": "2025-07-08",
-      "plan_start": "2025-07-08",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 36
-    },
-    {
-      "article_number": "9.30.00.00228",
-      "daily": {
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 100
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 30 SI BE EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 100,
-      "plan_finish": "2025-07-07",
-      "plan_start": "2025-07-07",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
-    },
-    {
-      "article_number": "9.30.00.00229",
-      "daily": {
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 100
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 50 SI BE EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 100,
-      "plan_finish": "2025-07-07",
-      "plan_start": "2025-07-07",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
-    },
-    {
-      "article_number": "9.30.00.00230",
-      "daily": {
-        "2025-07-09": {
-          "fact": 0,
-          "plan": 179
-        },
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 71
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 80 SI BE EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 250,
-      "plan_finish": "2025-07-10",
-      "plan_start": "2025-07-09",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 250
-    },
-    {
-      "article_number": "9.30.00.00231",
-      "daily": {
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 100
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 100 SI BE EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 100,
-      "plan_finish": "2025-07-10",
-      "plan_start": "2025-07-10",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
-    },
-    {
-      "article_number": "9.30.00.00341",
-      "daily": {
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 100
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 50 SI EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 100,
-      "plan_finish": "2025-07-07",
-      "plan_start": "2025-07-07",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
-    },
-    {
-      "article_number": "9.30.00.00342",
-      "daily": {
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 39
-        },
-        "2025-07-09": {
-          "fact": 0,
-          "plan": 161
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 80 SI EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 200,
-      "plan_finish": "2025-07-09",
-      "plan_start": "2025-07-08",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 200
-    },
-    {
-      "article_number": "9.30.00.00343",
-      "daily": {
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 100
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH 100 SI EEC",
-      "order_no": "CSA-EU2510",
-      "order_qty": 100,
-      "plan_finish": "2025-07-10",
-      "plan_start": "2025-07-10",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
     },
     {
       "article_number": "9.30.00.00228",
@@ -1201,248 +1629,276 @@
       "total_plan": 50
     },
     {
-      "article_number": "9.00.03.00034",
+      "article_number": "9.80.01.01182",
       "daily": {
-        "2025-07-01": {
+        "2025-07-17": {
           "fact": 0,
-          "plan": 195
+          "plan": 65
         },
-        "2025-07-02": {
+        "2025-07-18": {
           "fact": 0,
-          "plan": 805
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "SF to transformers (head)",
-      "name": "E-MF-T3.0",
-      "order_no": "CSA-M2512",
-      "order_qty": 1000,
-      "plan_finish": "2025-07-02",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1000
-    },
-    {
-      "article_number": "9.00.03.00054",
-      "daily": {
-        "2025-07-02": {
-          "fact": 0,
-          "plan": 1240
+          "plan": 621
         },
-        "2025-07-03": {
+        "2025-07-19": {
           "fact": 0,
-          "plan": 1760
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "SF to transformers (head)",
-      "name": "E-INV-T4.0",
-      "order_no": "CSA-M2512",
-      "order_qty": 3000,
-      "plan_finish": "2025-07-03",
-      "plan_start": "2025-07-02",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 3000
-    },
-    {
-      "article_number": "9.80.01.00218",
-      "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 720
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Convector / Body",
-      "name": "ECH/AG2-1000T ",
-      "order_no": "CSA-M2512",
-      "order_qty": 720,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 720
-    },
-    {
-      "article_number": "9.30.00.00368",
-      "daily": {
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 1
+          "plan": 621
         },
-        "2025-07-14": {
+        "2025-07-21": {
           "fact": 0,
-          "plan": 259
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH  30 Royal Flash ",
-      "order_no": "CSA-M2513",
-      "order_qty": 260,
-      "plan_finish": "2025-07-14",
-      "plan_start": "2025-07-10",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 260
-    },
-    {
-      "article_number": "9.30.00.00371",
-      "daily": {
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 138
+          "plan": 621
         },
-        "2025-07-16": {
+        "2025-07-22": {
           "fact": 0,
-          "plan": 42
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH  100 Royal Flash",
-      "order_no": "CSA-M2513",
-      "order_qty": 180,
-      "plan_finish": "2025-07-16",
-      "plan_start": "2025-07-15",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 180
-    },
-    {
-      "article_number": "9.30.00.00419",
-      "daily": {
-        "2025-07-14": {
-          "fact": 0,
-          "plan": 141
+          "plan": 621
         },
-        "2025-07-15": {
+        "2025-07-23": {
           "fact": 0,
-          "plan": 109
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH  50 Royal Flash Silver   ",
-      "order_no": "CSA-M2513",
-      "order_qty": 250,
-      "plan_finish": "2025-07-15",
-      "plan_start": "2025-07-14",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 250
-    },
-    {
-      "article_number": "9.30.00.00420",
-      "daily": {
-        "2025-07-15": {
+          "plan": 621
+        },
+        "2025-07-24": {
           "fact": 0,
-          "plan": 110
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "EWH  80 Royal Flash Silver   ",
-      "order_no": "CSA-M2513",
-      "order_qty": 110,
-      "plan_finish": "2025-07-15",
-      "plan_start": "2025-07-15",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 110
-    },
-    {
-      "article_number": "9.80.01.01199",
-      "daily": {
-        "2025-07-12": {
+          "plan": 621
+        },
+        "2025-07-25": {
           "fact": 0,
-          "plan": 300
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA15-1G-INV4.0 \u5fb7\u56fd \u5305\u5e03",
-      "order_no": "ESD-EG2502",
-      "order_qty": 300,
-      "plan_finish": "2025-07-12",
-      "plan_start": "2025-07-12",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 300
-    },
-    {
-      "article_number": "9.80.01.01200",
-      "daily": {
-        "2025-07-12": {
+          "plan": 621
+        },
+        "2025-07-26": {
           "fact": 0,
-          "plan": 300
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA20-1G-INV4.0 \u5fb7\u56fd \u5305\u5e03",
-      "order_no": "ESD-EG2502",
-      "order_qty": 300,
-      "plan_finish": "2025-07-12",
-      "plan_start": "2025-07-12",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 300
-    },
-    {
-      "article_number": "9.40.00.00029",
-      "daily": {
+          "plan": 621
+        },
+        "2025-07-27": {
+          "fact": 0,
+          "plan": 493
+        },
+        "2025-07-28": {
+          "fact": 0,
+          "plan": 621
+        },
         "2025-07-29": {
           "fact": 0,
-          "plan": 500
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Hand dryer",
-      "name": "HNA \u767d\u9ad8\u5149  \u5fb7\u56fd",
-      "order_no": "ESD-EG2503",
-      "order_qty": 500,
-      "plan_finish": "2025-07-29",
-      "plan_start": "2025-07-29",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 500
-    },
-    {
-      "article_number": "9.80.01.01233",
-      "daily": {
-        "2025-07-29": {
-          "fact": 0,
-          "plan": 400
+          "plan": 621
         },
         "2025-07-30": {
           "fact": 0,
-          "plan": 31
+          "plan": 621
+        },
+        "2025-07-31": {
+          "fact": 0,
+          "plan": 562
         }
       },
       "fact_finish": "",
       "fact_start": "",
       "large_group": "Heater Assembly",
-      "name": "NCA20-1-INV4.0 \u5e0c\u814a",
-      "order_no": "ESD-EGR2504",
-      "order_qty": 431,
-      "plan_finish": "2025-07-30",
-      "plan_start": "2025-07-29",
+      "name": "NCA2 EF4.3.1 1.5kW US / Ballu WM HH ",
+      "order_no": "BIG-D2504",
+      "order_qty": 7951,
+      "plan_finish": "2025-07-31",
+      "plan_start": "2025-07-17",
       "total_fact": 0,
       "total_fact_qty": 0,
-      "total_plan": 431
+      "total_plan": 7951
+    },
+    {
+      "article_number": "9.80.01.01164",
+      "daily": {
+        "2025-07-17": {
+          "fact": 0,
+          "plan": 449
+        },
+        "2025-07-18": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-19": {
+          "fact": 0,
+          "plan": 156
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-2BM-INV 4.6\uff08US\uff09",
+      "order_no": "BIG-D2506",
+      "order_qty": 1226,
+      "plan_finish": "2025-07-19",
+      "plan_start": "2025-07-17",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 1226
+    },
+    {
+      "article_number": "9.80.01.01174",
+      "daily": {
+        "2025-07-18": {
+          "fact": 0,
+          "plan": 360
+        },
+        "2025-07-19": {
+          "fact": 0,
+          "plan": 450
+        },
+        "2025-07-21": {
+          "fact": 0,
+          "plan": 11
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-EF 4.3\uff08UK\uff09",
+      "order_no": "BIG-D2513",
+      "order_qty": 821,
+      "plan_finish": "2025-07-21",
+      "plan_start": "2025-07-18",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 821
+    },
+    {
+      "article_number": "9.80.01.01161",
+      "daily": {
+        "2025-07-19": {
+          "fact": 0,
+          "plan": 463
+        },
+        "2025-07-21": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-22": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-23": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-24": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-25": {
+          "fact": 0,
+          "plan": 254
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-2WM-INV 4.6\uff08US\uff09",
+      "order_no": "BIG-D2506",
+      "order_qty": 3201,
+      "plan_finish": "2025-07-25",
+      "plan_start": "2025-07-19",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 3201
+    },
+    {
+      "article_number": "9.80.01.01175",
+      "daily": {
+        "2025-07-21": {
+          "fact": 0,
+          "plan": 439
+        },
+        "2025-07-22": {
+          "fact": 0,
+          "plan": 17
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1WM-MF 3.0\uff08UK\uff09",
+      "order_no": "BIG-D2514",
+      "order_qty": 456,
+      "plan_finish": "2025-07-22",
+      "plan_start": "2025-07-21",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 456
+    },
+    {
+      "article_number": "9.80.01.01163",
+      "daily": {
+        "2025-07-22": {
+          "fact": 0,
+          "plan": 419
+        },
+        "2025-07-23": {
+          "fact": 0,
+          "plan": 632
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA15-1B-INV 4.6\uff08US\uff09\u5305\u5e03",
+      "order_no": "BIG-D2505",
+      "order_qty": 1051,
+      "plan_finish": "2025-07-23",
+      "plan_start": "2025-07-22",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 1051
+    },
+    {
+      "article_number": "9.80.01.01178",
+      "daily": {
+        "2025-07-22": {
+          "fact": 0,
+          "plan": 989
+        },
+        "2025-07-23": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-24": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-25": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-26": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-27": {
+          "fact": 0,
+          "plan": 820
+        },
+        "2025-07-28": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-29": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-30": {
+          "fact": 0,
+          "plan": 1029
+        },
+        "2025-07-31": {
+          "fact": 0,
+          "plan": 988
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCR20-MFE",
+      "order_no": "RK-M2523",
+      "order_qty": 10000,
+      "plan_finish": "2025-07-31",
+      "plan_start": "2025-07-22",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 10000
     },
     {
       "article_number": "9.80.01.01211",
@@ -1491,6 +1947,38 @@
       "total_fact": 0,
       "total_fact_qty": 0,
       "total_plan": 500
+    },
+    {
+      "article_number": "9.80.01.01184",
+      "daily": {
+        "2025-07-25": {
+          "fact": 0,
+          "plan": 367
+        },
+        "2025-07-26": {
+          "fact": 0,
+          "plan": 621
+        },
+        "2025-07-27": {
+          "fact": 0,
+          "plan": 497
+        },
+        "2025-07-28": {
+          "fact": 0,
+          "plan": 291
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA2 EF4.3.1 1.5kW US / Ballu BM HH ",
+      "order_no": "BIG-D2504",
+      "order_qty": 1776,
+      "plan_finish": "2025-07-28",
+      "plan_start": "2025-07-25",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 1776
     },
     {
       "article_number": "9.80.01.01213",
@@ -1629,574 +2117,6 @@
       "total_plan": 301
     },
     {
-      "article_number": "9.40.00.00025",
-      "daily": {
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 188
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Hand dryer",
-      "name": "HNA-2",
-      "order_no": "RK-M2512",
-      "order_qty": 800,
-      "plan_finish": "2025-07-11",
-      "plan_start": "2025-07-11",
-      "total_fact": 0,
-      "total_fact_qty": 612,
-      "total_plan": 188
-    },
-    {
-      "article_number": "9.50.00.00043",
-      "daily": {
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 248
-        },
-        "2025-07-12": {
-          "fact": 0,
-          "plan": 514
-        },
-        "2025-07-13": {
-          "fact": 0,
-          "plan": 411
-        },
-        "2025-07-14": {
-          "fact": 0,
-          "plan": 514
-        },
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 514
-        },
-        "2025-07-16": {
-          "fact": 0,
-          "plan": 499
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "\u7a7a\u6c14\u51c0\u5316\u5668 OCA2",
-      "order_no": "RK-M2514",
-      "order_qty": 2700,
-      "plan_finish": "2025-07-16",
-      "plan_start": "2025-07-11",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 2700
-    },
-    {
-      "article_number": "9.50.00.00041",
-      "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 264
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "OCA-INV-HT-W",
-      "order_no": "RK-M2515",
-      "order_qty": 972,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 708,
-      "total_plan": 264
-    },
-    {
-      "article_number": "9.30.00.00309",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 10
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "BWH/S 50 Level PRO",
-      "order_no": "RK-M2517",
-      "order_qty": 100,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 96,
-      "total_plan": 10
-    },
-    {
-      "article_number": "9.30.00.00310",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 82
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "BWH/S 80 Level PRO",
-      "order_no": "RK-M2517",
-      "order_qty": 142,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 67,
-      "total_plan": 82
-    },
-    {
-      "article_number": "9.30.00.00311",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 95
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "BWH/S 100 Level PRO",
-      "order_no": "RK-M2517",
-      "order_qty": 95,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 95
-    },
-    {
-      "article_number": "9.30.00.00432",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 50
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "BWH/S 80 Azurro Inverter",
-      "order_no": "RK-M2517",
-      "order_qty": 50,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 50
-    },
-    {
-      "article_number": "9.30.00.00435",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 15
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "RWH 50 Splendore Dry Enamel",
-      "order_no": "RK-M2518",
-      "order_qty": 352,
-      "plan_finish": "2025-07-05",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 337,
-      "total_plan": 15
-    },
-    {
-      "article_number": "9.30.00.00436",
-      "daily": {
-        "2025-07-06": {
-          "fact": 0,
-          "plan": 272
-        },
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 28
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "RWH 80 Splendore Dry Enamel",
-      "order_no": "RK-M2518",
-      "order_qty": 300,
-      "plan_finish": "2025-07-07",
-      "plan_start": "2025-07-06",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 300
-    },
-    {
-      "article_number": "9.30.00.00444",
-      "daily": {
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 92
-        },
-        "2025-07-06": {
-          "fact": 0,
-          "plan": 68
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Water heater",
-      "name": "RWH 80 Smalto Inverter",
-      "order_no": "RK-M2518",
-      "order_qty": 160,
-      "plan_finish": "2025-07-06",
-      "plan_start": "2025-07-05",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 160
-    },
-    {
-      "article_number": "9.00.00.00012",
-      "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 1640
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "SF (other)",
-      "name": "NCA-T\u811a\u8f6e\u7ec4\u4ef6(2025\u65b0\u6b3e\uff09",
-      "order_no": "RK-M2519",
-      "order_qty": 1640,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1640
-    },
-    {
-      "article_number": "9.00.03.00053",
-      "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 600
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "SF to transformers (head)",
-      "name": "B-EF-T4.0",
-      "order_no": "RK-M2519",
-      "order_qty": 5460,
-      "plan_finish": "2025-07-01",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 3900,
-      "total_plan": 600
-    },
-    {
-      "article_number": "9.80.01.00717",
-      "daily": {
-        "2025-07-29": {
-          "fact": 0,
-          "plan": 282
-        },
-        "2025-07-30": {
-          "fact": 0,
-          "plan": 319
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCA25-1BM-INV3.1",
-      "order_no": "RK-M2519",
-      "order_qty": 601,
-      "plan_finish": "2025-07-30",
-      "plan_start": "2025-07-29",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 601
-    },
-    {
-      "article_number": "9.20.01.00046",
-      "daily": {
-        "2025-07-30": {
-          "fact": 0,
-          "plan": 1520
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Other FG",
-      "name": "CO2\u611f\u5e94\u5668",
-      "order_no": "RK-M2520",
-      "order_qty": 1520,
-      "plan_finish": "2025-07-30",
-      "plan_start": "2025-07-30",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1520
-    },
-    {
-      "article_number": "9.50.00.00032",
-      "daily": {
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 250
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier OCK",
-      "name": "OCK-INV-P2.0",
-      "order_no": "RK-M2520",
-      "order_qty": 250,
-      "plan_finish": "2025-07-15",
-      "plan_start": "2025-07-15",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 250
-    },
-    {
-      "article_number": "9.50.00.00033",
-      "daily": {
-        "2025-07-14": {
-          "fact": 0,
-          "plan": 204
-        },
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 146
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier OCK",
-      "name": "OCK-INV-HT2.0",
-      "order_no": "RK-M2520",
-      "order_qty": 350,
-      "plan_finish": "2025-07-15",
-      "plan_start": "2025-07-14",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 350
-    },
-    {
-      "article_number": "9.50.00.00040",
-      "daily": {
-        "2025-07-04": {
-          "fact": 0,
-          "plan": 406
-        },
-        "2025-07-05": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-07": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-08": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-09": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 149
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "OCA-INV-HT-G",
-      "order_no": "RK-M2520",
-      "order_qty": 3200,
-      "plan_finish": "2025-07-11",
-      "plan_start": "2025-07-04",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 3200
-    },
-    {
-      "article_number": "9.50.00.00041",
-      "daily": {
-        "2025-07-01": {
-          "fact": 0,
-          "plan": 265
-        },
-        "2025-07-02": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-03": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-04": {
-          "fact": 0,
-          "plan": 127
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "OCA-INV-HT-W",
-      "order_no": "RK-M2520",
-      "order_qty": 1450,
-      "plan_finish": "2025-07-04",
-      "plan_start": "2025-07-01",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 1450
-    },
-    {
-      "article_number": "9.50.00.00043",
-      "daily": {
-        "2025-07-15": {
-          "fact": 0,
-          "plan": 8
-        },
-        "2025-07-16": {
-          "fact": 0,
-          "plan": 92
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "OCA-2",
-      "order_no": "RK-M2520",
-      "order_qty": 100,
-      "plan_finish": "2025-07-16",
-      "plan_start": "2025-07-15",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 100
-    },
-    {
-      "article_number": "9.50.00.00040",
-      "daily": {
-        "2025-07-10": {
-          "fact": 0,
-          "plan": 356
-        },
-        "2025-07-11": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-12": {
-          "fact": 0,
-          "plan": 529
-        },
-        "2025-07-13": {
-          "fact": 0,
-          "plan": 424
-        },
-        "2025-07-14": {
-          "fact": 0,
-          "plan": 262
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Purifier (other)",
-      "name": "OCA-INV-HT-G",
-      "order_no": "RK-M2521",
-      "order_qty": 2100,
-      "plan_finish": "2025-07-14",
-      "plan_start": "2025-07-10",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 2100
-    },
-    {
-      "article_number": "9.80.01.01178",
-      "daily": {
-        "2025-07-22": {
-          "fact": 0,
-          "plan": 989
-        },
-        "2025-07-23": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-24": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-25": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-26": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-27": {
-          "fact": 0,
-          "plan": 820
-        },
-        "2025-07-28": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-29": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-30": {
-          "fact": 0,
-          "plan": 1029
-        },
-        "2025-07-31": {
-          "fact": 0,
-          "plan": 988
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Heater Assembly",
-      "name": "NCR20-MFE",
-      "order_no": "RK-M2523",
-      "order_qty": 10000,
-      "plan_finish": "2025-07-31",
-      "plan_start": "2025-07-22",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 10000
-    },
-    {
-      "article_number": "9.20.02.00016",
-      "daily": {
-        "2025-07-29": {
-          "fact": 0,
-          "plan": 500
-        }
-      },
-      "fact_finish": "",
-      "fact_start": "",
-      "large_group": "Other FG",
-      "name": "HCC-CK",
-      "order_no": "TC-M2501",
-      "order_qty": 500,
-      "plan_finish": "2025-07-29",
-      "plan_start": "2025-07-29",
-      "total_fact": 0,
-      "total_fact_qty": 0,
-      "total_plan": 500
-    },
-    {
       "article_number": "9.20.02.00002",
       "daily": {
         "2025-07-28": {
@@ -2239,6 +2159,242 @@
       "total_fact": 0,
       "total_fact_qty": 0,
       "total_plan": 3600
+    },
+    {
+      "article_number": "9.40.00.00029",
+      "daily": {
+        "2025-07-29": {
+          "fact": 0,
+          "plan": 500
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Hand dryer",
+      "name": "HNA \u767d\u9ad8\u5149  \u5fb7\u56fd",
+      "order_no": "ESD-EG2503",
+      "order_qty": 500,
+      "plan_finish": "2025-07-29",
+      "plan_start": "2025-07-29",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 500
+    },
+    {
+      "article_number": "9.80.01.01233",
+      "daily": {
+        "2025-07-29": {
+          "fact": 0,
+          "plan": 400
+        },
+        "2025-07-30": {
+          "fact": 0,
+          "plan": 31
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA20-1-INV4.0 \u5e0c\u814a",
+      "order_no": "ESD-EGR2504",
+      "order_qty": 431,
+      "plan_finish": "2025-07-30",
+      "plan_start": "2025-07-29",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 431
+    },
+    {
+      "article_number": "9.80.01.00717",
+      "daily": {
+        "2025-07-29": {
+          "fact": 0,
+          "plan": 282
+        },
+        "2025-07-30": {
+          "fact": 0,
+          "plan": 319
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCA25-1BM-INV3.1",
+      "order_no": "RK-M2519",
+      "order_qty": 601,
+      "plan_finish": "2025-07-30",
+      "plan_start": "2025-07-29",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 601
+    },
+    {
+      "article_number": "9.20.02.00016",
+      "daily": {
+        "2025-07-29": {
+          "fact": 0,
+          "plan": 500
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Other FG",
+      "name": "HCC-CK",
+      "order_no": "TC-M2501",
+      "order_qty": 500,
+      "plan_finish": "2025-07-29",
+      "plan_start": "2025-07-29",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 500
+    },
+    {
+      "article_number": "9.20.01.00046",
+      "daily": {
+        "2025-07-30": {
+          "fact": 0,
+          "plan": 1520
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Other FG",
+      "name": "CO2\u611f\u5e94\u5668",
+      "order_no": "RK-M2520",
+      "order_qty": 1520,
+      "plan_finish": "2025-07-30",
+      "plan_start": "2025-07-30",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 1520
+    },
+    {
+      "article_number": "9.80.01.01185",
+      "daily": {
+        "2025-07-31": {
+          "fact": 0,
+          "plan": 20
+        }
+      },
+      "fact_finish": "",
+      "fact_start": "",
+      "large_group": "Heater Assembly",
+      "name": "NCR MFE 2.0kW",
+      "order_no": "20250523\u8bd5\u4ea7\u5355",
+      "order_qty": 20,
+      "plan_finish": "2025-07-31",
+      "plan_start": "2025-07-31",
+      "total_fact": 0,
+      "total_fact_qty": 0,
+      "total_plan": 20
+    },
+    {
+      "article_number": "9.80.01.00219",
+      "daily": {
+        "2025-07-05": {
+          "fact": 17,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Convector / Body",
+      "name": " \u5bf9\u6d41\u5f0f\u7535\u6696\u5668 AirGate_NCD -T 1.5kW /  GWH HH ",
+      "order_no": "CSA-M2512",
+      "order_qty": 681,
+      "plan_finish": "",
+      "plan_start": "",
+      "total_fact": 17,
+      "total_fact_qty": 664,
+      "total_plan": 0
+    },
+    {
+      "article_number": "9.80.01.00221",
+      "daily": {
+        "2025-07-05": {
+          "fact": 31,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Convector / Body",
+      "name": " \u5bf9\u6d41\u5f0f\u7535\u6696\u5668 Rapid_NCK  -T 10 / E WH HH",
+      "order_no": "CSA-M2512",
+      "order_qty": 1300,
+      "plan_finish": "",
+      "plan_start": "",
+      "total_fact": 31,
+      "total_fact_qty": 850,
+      "total_plan": 0
+    },
+    {
+      "article_number": "9.80.01.00241",
+      "daily": {
+        "2025-07-05": {
+          "fact": 82,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-05",
+      "fact_start": "2025-07-05",
+      "large_group": "Convector / Body",
+      "name": " \u5bf9\u6d41\u5f0f\u7535\u6696\u5668 AirGate2_NCD -T 2.5 / E WH HH",
+      "order_no": "CSA-M2512",
+      "order_qty": 840,
+      "plan_finish": "",
+      "plan_start": "",
+      "total_fact": 82,
+      "total_fact_qty": 60,
+      "total_plan": 0
+    },
+    {
+      "article_number": "9.80.02.00129",
+      "daily": {
+        "2025-07-01": {
+          "fact": 1500,
+          "plan": 0
+        },
+        "2025-07-02": {
+          "fact": 400,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-02",
+      "fact_start": "2025-07-01",
+      "large_group": "Breeze Metal",
+      "name": "\u6696\u98ce\u673a BKN5_NPF / Ballu Metal Yellow  3.0 kW  2",
+      "order_no": "RK-M2510",
+      "order_qty": 2000,
+      "plan_finish": "",
+      "plan_start": "",
+      "total_fact": 1900,
+      "total_fact_qty": 0,
+      "total_plan": 0
+    },
+    {
+      "article_number": "9.80.02.00129",
+      "daily": {
+        "2025-07-02": {
+          "fact": 903,
+          "plan": 0
+        },
+        "2025-07-03": {
+          "fact": 257,
+          "plan": 0
+        }
+      },
+      "fact_finish": "2025-07-03",
+      "fact_start": "2025-07-02",
+      "large_group": "Breeze Metal",
+      "name": "\u6696\u98ce\u673a BKN5_NPF / Ballu Metal Yellow  3.0 kW  2",
+      "order_no": "RK-M2511",
+      "order_qty": 1200,
+      "plan_finish": "",
+      "plan_start": "",
+      "total_fact": 1160,
+      "total_fact_qty": 0,
+      "total_plan": 0
     }
   ],
   "month": "07",

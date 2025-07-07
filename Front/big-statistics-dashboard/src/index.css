@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root{
+  --tbl-head-bg:#f3f4f6;   /* slate-100 */
+  --tbl-head-text:#4b5563; /* slate-600 */
+  --tbl-row-hover:#f9fafb; /* slate-50  */
+  --tbl-row-zebra:#fcfcfc; /* почти white */
+}
+
 input[type="checkbox"] {
     accent-color: #2b2fff;
   }

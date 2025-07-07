@@ -26,7 +26,7 @@ function App() {
         <BrowserRouter>
             <div className="flex h-screen">
                 <Sidebar expanded={expanded} toggleSidebar={toggle} />
-                <main className="flex-1 p-4 overflow-auto bg-gray-100">
+                <main className="flex-1 p-4 overflow-auto bg-gray-15">
                     <Routes>
                         <Route path="/" element={<CustomerOrdersInformation />} />
                         <Route path="/uncompleted-orders" element={<CustomerOrdersInformation />} />

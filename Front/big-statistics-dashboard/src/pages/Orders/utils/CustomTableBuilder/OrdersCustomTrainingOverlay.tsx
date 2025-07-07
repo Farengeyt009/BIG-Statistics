@@ -30,7 +30,7 @@ export default function OrdersCustomTrainingOverlay({ anchorRef, visible }: Prop
       {/* плашка */}
       <div
         id="custom-help-card"
-        className="relative bg-gray-100 text-gray-700 rounded-lg p-8 shadow-lg max-w-lg text-center border border-[#0d1c3d]"
+        className="relative bg-gray-15 text-gray-700 rounded-lg p-8 shadow-lg max-w-lg text-center border border-[#0d1c3d]"
       >
         <h2 className="text-lg font-semibold mb-2">{t('title')}</h2>
         <div className="text-sm whitespace-pre-line text-left">

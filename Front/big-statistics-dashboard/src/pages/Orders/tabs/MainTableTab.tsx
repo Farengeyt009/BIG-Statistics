@@ -74,7 +74,7 @@ const MainTableTab: React.FC<MainTableTabProps> = ({ data, onTableReady }) => {
     <div
       ref={wrapperRef}
       style={{
-        zoom: 0.98,
+        zoom: 0.96,
         transform: 'scale(1)',  // fallback для Firefox
         transformOrigin: 'top left',
         width: '105%',

@@ -6,6 +6,8 @@
     "Front/big-statistics-dashboard"
   ],
   "dependencies": {
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-tabs": "^1.1.12",
     "date-fns": "^4.1.0",
     "react-markdown": "^10.1.0"
   },
