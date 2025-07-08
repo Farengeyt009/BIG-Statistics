@@ -3,20 +3,23 @@ import { useTranslation } from 'react-i18next';
 import MonthPlanTab from './tabs/MonthPlanTab';
 import WeeklyPlanTab from './tabs/WeeklyPlanTab';
 import DailyPlanTab from './tabs/DailyPlanTab';
-import planTranslations from './PlanTranslation.json';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 
 const Plan = () => {
   const [activeTab, setActiveTab] = useState('month');
-  const { i18n } = useTranslation();
-  const lang = i18n.language === 'zh' ? 'zh' : 'en';
+  const { t } = useTranslation('planTranslation');
 
   return (
     <div className="p-4">
       <PageHeader
-        title={planTranslations.pageTitle[lang]}
-        view={activeTab as 'month' | 'week' | 'day'}
-        onViewChange={(v: 'month' | 'week' | 'day') => setActiveTab(v)}
+        title={t('pageTitle')}
+        view={activeTab}
+        onViewChange={setActiveTab}
+        tabs={[
+          { key: 'month', label: t('tabs.month') },
+          { key: 'week', label: t('tabs.week') },
+          { key: 'day', label: t('tabs.day') },
+        ]}
       />
       {activeTab === 'month' && <MonthPlanTab />}
       {activeTab === 'week' && <WeeklyPlanTab />}

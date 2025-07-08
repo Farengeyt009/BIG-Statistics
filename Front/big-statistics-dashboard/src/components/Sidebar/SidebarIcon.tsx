@@ -90,7 +90,7 @@ export function SidebarIcon({
       {/* tooltip — показываем ТОЛЬКО когда сайдбар узкий */}
       {!staticCenter && isCollapsed && (
         <span
-          className="absolute left-full ml-3 py-1 px-2 rounded bg-white text-[#0d1c3d] text-xs font-medium shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-150"
+          className="absolute left-full ml-3 py-1 px-2 rounded bg-white text-[#0d1c3d] text-xs font-medium shadow-lg whitespace-nowrap opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-[9999]"
         >
           {label}
         </span>

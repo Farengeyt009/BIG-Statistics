@@ -6,19 +6,22 @@ import sidebarTranslation from './components/Sidebar/sidebarTranslation.json';
 import ordersTranslation from './pages/Orders/ordersTranslation.json';
 import dataTableTranslation from './components/DataTable/dataTableTranslation.json';
 import ordersCustomTrainingTranslation from './pages/Orders/utils/CustomTableBuilder/ordersCustomTrainingTranslation.json';
+import planTranslation from './pages/Plan/PlanTranslation.json';
 
 const resources = {
   en: {
     sidebar: sidebarTranslation.en,
     ordersTranslation: ordersTranslation.en,
     dataTable: dataTableTranslation.en,
-    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.en
+    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.en,
+    planTranslation: planTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
     ordersTranslation: ordersTranslation.zh,
     dataTable: dataTableTranslation.zh,
-    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.zh
+    ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.zh,
+    planTranslation: planTranslation.zh
   }
 };
 
@@ -33,4 +36,8 @@ i18n
     }
   });
 
-export default i18n; 
+export default i18n;
+
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng;
+}); 

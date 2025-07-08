@@ -237,7 +237,7 @@ export function DataTable<T extends Record<string, any>>({
 
           {/* thead */}
           <thead className="select-none sticky top-0 z-20
-                         bg-[color:var(--tbl-head-bg)] text-[color:var(--tbl-head-text)]
+                         bg-[color:var(--tbl-head-bg)] text-[#0d1c3d]
                          text-[11px] font-semibold uppercase tracking-wide">
             <SortableContext items={columnOrder}>
               {table.getHeaderGroups().map((hg) => (

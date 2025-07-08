@@ -13,6 +13,7 @@ import FieldsSelectorPopover from "./FieldsSelectorPopover";
 import ExportButton from "../../components/ExportButton";
 import Chart from './tabs/Chart';
 import MainTableTab from './tabs/MainTableTab';
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 
 type Order = Record<string, any>;
 
@@ -60,42 +61,21 @@ export default function CustomerOrdersInformation() {
 
     return (
         <div className="p-4">
-            {/* header-bar */}
-            <header className="mb-4">
-                <h1 className="text-2xl font-bold mb-2">{t('title')}</h1>
-                {/* TAB STRIP */}
-                <div className="flex items-end justify-between">
-                    <ul className="flex gap-0.5 h-9">
-                        {[
-                            { label: t('mainTab'), key: 'main' },
-                            { label: t('chartTab'), key: 'gantt' },
-                            { label: t('customTab'), key: 'custom' },
-                        ].map(tab => (
-                            <li key={tab.key}>
-                                <button
-                                    onClick={() => setActiveTab(tab.key)}
-                                    className={
-                                        `px-4 h-8 flex items-center rounded-t-md text-sm select-none ` +
-                                        (activeTab === tab.key
-                                            ? 'bg-white text-gray-900 border border-b-transparent'
-                                            : 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-300')
-                                    }
-                                >
-                                    {tab.label}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                    {/* Кнопки действий – на Main и Custom */}
-                    {activeTab === 'main' && (
+            <PageHeader
+                title={t('title')}
+                view={activeTab}
+                onViewChange={setActiveTab}
+                tabs={[
+                    { key: 'main', label: t('mainTab') },
+                    { key: 'gantt', label: t('chartTab') },
+                    { key: 'custom', label: t('customTab') },
+                ]}
+                rightSlot={
+                    activeTab === 'main' ? (
                         <div className="flex gap-3">
-                            <ExportButton
-                                table={mainTable}
-                                fileName="main_table.xlsx"
-                            />
+                            <ExportButton table={mainTable} fileName="main_table.xlsx" />
                         </div>
-                    )}
-                    {activeTab === 'custom' && (
+                    ) : activeTab === 'custom' ? (
                         <div className="flex gap-3">
                             <FieldsSelectorPopover
                                 allColumns={allColumns}
@@ -120,16 +100,11 @@ export default function CustomerOrdersInformation() {
                                     ].join(' ')
                                 }}
                             />
-                            <ExportButton
-                                table={customTable}
-                                fileName="uncompleted_orders.xlsx"
-                            />
+                            <ExportButton table={customTable} fileName="uncompleted_orders.xlsx" />
                         </div>
-                    )}
-                </div>
-                {/* Серая «полка» сразу под табами  – ровно 1 px */}
-                <div className="-mt-px h-px bg-gray-300" />
-            </header>
+                    ) : null
+                }
+            />
             {/* Содержимое вкладок */}
             {activeTab === 'main'   && (
                 <MainTableTab data={data} onTableReady={setMainTable} />

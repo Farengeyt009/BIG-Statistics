@@ -1,20 +1,46 @@
 {
-  "pageTitle": {
-    "en": "Plan",
-    "zh": "计划"
+  "en": {
+    "tableHeaders": {
+      "group": "Group",
+      "orderNo": "Order No.",
+      "article": "Article",
+      "name": "Name",
+      "orderQty": "Order QTY",
+      "totalPlan": "Σ Plan",
+      "totalFact": "Σ Fact",
+      "totalFactQty": "Total Fact QTY",
+      "planStart": "Plan Start",
+      "planEnd": "Plan End",
+      "factStart": "Fact Start",
+      "factEnd": "Fact End"
+    },
+    "pageTitle": "Plan",
+    "tabs": {
+      "month": "Month Plan",
+      "week": "Weekly Plan",
+      "day": "Daily Plan"
+    }
   },
-  "tabs": {
-    "month": {
-      "en": "Month Plan",
-      "zh": "月计划"
+  "zh": {
+    "tableHeaders": {
+      "group": "成品组",
+      "orderNo": "订单号",
+      "article": "成品编码",
+      "name": "成品名称",
+      "orderQty": "订单量",
+      "totalPlan": "Σ 计划",
+      "totalFact": "Σ 实际",
+      "totalFactQty": "总实际量",
+      "planStart": "计划开始",
+      "planEnd": "计划结束",
+      "factStart": "实际开始",
+      "factEnd": "实际结束"
     },
-    "week": {
-      "en": "Weekly Plan",
-      "zh": "周计划"
-    },
-    "day": {
-      "en": "Daily Plan",
-      "zh": "日计划"
+    "pageTitle": "计划",
+    "tabs": {
+      "month": "月计划",
+      "week": "周计划",
+      "day": "日计划"
     }
   }
 } 
