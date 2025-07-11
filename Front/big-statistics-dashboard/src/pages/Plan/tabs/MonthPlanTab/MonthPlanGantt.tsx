@@ -9,8 +9,8 @@ import React, {
 import { addDays, format, startOfMonth } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import testData from "../../../Test/MonthPlanTab.json";
-import FilterPopover from "../../../components/DataTable/FilterPopover";
+import testData from "../../../../Test/MonthPlanTab.json";
+import FilterPopover from "../../../../components/DataTable/FilterPopover";
 
 /* ───────── types ───────── */
 interface PlanFactRow {
@@ -37,6 +37,12 @@ type ColKey =
   | "total_plan"
   | "total_fact";
 
+interface MonthPlanGanttProps {
+  year: number;
+  month: number;
+  ymPanelRef: React.RefObject<HTMLDivElement | null>;
+}
+
 /* ───────── constants ───────── */
 const VERTICAL_FACTOR = -0.5;
 const DIVIDER_CLS = "border-l border-gray-300";
@@ -45,13 +51,11 @@ const LEGEND_VERTICAL_OFFSET = 0; // px, регулирует вертикаль
 const BTN_VERTICAL_OFFSET = 13; // px, регулирует вертикальное смещение кнопки
 
 /* ───────── component ───────── */
-const MonthPlanTab: React.FC = () => {
+const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef }) => {
   const { t } = useTranslation("planTranslation");
 
   /* ----- state ----- */
   const today = new Date();
-  const [year, setYear]   = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
   const [data, setData]   = useState<PlanFactRow[]>([]);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -65,10 +69,10 @@ const MonthPlanTab: React.FC = () => {
   const containerRef   = useRef<HTMLDivElement>(null);
   const sigmaThRef     = useRef<HTMLTableCellElement>(null);
   const firstDayThRef  = useRef<HTMLTableCellElement>(null); // нуж­но для легенды
-  const ymPanelRef     = useRef<HTMLDivElement>(null);
 
   const [btnPos,     setBtnPos]     = useState({ left: 0, top: 0 });
   const [legendLeft, setLegendLeft] = useState(0);
+  const [legendTop, setLegendTop] = useState(0);
 
   /* ----- helpers ----- */
   const days = useMemo(() => {
@@ -125,23 +129,23 @@ const MonthPlanTab: React.FC = () => {
     if (
       !containerRef.current ||
       !sigmaThRef.current ||
-      !ymPanelRef.current ||
-      !firstDayThRef.current
+      !firstDayThRef.current ||
+      !ymPanelRef.current
     )
       return;
 
     const cont = containerRef.current.getBoundingClientRect();
     const th   = sigmaThRef.current.getBoundingClientRect();
-    const ym   = ymPanelRef.current.getBoundingClientRect();
     const fd   = firstDayThRef.current.getBoundingClientRect();
+    const ym   = ymPanelRef.current.getBoundingClientRect();
 
     setBtnPos({
       left: th.left - cont.left + th.width / 2,
-      top:  ym.bottom - cont.top + (th.top - ym.bottom) * VERTICAL_FACTOR + BTN_VERTICAL_OFFSET,
+      top: ym.bottom - cont.top - 15, // поднять на 3px
     });
-
-    setLegendLeft(fd.right - cont.left + 8); // +8 px отступ
-  }, []);
+    setLegendLeft(fd.right - cont.left + 8);
+    setLegendTop(ym.bottom - cont.top - 15); // поднять на 3px
+  }, [ymPanelRef]);
 
   useLayoutEffect(recalc, [recalc, showDetails, days.length, visibleRows.length]);
   useEffect(() => {
@@ -165,7 +169,7 @@ const MonthPlanTab: React.FC = () => {
 
   /* ───────── render ───────── */
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       {/* плавающая кнопка */}
       <button
         className="absolute z-50 -translate-x-1/2 flex items-center justify-center w-5 h-5 rounded-full border border-[#0d1c3d] bg-transparent shadow"
@@ -178,7 +182,7 @@ const MonthPlanTab: React.FC = () => {
       {/* ЛЕГЕНДА */}
       <div
         className="absolute z-40 flex gap-5 text-[15px] text-slate-600 font-bold pointer-events-none"
-        style={{ left: legendLeft, top: btnPos.top + LEGEND_VERTICAL_OFFSET }}
+        style={{ left: legendLeft, top: legendTop }}
       >
         <span className="inline-flex items-center gap-1">
           <span className="w-5 h-5 rounded-full bg-emerald-300/50 ring-1 ring-emerald-300/40" />
@@ -190,42 +194,9 @@ const MonthPlanTab: React.FC = () => {
         </span>
       </div>
 
-      {/* селекторы год / месяц */}
-      <div className="sticky top-0 z-20 bg-gray-15 pb-3">
-        <div ref={ymPanelRef} className="flex gap-3">
-          {/* YEAR */}
-          <select
-            value={year}
-            onChange={e => setYear(+e.target.value)}
-            className="h-9 rounded-lg border-slate-300 shadow-sm px-3 focus:ring-2 focus:ring-indigo-600"
-          >
-            {Array.from({ length: 5 }, (_, i) => {
-              const y = today.getFullYear() - 2 + i;
-              return (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              );
-            })}
-          </select>
-
-          {/* MONTH */}
-          <select
-            value={month}
-            onChange={e => setMonth(+e.target.value)}
-            className="h-9 rounded-lg border-slate-300 shadow-sm px-3 focus:ring-2 focus:ring-indigo-600"
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {i + 1}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       {/* таблица */}
       <div
+        ref={containerRef}
         className="overflow-x-auto overflow-y-auto mt-4 rounded-lg shadow ring-1 ring-slate-200 relative"
         style={{ maxHeight: "80vh" }}
       >
@@ -442,4 +413,4 @@ const MonthPlanTab: React.FC = () => {
   );
 };
 
-export default MonthPlanTab;
+export default MonthPlanGantt;

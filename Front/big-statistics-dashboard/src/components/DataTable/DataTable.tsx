@@ -24,7 +24,8 @@ import FilterPopover from './FilterPopover';
 /* ------------------------------------------------------------------ */
 export interface DataTableProps<T extends RowData> {
   data: T[];
-  columnsOverrides?: Record<string, Partial<ColumnDef<T>>>;
+  columns?: ColumnDef<T>[]; // новый способ
+  columnsOverrides?: Record<string, Partial<ColumnDef<T>>>; // старый способ (опционально)
   columnsOrder?: string[];
   defaultVisible?: string[];
   onTableReady?: (table: Table<T>) => void;
@@ -37,11 +38,61 @@ export interface DataTableProps<T extends RowData> {
   numericKeys?: string[];
 }
 
+function buildColumnsFromOverrides<T extends Record<string, any>>(
+  columnsOverrides: Record<string, Partial<ColumnDef<T>>> = {},
+  columnsOrder: string[] | undefined,
+  data: T[],
+  filteredData: T[],
+  filters: Record<string, string[]>,
+  uniqueValuesByKey: Record<string, string[]>,
+  setFilters: React.Dispatch<React.SetStateAction<Record<string, string[]>>>
+): ColumnDef<T>[] {
+  if (!data.length) return [];
+  // 1. базовые
+  const base = Object.keys(data[0]).map((k) => ({ id: k, accessorKey: k }));
+  // 2. merge overrides
+  let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
+  // 2a. фильтруем лишние колонки
+  if (columnsOrder?.length) {
+    merged = merged.filter((c) => columnsOrder.includes(c.id as string));
+  }
+  // 3. custom order
+  if (columnsOrder?.length) {
+    merged.sort(
+      (a, b) => columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
+    );
+  }
+  // 4. header + FilterPopover + meta.excelHeader
+  return merged.map((c) => {
+    const rawHeader =
+      typeof c.header === 'string'
+        ? (c.header as string)
+        : (columnsOverrides[c.id]?.header as string) ?? (c.id as string);
+    return {
+      ...c,
+      meta: { ...c.meta, excelHeader: c.meta?.excelHeader ?? rawHeader },
+      header: () => (
+        <>
+          {rawHeader}
+          <FilterPopover
+            columnId={c.id}
+            data={filteredData}
+            uniqueValues={uniqueValuesByKey[c.id] ?? []}
+            selectedValues={filters[c.id] ?? []}
+            onFilterChange={(sel) => setFilters((p) => ({ ...p, [c.id]: sel }))}
+          />
+        </>
+      ),
+    } as ColumnDef<T>;
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*                         MAIN COMPONENT                             */
 /* ------------------------------------------------------------------ */
 export function DataTable<T extends Record<string, any>>({
   data,
+  columns,
   columnsOverrides = {},
   columnsOrder,
   defaultVisible,
@@ -86,10 +137,14 @@ export function DataTable<T extends Record<string, any>>({
   const numericColumns = useMemo<string[]>(() => {
     if (!filteredData.length) return [];
 
-    const candidateKeys = numericKeys ?? Object.keys(filteredData[0]);
+    // 1️⃣ если numericKeys задан → считаем их числовыми "как есть"
+    if (numericKeys?.length) {
+      return numericKeys.filter((k) => k in filteredData[0]);
+    }
 
-    return candidateKeys.filter((k) =>
-      filteredData.every((r) => r[k] === '' || r[k] === null || !isNaN(Number(r[k]))),
+    // 2️⃣ иначе авто-детектор (как было)
+    return Object.keys(filteredData[0]).filter((k) =>
+      filteredData.every((r) => r[k] === '' || r[k] === null || !isNaN(Number(r[k])))
     );
   }, [filteredData, numericKeys]);
 
@@ -105,56 +160,22 @@ export function DataTable<T extends Record<string, any>>({
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
 
   /* ----------------------- columns ----------------------- */
-  const columns = useMemo<ColumnDef<T>[]>(() => {
-    if (!data.length) return [];
-
-    /* 1. базовые */
-    const base = Object.keys(data[0]).map((k) => ({ id: k, accessorKey: k }));
-
-    /* 2. merge overrides */
-    let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
-
-    /* 2a. фильтруем лишние колонки */
-    if (columnsOrder?.length) {
-      merged = merged.filter((c) => columnsOrder.includes(c.id as string));
-    }
-
-    /* 3. custom order */
-    if (columnsOrder?.length) {
-      merged.sort(
-        (a, b) => columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
-      );
-    }
-
-    /* 4. header + FilterPopover + meta.excelHeader */
-    return merged.map((c) => {
-      const rawHeader =
-        typeof c.header === 'string'
-          ? (c.header as string)
-          : (columnsOverrides[c.id]?.header as string) ?? (c.id as string);
-
-      return {
-        ...c,
-        meta: { ...c.meta, excelHeader: c.meta?.excelHeader ?? rawHeader },
-        header: () => (
-          <>
-            {rawHeader}
-            <FilterPopover
-              columnId={c.id}
-              data={filteredData}
-              uniqueValues={uniqueValuesByKey[c.id] ?? []}
-              selectedValues={filters[c.id] ?? []}
-              onFilterChange={(sel) => setFilters((p) => ({ ...p, [c.id]: sel }))}
-            />
-          </>
-        ),
-      } as ColumnDef<T>;
-    });
-  }, [data, columnsOverrides, columnsOrder, filteredData, filters, uniqueValuesByKey]);
+  const columnDefs = useMemo<ColumnDef<T>[]>(() => {
+    if (columns) return columns;
+    return buildColumnsFromOverrides(
+      columnsOverrides,
+      columnsOrder,
+      data,
+      filteredData,
+      filters,
+      uniqueValuesByKey,
+      setFilters
+    );
+  }, [columns, columnsOverrides, columnsOrder, data, filteredData, filters, uniqueValuesByKey]);
 
   useEffect(() => {
-    setColumnOrder(columns.map((c) => c.id as string));
-  }, [columns]);
+    setColumnOrder(columnDefs.map((c) => c.id as string));
+  }, [columnDefs]);
 
   /* ------------------- virtualizer ------------------- */
   const rowHeight = 34;
@@ -171,7 +192,7 @@ export function DataTable<T extends Record<string, any>>({
   /* -------------------- react-table ------------------ */
   const table = useReactTable({
     data: filteredData,
-    columns,
+    columns: columnDefs,
     state: { columnOrder },
     onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
@@ -189,7 +210,7 @@ export function DataTable<T extends Record<string, any>>({
 
     const res: Record<string, number> = {};
 
-    columns.forEach((col) => {
+    columnDefs.forEach((col) => {
       const colId = col.id as string;
       const headerLen = (col.meta?.excelHeader ?? colId).length;
       const cellLen = filteredData.reduce(
@@ -205,7 +226,7 @@ export function DataTable<T extends Record<string, any>>({
     });
 
     return res;
-  }, [columns, filteredData]);
+  }, [columnDefs, filteredData]);
 
   /* -------------- virtual row paddings -------------- */
   const virtualRows = rowVirtualizer.getVirtualItems();
@@ -256,7 +277,7 @@ export function DataTable<T extends Record<string, any>>({
           <tbody>
             {paddingTop > 0 && (
               <tr style={{ height: `${paddingTop}px` }}>
-                <td colSpan={columns.length} />
+                <td colSpan={columnDefs.length} />
               </tr>
             )}
 
@@ -277,20 +298,19 @@ export function DataTable<T extends Record<string, any>>({
                              hover:bg-[color:var(--tbl-row-hover)] transition-colors`}
                 >
                   {row.getVisibleCells().map((cell) => {
-                    const colId = cell.column.id as string;
-                    const raw = cell.getValue();
-                    const display = numericColumns.includes(colId)
-                      ? raw !== undefined && raw !== null && raw !== ''
-                        ? Number(raw).toLocaleString('ru-RU')
-                        : ''
-                      : flexRender(cell.column.columnDef.cell, cell.getContext());
+                    const isNumeric = numericColumns.includes(cell.column.id as string);
+                    const value = cell.getValue();
                     return (
                       <td
                         key={cell.id}
                         className={`border-t px-3 py-1 whitespace-nowrap overflow-hidden text-ellipsis
-                                   ${numericColumns.includes(colId) ? 'text-right tabular-nums' : ''}`}
+                                   ${isNumeric ? 'text-right tabular-nums' : ''}`}
                       >
-                        {display}
+                        {cell.column.columnDef.cell
+                          ? flexRender(cell.column.columnDef.cell, cell.getContext())
+                          : (isNumeric && value !== null && value !== undefined && value !== '')
+                            ? Number(value).toLocaleString('ru-RU')
+                            : (value !== null && value !== undefined ? String(value) : '')}
                       </td>
                     );
                   })}
@@ -300,7 +320,7 @@ export function DataTable<T extends Record<string, any>>({
 
             {paddingBottom > 0 && (
               <tr style={{ height: `${paddingBottom}px` }}>
-                <td colSpan={columns.length} />
+                <td colSpan={columnDefs.length} />
               </tr>
             )}
           </tbody>

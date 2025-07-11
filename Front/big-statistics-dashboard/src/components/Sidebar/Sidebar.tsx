@@ -46,6 +46,11 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
     const iconClass = "w-5 h-5 text-white";
     const [sidebarFullyExpanded, setSidebarFullyExpanded] = useState(expanded);
     const [iconsFullyShifted, setIconsFullyShifted] = useState(expanded);
+    const [avatarHovered, setAvatarHovered] = useState(false);
+    const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
+    const popoverTimeout = useRef<NodeJS.Timeout | null>(null);
+    const user = typeof window !== 'undefined' ? (localStorage.getItem('user') || '') : '';
+    const avatarSrc = user ? `/avatar_${user.toLowerCase()}.png` : '/avatar.png';
 
     const widthMV = useMotionValue(expanded ? EXPANDED : COLLAPSED);
     const widthSpring = useSpring(widthMV, { stiffness: 260, damping: 30 });
@@ -190,13 +195,49 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                       />
                     </svg>
                   </div>
-                  {/* аватар */}
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <img
-                      src="/avatar.png"
-                      alt="User"
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
+                  {/* аватар + popover */}
+                  <div
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (popoverTimeout.current) clearTimeout(popoverTimeout.current);
+                      setAvatarPopoverOpen(true);
+                    }}
+                    onMouseLeave={() => {
+                      popoverTimeout.current = setTimeout(() => setAvatarPopoverOpen(false), 200);
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white flex items-center justify-center cursor-pointer">
+                      <img
+                        src={avatarSrc}
+                        alt="User"
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => { e.currentTarget.src = "/avatar.png"; }}
+                      />
+                    </div>
+                    {avatarPopoverOpen && (
+                      <div
+                        className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 min-w-[160px] bg-white text-[#142143] rounded-lg shadow-lg p-4 flex flex-col items-center animate-fade-in border border-[#142143]"
+                        onMouseEnter={() => {
+                          if (popoverTimeout.current) clearTimeout(popoverTimeout.current);
+                          setAvatarPopoverOpen(true);
+                        }}
+                        onMouseLeave={() => {
+                          popoverTimeout.current = setTimeout(() => setAvatarPopoverOpen(false), 200);
+                        }}
+                      >
+                        <div className="font-semibold mb-2">{user || "User"}</div>
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem("isAuth");
+                            localStorage.removeItem("user");
+                            window.location.href = "/login";
+                          }}
+                          className="text-red-600 hover:underline text-sm"
+                        >
+                          Выйти
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {/* переключатель языка */}
                   <div className="mt-4 w-full flex justify-center">

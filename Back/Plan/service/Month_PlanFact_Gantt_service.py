@@ -27,6 +27,12 @@ def _month_bounds(year: int, month: int) -> tuple[_dt.date, _dt.date]:
     last = _dt.date(year, month, calendar.monthrange(year, month)[1])
     return first, last
 
+def _format_date_ru(date_obj: _dt.date) -> str:
+    """Форматирует дату в российском формате DD.MM.YYYY."""
+    if date_obj is None:
+        return ""
+    return date_obj.strftime("%d.%m.%Y")
+
 # ---------------------------------------------------------------------------
 # public api
 # ---------------------------------------------------------------------------
@@ -39,8 +45,9 @@ def fetch_month_planfact(year: int, month: int) -> Dict[str, Any]:
                 MonthPlanPcs, FactPcs,
                 Order_QTY,       -- из Order_1C
                 TotalFACT_QTY    -- из Order_1C
-        FROM    Views_For_Plan.Month_PlanFact
+        FROM    Views_For_Plan.Month_PlanFact_Gantt
         WHERE   [Date] BETWEEN ? AND ?
+          AND   (ISNULL(MonthPlanPcs, 0) > 0 OR ISNULL(FactPcs, 0) > 0)
         ORDER   BY Order_No, Article_number, [Date];
     """
 
@@ -67,19 +74,27 @@ def fetch_month_planfact(year: int, month: int) -> Dict[str, Any]:
         cur = conn.cursor()
         cur.execute(sql, first_day, last_day)
         for row in cur:
-            key = (row.Order_No.strip(), row.Article_number.strip())
+            # Безопасная обработка NULL значений
+            order_no = (row.Order_No or "").strip()
+            article_number = (row.Article_number or "").strip()
+            
+            # Пропускаем записи с пустыми ключами
+            if not order_no or not article_number:
+                continue
+                
+            key = (order_no, article_number)
             rec = orders[key]
 
             # статические поля (заполняются один раз)
-            rec["order_no"] = row.Order_No.strip()
-            rec["article_number"] = row.Article_number.strip()
-            rec["name"] = row.Name_CN
-            rec["large_group"] = row.LargeGroup
+            rec["order_no"] = order_no
+            rec["article_number"] = article_number
+            rec["name"] = row.Name_CN or ""
+            rec["large_group"] = row.LargeGroup or ""
             rec["order_qty"] = int(row.Order_QTY or 0)
             rec["total_fact_qty"] = int(row.TotalFACT_QTY or 0)
 
             # ежедневные значения
-            rec["daily"][row.Date.isoformat()] = {
+            rec["daily"][_format_date_ru(row.Date)] = {
                 "plan": int(row.MonthPlanPcs or 0),
                 "fact": int(row.FactPcs or 0),
             }
@@ -104,14 +119,14 @@ def fetch_month_planfact(year: int, month: int) -> Dict[str, Any]:
                 if rec["fact_finish"] is None or row.Date > rec["fact_finish"]:
                     rec["fact_finish"] = row.Date
 
-    # финальная подготовка: ISO‑строки и условие fact_finish
+    # финальная подготовка: российский формат дат и условие fact_finish
     prepared: list[Dict[str, Any]] = []
     for rec in orders.values():
-        rec["plan_start"] = rec["plan_start"].isoformat() if rec["plan_start"] else ""
-        rec["plan_finish"] = rec["plan_finish"].isoformat() if rec["plan_finish"] else ""
-        rec["fact_start"] = rec["fact_start"].isoformat() if rec["fact_start"] else ""
+        rec["plan_start"] = _format_date_ru(rec["plan_start"])
+        rec["plan_finish"] = _format_date_ru(rec["plan_finish"])
+        rec["fact_start"] = _format_date_ru(rec["fact_start"])
         rec["fact_finish"] = (
-            rec["fact_finish"].isoformat()
+            _format_date_ru(rec["fact_finish"])
             if rec["total_fact"] >= rec["total_plan"] and rec["fact_finish"]
             else ""
         )
@@ -120,7 +135,7 @@ def fetch_month_planfact(year: int, month: int) -> Dict[str, Any]:
     # сортируем по плановой дате запуска (старые → новые, пустые в конец)
     prepared.sort(
         key=lambda r: (
-            r["plan_start"] or "9999-12-31",
+            r["plan_start"] or "31.12.9999",
             r["order_no"],
             r["article_number"],
         )

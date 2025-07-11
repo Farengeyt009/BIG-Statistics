@@ -1,0 +1,842 @@
+{
+  "month": "07",
+  "table1": [
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "0.0000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "LargeGroup": null,
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "3060",
+      "DifferentTime": "498.7800",
+      "FactQty": 3060,
+      "FactTime": "498.780000",
+      "LargeGroup": "Breeze Metal",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-572",
+      "DifferentTime": "-80.2060",
+      "FactQty": 148,
+      "FactTime": "22.394000",
+      "LargeGroup": "Convector / Body",
+      "PercentQty": "-79.400000",
+      "PercentTime": "-78.200000",
+      "PlanQty": "720",
+      "PlanTime": "102.6000"
+    },
+    {
+      "DifferentQty": "-564",
+      "DifferentTime": "-179.0311",
+      "FactQty": 124,
+      "FactTime": "34.720000",
+      "LargeGroup": "Hand dryer",
+      "PercentQty": "-82.000000",
+      "PercentTime": "-83.800000",
+      "PlanQty": "688",
+      "PlanTime": "213.7511"
+    },
+    {
+      "DifferentQty": "-49228",
+      "DifferentTime": "-20697.0016",
+      "FactQty": 3345,
+      "FactTime": "1428.315000",
+      "LargeGroup": "Heater Assembly",
+      "PercentQty": "-93.600000",
+      "PercentTime": "-93.500000",
+      "PlanQty": "52573",
+      "PlanTime": "22125.3166"
+    },
+    {
+      "DifferentQty": "-17",
+      "DifferentTime": "-13.6945",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "LargeGroup": "Humidifier",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "17",
+      "PlanTime": "13.6945"
+    },
+    {
+      "DifferentQty": "-6020",
+      "DifferentTime": "-182.3900",
+      "FactQty": 1640,
+      "FactTime": "62.320000",
+      "LargeGroup": "Other FG",
+      "PercentQty": "-78.600000",
+      "PercentTime": "-74.500000",
+      "PlanQty": "7660",
+      "PlanTime": "244.7100"
+    },
+    {
+      "DifferentQty": "-9814",
+      "DifferentTime": "-5234.0709",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "LargeGroup": "Purifier (other)",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "9814",
+      "PlanTime": "5234.0709"
+    },
+    {
+      "DifferentQty": "2158",
+      "DifferentTime": "1041.7820",
+      "FactQty": 2758,
+      "FactTime": "1458.982000",
+      "LargeGroup": "Purifier OCK",
+      "PercentQty": "359.700000",
+      "PercentTime": "249.700000",
+      "PlanQty": "600",
+      "PlanTime": "417.2000"
+    },
+    {
+      "DifferentQty": "-1640",
+      "DifferentTime": "-61.5000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "LargeGroup": "SF (other)",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "1640",
+      "PlanTime": "61.5000"
+    },
+    {
+      "DifferentQty": "-180",
+      "DifferentTime": "-24.5222",
+      "FactQty": 4420,
+      "FactTime": "608.700000",
+      "LargeGroup": "SF to transformers (head)",
+      "PercentQty": "-3.900000",
+      "PercentTime": "-3.900000",
+      "PlanQty": "4600",
+      "PlanTime": "633.2222"
+    },
+    {
+      "DifferentQty": "-2534",
+      "DifferentTime": "-1859.2145",
+      "FactQty": 747,
+      "FactTime": "614.294000",
+      "LargeGroup": "Water heater",
+      "PercentQty": "-77.200000",
+      "PercentTime": "-75.200000",
+      "PlanQty": "3281",
+      "PlanTime": "2473.5085"
+    }
+  ],
+  "table2": [
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "0.0000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": null,
+      "Market": "-",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-20",
+      "DifferentTime": "-4.9500",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": " NCR",
+      "LargeGroup": "Heater Assembly",
+      "Market": "-",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "20",
+      "PlanTime": "4.9500"
+    },
+    {
+      "DifferentQty": "-17",
+      "DifferentTime": "-13.6945",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": "Humidifier",
+      "Market": "-",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "17",
+      "PlanTime": "13.6945"
+    },
+    {
+      "DifferentQty": "-100",
+      "DifferentTime": "-36.2500",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": "Heater Assembly",
+      "Market": "CIS",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "100",
+      "PlanTime": "36.2500"
+    },
+    {
+      "DifferentQty": "-200",
+      "DifferentTime": "-64.5000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCF-1",
+      "LargeGroup": "Heater Assembly",
+      "Market": "CIS",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "200",
+      "PlanTime": "64.5000"
+    },
+    {
+      "DifferentQty": "-150",
+      "DifferentTime": "-32.7273",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCK",
+      "LargeGroup": "Heater Assembly",
+      "Market": "CIS",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "150",
+      "PlanTime": "32.7273"
+    },
+    {
+      "DifferentQty": "-200",
+      "DifferentTime": "-37.5000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCK-S",
+      "LargeGroup": "Heater Assembly",
+      "Market": "CIS",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "200",
+      "PlanTime": "37.5000"
+    },
+    {
+      "DifferentQty": "-393",
+      "DifferentTime": "-283.7588",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "Cameo",
+      "LargeGroup": "Water heater",
+      "Market": "CIS",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "393",
+      "PlanTime": "283.7588"
+    },
+    {
+      "DifferentQty": "-500",
+      "DifferentTime": "-161.1111",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "HNA",
+      "LargeGroup": "Hand dryer",
+      "Market": "Direct Sales",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "500",
+      "PlanTime": "161.1111"
+    },
+    {
+      "DifferentQty": "-3133",
+      "DifferentTime": "-1717.4444",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": "Heater Assembly",
+      "Market": "Direct Sales",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "3133",
+      "PlanTime": "1717.4444"
+    },
+    {
+      "DifferentQty": "-600",
+      "DifferentTime": "-196.0000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCA-1",
+      "LargeGroup": "Heater Assembly",
+      "Market": "Direct Sales",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "600",
+      "PlanTime": "196.0000"
+    },
+    {
+      "DifferentQty": "-50",
+      "DifferentTime": "-33.7500",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "AZR EEC",
+      "LargeGroup": "Water heater",
+      "Market": "Eastern Europe",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "50",
+      "PlanTime": "33.7500"
+    },
+    {
+      "DifferentQty": "-50",
+      "DifferentTime": "-32.5000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "MXM WiFi EEC",
+      "LargeGroup": "Water heater",
+      "Market": "Eastern Europe",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "50",
+      "PlanTime": "32.5000"
+    },
+    {
+      "DifferentQty": "-1112",
+      "DifferentTime": "-861.7376",
+      "FactQty": 164,
+      "FactTime": "139.892000",
+      "GroupName": "SI EEC",
+      "LargeGroup": "Water heater",
+      "Market": "Eastern Europe",
+      "PercentQty": "-87.100000",
+      "PercentTime": "-86.000000",
+      "PlanQty": "1276",
+      "PlanTime": "1001.6296"
+    },
+    {
+      "DifferentQty": "3060",
+      "DifferentTime": "498.7800",
+      "FactQty": 3060,
+      "FactTime": "498.780000",
+      "GroupName": "NPF",
+      "LargeGroup": "Breeze Metal",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-603",
+      "DifferentTime": "-84.6390",
+      "FactQty": 117,
+      "FactTime": "17.961000",
+      "GroupName": "NCD",
+      "LargeGroup": "Convector / Body",
+      "Market": "Russia",
+      "PercentQty": "-83.800000",
+      "PercentTime": "-82.500000",
+      "PlanQty": "720",
+      "PlanTime": "102.6000"
+    },
+    {
+      "DifferentQty": "31",
+      "DifferentTime": "4.4330",
+      "FactQty": 31,
+      "FactTime": "4.433000",
+      "GroupName": "NCK",
+      "LargeGroup": "Convector / Body",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-64",
+      "DifferentTime": "-17.9200",
+      "FactQty": 124,
+      "FactTime": "34.720000",
+      "GroupName": "HNA",
+      "LargeGroup": "Hand dryer",
+      "Market": "Russia",
+      "PercentQty": "-34.000000",
+      "PercentTime": "-34.000000",
+      "PlanQty": "188",
+      "PlanTime": "52.6400"
+    },
+    {
+      "DifferentQty": "-10000",
+      "DifferentTime": "-2625.0000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": "Heater Assembly",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "10000",
+      "PlanTime": "2625.0000"
+    },
+    {
+      "DifferentQty": "-601",
+      "DifferentTime": "-154.2567",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCA-1",
+      "LargeGroup": "Heater Assembly",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "601",
+      "PlanTime": "154.2567"
+    },
+    {
+      "DifferentQty": "-500",
+      "DifferentTime": "-15.7500",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": null,
+      "LargeGroup": "Other FG",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "500",
+      "PlanTime": "15.7500"
+    },
+    {
+      "DifferentQty": "1640",
+      "DifferentTime": "62.3200",
+      "FactQty": 1640,
+      "FactTime": "62.320000",
+      "GroupName": "Chassis/Pillar",
+      "LargeGroup": "Other FG",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-1520",
+      "DifferentTime": "-51.3000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "CO2",
+      "LargeGroup": "Other FG",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "1520",
+      "PlanTime": "51.3000"
+    },
+    {
+      "DifferentQty": "-5640",
+      "DifferentTime": "-177.6600",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "WIFI\u8fde\u63a5\u7ebf",
+      "LargeGroup": "Other FG",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "5640",
+      "PlanTime": "177.6600"
+    },
+    {
+      "DifferentQty": "-9814",
+      "DifferentTime": "-5234.0709",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "OCA",
+      "LargeGroup": "Purifier (other)",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "9814",
+      "PlanTime": "5234.0709"
+    },
+    {
+      "DifferentQty": "2758",
+      "DifferentTime": "1458.9820",
+      "FactQty": 2758,
+      "FactTime": "1458.982000",
+      "GroupName": "OCA",
+      "LargeGroup": "Purifier OCK",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "0",
+      "PlanTime": "0.0000"
+    },
+    {
+      "DifferentQty": "-600",
+      "DifferentTime": "-417.2000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "OCK",
+      "LargeGroup": "Purifier OCK",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "600",
+      "PlanTime": "417.2000"
+    },
+    {
+      "DifferentQty": "-1640",
+      "DifferentTime": "-61.5000",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "Chassis/Pillar",
+      "LargeGroup": "SF (other)",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "1640",
+      "PlanTime": "61.5000"
+    },
+    {
+      "DifferentQty": "-180",
+      "DifferentTime": "-24.3000",
+      "FactQty": 420,
+      "FactTime": "56.700000",
+      "GroupName": "EF",
+      "LargeGroup": "SF to transformers (head)",
+      "Market": "Russia",
+      "PercentQty": "-30.000000",
+      "PercentTime": "-30.000000",
+      "PlanQty": "600",
+      "PlanTime": "81.0000"
+    },
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "0.0000",
+      "FactQty": 3000,
+      "FactTime": "420.000000",
+      "GroupName": "INV",
+      "LargeGroup": "SF to transformers (head)",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "3000",
+      "PlanTime": "420.0000"
+    },
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "-0.2222",
+      "FactQty": 1000,
+      "FactTime": "132.000000",
+      "GroupName": "MF",
+      "LargeGroup": "SF to transformers (head)",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "-0.200000",
+      "PlanQty": "1000",
+      "PlanTime": "132.2222"
+    },
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "-0.0187",
+      "FactQty": 50,
+      "FactTime": "41.900000",
+      "GroupName": "Azurro Inverter",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "50",
+      "PlanTime": "41.9187"
+    },
+    {
+      "DifferentQty": "-95",
+      "DifferentTime": "-75.4538",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "Level PRO",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "95",
+      "PlanTime": "75.4538"
+    },
+    {
+      "DifferentQty": "-19",
+      "DifferentTime": "-13.4165",
+      "FactQty": 73,
+      "FactTime": "57.962000",
+      "GroupName": "Nero PRO",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "-20.700000",
+      "PercentTime": "-18.800000",
+      "PlanQty": "92",
+      "PlanTime": "71.3785"
+    },
+    {
+      "DifferentQty": "-800",
+      "DifferentTime": "-549.0825",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "Royal Flash",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "800",
+      "PlanTime": "549.0825"
+    },
+    {
+      "DifferentQty": "0",
+      "DifferentTime": "0.0534",
+      "FactQty": 160,
+      "FactTime": "131.840000",
+      "GroupName": "Smalto Inverter",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "0.000000",
+      "PercentTime": "0.000000",
+      "PlanQty": "160",
+      "PlanTime": "131.7866"
+    },
+    {
+      "DifferentQty": "-15",
+      "DifferentTime": "-9.5500",
+      "FactQty": 300,
+      "FactTime": "242.700000",
+      "GroupName": "Splendore",
+      "LargeGroup": "Water heater",
+      "Market": "Russia",
+      "PercentQty": "-4.800000",
+      "PercentTime": "-3.800000",
+      "PlanQty": "315",
+      "PlanTime": "252.2500"
+    },
+    {
+      "DifferentQty": "-19494",
+      "DifferentTime": "-8946.1898",
+      "FactQty": 3345,
+      "FactTime": "1428.315000",
+      "GroupName": "NCA-1",
+      "LargeGroup": "Heater Assembly",
+      "Market": "TC",
+      "PercentQty": "-85.400000",
+      "PercentTime": "-86.200000",
+      "PlanQty": "22839",
+      "PlanTime": "10374.5048"
+    },
+    {
+      "DifferentQty": "-7951",
+      "DifferentTime": "-3714.8839",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCA2",
+      "LargeGroup": "Heater Assembly",
+      "Market": "TC",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "7951",
+      "PlanTime": "3714.8839"
+    },
+    {
+      "DifferentQty": "-6779",
+      "DifferentTime": "-3167.2995",
+      "FactQty": 0,
+      "FactTime": "0.000000",
+      "GroupName": "NCA-2",
+      "LargeGroup": "Heater Assembly",
+      "Market": "TC",
+      "PercentQty": "-100.000000",
+      "PercentTime": "-100.000000",
+      "PlanQty": "6779",
+      "PlanTime": "3167.2995"
+    }
+  ],
+  "table3": [
+    {
+      "DailyPlanTime": "847.001000",
+      "Date": "Tue, 01 Jul 2025 00:00:00 GMT",
+      "FactTime": "817.128000",
+      "PlanTime": "840.5609"
+    },
+    {
+      "DailyPlanTime": "849.319000",
+      "Date": "Wed, 02 Jul 2025 00:00:00 GMT",
+      "FactTime": "774.598000",
+      "PlanTime": "849.7164"
+    },
+    {
+      "DailyPlanTime": "849.624000",
+      "Date": "Thu, 03 Jul 2025 00:00:00 GMT",
+      "FactTime": "816.386000",
+      "PlanTime": "851.0869"
+    },
+    {
+      "DailyPlanTime": "849.774000",
+      "Date": "Fri, 04 Jul 2025 00:00:00 GMT",
+      "FactTime": "820.606000",
+      "PlanTime": "861.6884"
+    },
+    {
+      "DailyPlanTime": "1102.562000",
+      "Date": "Sat, 05 Jul 2025 00:00:00 GMT",
+      "FactTime": "693.315000",
+      "PlanTime": "1134.5174"
+    },
+    {
+      "DailyPlanTime": "220.108000",
+      "Date": "Sun, 06 Jul 2025 00:00:00 GMT",
+      "FactTime": "272.948000",
+      "PlanTime": "276.0460"
+    },
+    {
+      "DailyPlanTime": "1141.940000",
+      "Date": "Mon, 07 Jul 2025 00:00:00 GMT",
+      "FactTime": "533.524000",
+      "PlanTime": "1129.9486"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Tue, 08 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1131.3769"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Wed, 09 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1149.6211"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Thu, 10 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1084.9810"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Fri, 11 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1139.6574"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Sat, 12 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1133.4402"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Sun, 13 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "911.7135"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Mon, 14 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1390.1566"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Tue, 15 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1404.5463"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Wed, 16 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1412.2187"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Thu, 17 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1227.7740"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Fri, 18 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1159.9597"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Sat, 19 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1159.2509"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Mon, 21 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1160.1853"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Tue, 22 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1140.7534"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Wed, 23 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1140.6482"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Thu, 24 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1140.4468"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Fri, 25 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1140.2776"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Sat, 26 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1140.4669"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Sun, 27 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "909.3771"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Mon, 28 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1129.4849"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Tue, 29 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "1134.3763"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Wed, 30 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "708.4175"
+    },
+    {
+      "DailyPlanTime": "0.000000",
+      "Date": "Thu, 31 Jul 2025 00:00:00 GMT",
+      "FactTime": "0.000000",
+      "PlanTime": "526.8789"
+    }
+  ],
+  "year": 2025
+}

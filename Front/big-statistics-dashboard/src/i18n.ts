@@ -7,6 +7,7 @@ import ordersTranslation from './pages/Orders/ordersTranslation.json';
 import dataTableTranslation from './components/DataTable/dataTableTranslation.json';
 import ordersCustomTrainingTranslation from './pages/Orders/utils/CustomTableBuilder/ordersCustomTrainingTranslation.json';
 import planTranslation from './pages/Plan/PlanTranslation.json';
+import loginPageTranslation from './pages/LoginPage/LoginPageTranslation.json';
 
 const resources = {
   en: {
@@ -14,14 +15,19 @@ const resources = {
     ordersTranslation: ordersTranslation.en,
     dataTable: dataTableTranslation.en,
     ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.en,
-    planTranslation: planTranslation.en
+    planTranslation: planTranslation.en,
+    loginPage: loginPageTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
     ordersTranslation: ordersTranslation.zh,
     dataTable: dataTableTranslation.zh,
     ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.zh,
-    planTranslation: planTranslation.zh
+    planTranslation: planTranslation.zh,
+    loginPage: loginPageTranslation.zh
+  },
+  ru: {
+    loginPage: loginPageTranslation.ru
   }
 };
 

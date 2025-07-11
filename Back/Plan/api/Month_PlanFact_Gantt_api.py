@@ -14,15 +14,18 @@ from Plan.service.Month_PlanFact_Gantt_service import fetch_month_planfact  # и
 bp = Blueprint("planfact", __name__, url_prefix="/api")
 
 
-@bp.route("/planfact", methods=["GET"])
-def planfact_endpoint():
-    """/api/planfact?year=YYYY&month=M → JSON.
+@bp.route("/MonthPlanFactGantt", methods=["GET"])
+def month_planfact_gantt_endpoint():
+    """/api/MonthPlanFactGantt?year=YYYY&month=M → JSON.
     Если параметры не заданы, берётся текущий год/месяц."""
-    today = date.today()
-    year = int(request.args.get("year", today.year))
-    month = int(request.args.get("month", today.month))
+    try:
+        today = date.today()
+        year = int(request.args.get("year", today.year))
+        month = int(request.args.get("month", today.month))
 
-    return jsonify(fetch_month_planfact(year, month))
+        return jsonify(fetch_month_planfact(year, month))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 def init_app(app):
