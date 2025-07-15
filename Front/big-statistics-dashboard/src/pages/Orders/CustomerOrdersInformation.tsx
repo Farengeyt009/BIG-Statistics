@@ -15,6 +15,8 @@ import Chart from './tabs/Chart';
 import MainTableTab from './tabs/MainTableTab';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 
+console.log('CustomerOrdersInformation rendered');
+
 type Order = Record<string, any>;
 
 const isMock = true;

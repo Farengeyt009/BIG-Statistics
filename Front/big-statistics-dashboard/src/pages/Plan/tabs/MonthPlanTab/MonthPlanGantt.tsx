@@ -79,7 +79,7 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
     const first = startOfMonth(new Date(year, month - 1));
     const len   = new Date(year, month, 0).getDate();
     return Array.from({ length: len }, (_, i) =>
-      format(addDays(first, i), "yyyy-MM-dd"),
+      format(addDays(first, i), "dd.MM.yyyy"),
     );
   }, [year, month]);
 
@@ -296,7 +296,7 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
                       aria-hidden
                     />
                   )}
-                  {d.slice(8)}
+                  {d.slice(0, 2)}
                 </th>
               ))}
             </tr>

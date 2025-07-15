@@ -153,7 +153,7 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                     {(() => {
                         return (
                             <>
-                                <Link to="/" className="block">
+                                <Link to="/uncompleted-orders" className="block">
                                     <SidebarIcon icon={<Home className={iconClass} />} label={t('home')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                                 </Link>
                                 <Link to="/uncompleted-orders" className="block">
