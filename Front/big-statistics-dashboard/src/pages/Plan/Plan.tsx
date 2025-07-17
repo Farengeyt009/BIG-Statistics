@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import MonthPlanGantt from './tabs/MonthPlanTab/MonthPlanGantt';
-import MonthPlanSvod from './tabs/MonthPlanTab/MonthPlanSvod';
+import MonthPlanSummary from './tabs/MonthPlanTab/MonthPlanSummary';
 import WeeklyPlanTab from './tabs/WeeklyPlanTab';
 import DailyPlanTab from './tabs/DailyPlanTab';
 import MonthPlanTabs from './tabs/MonthPlanTab/MonthPlanTabs';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+
+console.log('Plan rendered');
 
 const Plan = () => {
   const [activeTab, setActiveTab] = useState('month');

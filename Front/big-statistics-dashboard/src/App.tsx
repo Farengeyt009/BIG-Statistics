@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import CustomerOrdersInformation from './pages/Orders/CustomerOrdersInformation';
 import Plan from './pages/Plan/Plan';
 import LoginPage from './pages/LoginPage/LoginPage';
+import Home from './pages/Home/Home';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -53,7 +54,7 @@ function AppContent() {
             <Sidebar expanded={expanded} toggleSidebar={toggle} />
             <main className="flex-1 p-4 overflow-auto bg-gray-15">
                 <Routes>
-                    <Route path="/" element={<RequireAuth><CustomerOrdersInformation /></RequireAuth>} />
+                    <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
                     <Route path="/uncompleted-orders" element={<RequireAuth><CustomerOrdersInformation /></RequireAuth>} />
                     <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
                 </Routes>

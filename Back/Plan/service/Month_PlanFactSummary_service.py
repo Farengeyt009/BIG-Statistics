@@ -43,35 +43,11 @@ def _fetch_query(conn, sql: str, *params) -> List[Dict[str, Any]]:
 # public API                                                                  #
 # --------------------------------------------------------------------------- #
 def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
-    """Возвращает table1/2/3 для указанного года-месяца."""
+    """Возвращает table1/2 для указанного года-месяца."""
     first_day, last_day = _month_bounds(year, month)
 
-    # ---------- Table 1: LargeGroup only ----------
+    # ---------- Table 1: Market + LargeGroup + GroupName ----------
     sql_table1 = """
-        SELECT
-            LargeGroup,
-            SUM(PlanQty)                        AS PlanQty,
-            SUM(FactQty)                        AS FactQty,
-            SUM(FactQty) - SUM(PlanQty)         AS DifferentQty,
-            ROUND(
-                CASE WHEN SUM(PlanQty)=0 THEN 0
-                     ELSE 100.0 * (SUM(FactQty)-SUM(PlanQty)) / SUM(PlanQty)
-                END, 1)                         AS PercentQty,
-            SUM(PlanTime)                       AS PlanTime,
-            SUM(FactTime)                       AS FactTime,
-            SUM(FactTime) - SUM(PlanTime)       AS DifferentTime,
-            ROUND(
-                CASE WHEN SUM(PlanTime)=0 THEN 0
-                     ELSE 100.0 * (SUM(FactTime)-SUM(PlanTime)) / SUM(PlanTime)
-                END, 1)                         AS PercentTime
-        FROM Views_For_Plan.Month_PlanFact_Summary
-        WHERE [Date] BETWEEN ? AND ?
-        GROUP BY LargeGroup
-        ORDER BY LargeGroup;
-    """
-
-    # ---------- Table 2: Market + LargeGroup + GroupName ----------
-    sql_table2 = """
         SELECT
             Market,
             LargeGroup,
@@ -80,15 +56,21 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
             SUM(FactQty)                        AS FactQty,
             SUM(FactQty) - SUM(PlanQty)         AS DifferentQty,
             ROUND(
-                CASE WHEN SUM(PlanQty)=0 THEN 0
-                     ELSE 100.0 * (SUM(FactQty)-SUM(PlanQty)) / SUM(PlanQty)
+                CASE 
+                    WHEN SUM(PlanQty)=0 AND SUM(FactQty)=0 THEN 0
+                    WHEN SUM(PlanQty)=0 AND SUM(FactQty)>0 THEN 100
+                    WHEN SUM(PlanQty)=0 THEN 0
+                    ELSE 100.0 * SUM(FactQty) / SUM(PlanQty)
                 END, 1)                         AS PercentQty,
             SUM(PlanTime)                       AS PlanTime,
             SUM(FactTime)                       AS FactTime,
             SUM(FactTime) - SUM(PlanTime)       AS DifferentTime,
             ROUND(
-                CASE WHEN SUM(PlanTime)=0 THEN 0
-                     ELSE 100.0 * (SUM(FactTime)-SUM(PlanTime)) / SUM(PlanTime)
+                CASE 
+                    WHEN SUM(PlanTime)=0 AND SUM(FactTime)=0 THEN 0
+                    WHEN SUM(PlanTime)=0 AND SUM(FactTime)>0 THEN 100
+                    WHEN SUM(PlanTime)=0 THEN 0
+                    ELSE 100.0 * SUM(FactTime) / SUM(PlanTime)
                 END, 1)                         AS PercentTime
         FROM Views_For_Plan.Month_PlanFact_Summary
         WHERE [Date] BETWEEN ? AND ?
@@ -96,13 +78,14 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
         ORDER BY Market, LargeGroup, GroupName;
     """
 
-    # ---------- Table 3: дневная динамика ----------
-    sql_table3 = """
+    # ---------- Table 2: дневная динамика по Water heater и Other ----------
+    sql_table2 = """
         SELECT
-            CAST([Date] AS date)                AS [Date],
-            SUM(PlanTime)                       AS PlanTime,
-            SUM(DailyPlanTime)                  AS DailyPlanTime,
-            SUM(FactTime)                       AS FactTime
+            CAST([Date] AS date) AS [Date],
+            SUM(CASE WHEN LargeGroup = 'Water heater' THEN PlanTime ELSE 0 END) AS WaterHeaterPlanTime,
+            SUM(CASE WHEN LargeGroup != 'Water heater' THEN PlanTime ELSE 0 END) AS OtherPlanTime,
+            SUM(CASE WHEN LargeGroup = 'Water heater' THEN FactTime ELSE 0 END) AS WaterHeaterFactTime,
+            SUM(CASE WHEN LargeGroup != 'Water heater' THEN FactTime ELSE 0 END) AS OtherFactTime
         FROM Views_For_Plan.Month_PlanFact_Summary
         WHERE [Date] BETWEEN ? AND ?
         GROUP BY CAST([Date] AS date)
@@ -112,12 +95,10 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
     with get_connection() as conn:
         t1 = _fetch_query(conn, sql_table1, first_day, last_day)
         t2 = _fetch_query(conn, sql_table2, first_day, last_day)
-        t3 = _fetch_query(conn, sql_table3, first_day, last_day)
 
     return {
         "year": year,
         "month": f"{month:02d}",
         "table1": t1,
         "table2": t2,
-        "table3": t3,
     }

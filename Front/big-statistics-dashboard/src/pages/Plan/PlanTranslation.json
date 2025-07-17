@@ -14,6 +14,17 @@
       "factStart": "Fact Start",
       "factEnd": "Fact End"
     },
+    "svodTable": {
+      "LargeGroup": "Large Group",
+      "PlanQty": "Plan Qty",
+      "FactQty": "Fact Qty",
+      "DifferentQty": "Difference Qty",
+      "PercentQty": "% Qty",
+      "PlanTime": "Plan Time",
+      "FactTime": "Fact Time",
+      "DifferentTime": "Difference Time",
+      "PercentTime": "% Time"
+    },
     "pageTitle": "Plan",
     "tabs": {
       "month": "Month Plan",
@@ -35,6 +46,17 @@
       "planEnd": "计划结束",
       "factStart": "实际开始",
       "factEnd": "实际结束"
+    },
+    "svodTable": {
+      "LargeGroup": "成品组",
+      "PlanQty": "计划数量",
+      "FactQty": "实际数量",
+      "DifferentQty": "差异数量",
+      "PercentQty": "%, 数量",
+      "PlanTime": "计划工时",
+      "FactTime": "实际工时",
+      "DifferentTime": "%, 工时",
+      "PercentTime": "百分比工时"
     },
     "pageTitle": "计划",
     "tabs": {
