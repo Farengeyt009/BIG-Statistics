@@ -1,7 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
 from database.db_connector import get_connection
-from cachetools import cached, TTLCache
 
 def try_convert_value(value):
     if value is None:
@@ -39,7 +38,6 @@ def try_convert_value(value):
     return value
 
 
-@cached(TTLCache(maxsize=1, ttl=60))
 def get_all_CustomerOrdersInformation_table():
     conn = get_connection()
     cursor = conn.cursor()

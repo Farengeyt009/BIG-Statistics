@@ -1,12 +1,7 @@
 from database.db_connector import get_connection
 from collections import defaultdict
-from cachetools import cached, TTLCache
 import datetime
 import decimal
-
-cache = TTLCache(maxsize=1, ttl=60)
-
-@cached(cache)
 def get_CustomerOrdersInformation_views():
     query_main = """
         SELECT

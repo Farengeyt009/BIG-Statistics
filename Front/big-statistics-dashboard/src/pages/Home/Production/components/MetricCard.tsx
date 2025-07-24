@@ -19,8 +19,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const good      = isPositiveMetric ? changePercent >= 0 : changePercent <= 0;
 
   // цвета бэйджа
-  const badgeText = good ? 'text-green-700' : 'text-red-700';
-  const badgeBg   = good ? 'bg-green-100'  : 'bg-red-100';
+  const badgeText = changePercent === 0 ? 'text-orange-600' : (good ? 'text-green-700' : 'text-red-700');
+  const badgeBg   = changePercent === 0 ? 'bg-orange-100' : (good ? 'bg-green-100' : 'bg-red-100');
 
   // угол поворота стрелки
   const arrowRotate =
@@ -49,14 +49,18 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         title={`${changePercent > 0 ? '+' : ''}${changePercent}%`}
       >
         {/* arrow icon */}
-        <svg
-          className={`w-[0.8em] h-[0.8em] ${arrowRotate}`}
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          fill="currentColor"
-        >
-          <path d="M22.414 12 14 20.414 12.586 19l6-6H2v-2h16.586l-6-6L14 3.586z" />
-        </svg>
+        {changePercent === 0 ? (
+          <span className="text-xs font-bold">-</span>
+        ) : (
+          <svg
+            className={`w-[0.8em] h-[0.8em] ${arrowRotate}`}
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="currentColor"
+          >
+            <path d="M22.414 12 14 20.414 12.586 19l6-6H2v-2h16.586l-6-6L14 3.586z" />
+          </svg>
+        )}
         <span>{Math.abs(changePercent)}%</span>
       </div>
     </div>

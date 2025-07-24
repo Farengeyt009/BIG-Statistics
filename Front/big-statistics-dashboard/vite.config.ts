@@ -7,5 +7,11 @@ export default defineConfig({
     open: true,
     host: '0.0.0.0', // Позволяет принимать подключения с любого IP
     port: 3000, // Стандартный порт для React приложений
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
 }); 

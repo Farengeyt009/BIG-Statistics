@@ -1,0 +1,40 @@
+{
+  "en": {
+    "production": {
+      "title": "Production",
+      "plan": "Plan",
+      "fact": "Fact",
+      "completion": "Compl.",
+      "workshop": "WorkShop",
+      "details": "Details",
+      "orderNo": "Order No",
+      "articleNumber": "Article Number",
+      "name": "Name",
+      "planFact": "Plan/Fact",
+      "legend": {
+        "plan": "plan",
+        "fact": "fact",
+        "noPlan": "no plan"
+      }
+    }
+  },
+  "zh": {
+    "production": {
+      "title": "生产",
+      "plan": "计划",
+      "fact": "实际",
+      "completion": "完成",
+      "workshop": "车间",
+      "details": "详情",
+      "orderNo": "订单号",
+      "articleNumber": "物料号",
+      "name": "名称",
+      "planFact": "计划/实际",
+      "legend": {
+        "plan": "计划",
+        "fact": "实际",
+        "noPlan": "无计划"
+      }
+    }
+  }
+} 
