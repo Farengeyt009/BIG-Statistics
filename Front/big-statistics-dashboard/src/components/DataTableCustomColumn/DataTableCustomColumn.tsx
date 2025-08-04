@@ -102,7 +102,7 @@ export function DataTableCustomColumn<T extends Record<string, any>>({
             ))}
         </colgroup>
         {/* thead */}
-        <thead className="select-none sticky top-0 z-20 bg-[color:var(--tbl-head-bg)] text-[color:var(--tbl-head-text)] text-[11px] font-semibold uppercase tracking-wide">
+        <thead className="select-none sticky top-0 z-20 bg-[color:var(--tbl-head-bg)] text-[color:var(--tbl-head-text)] text-[13px] font-semibold uppercase tracking-wide">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id}>
               {hg.headers.map((h, idx) => (

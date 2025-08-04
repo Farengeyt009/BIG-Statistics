@@ -56,8 +56,36 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
 
   /* ----- state ----- */
   const today = new Date();
-  const [data, setData]   = useState<PlanFactRow[]>([]);
+  const [data, setData] = useState<PlanFactRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+
+  // Функция для загрузки данных с API
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/MonthPlanFactGantt?year=${year}&month=${month}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      setData(result.data || []);
+    } catch (err) {
+      console.error('Ошибка загрузки данных:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+      // Fallback к статичным данным при ошибке
+      setData((testData as any).data || []);
+    } finally {
+      setLoading(false);
+    }
+  }, [year, month]);
+
+  // Загружаем данные при изменении года или месяца
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   /* filters */
   const [filters, setFilters] = useState<Record<ColKey, string[]>>({
@@ -168,6 +196,27 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
   );
 
   /* ───────── render ───────── */
+  
+  // Показываем индикатор загрузки
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-gray-600">Загрузка данных...</div>
+      </div>
+    );
+  }
+
+  // Показываем ошибку
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-red-600">
+          Ошибка загрузки данных: {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       {/* плавающая кнопка */}

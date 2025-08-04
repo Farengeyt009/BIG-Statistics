@@ -5,6 +5,7 @@ import { registerLocale } from 'react-datepicker';
 import { enUS as en } from 'date-fns/locale';
 import { zhCN as zh } from 'date-fns/locale';
 import { format } from 'date-fns';
+import './DatePicker.css';
 
 // Регистрируем локали
 registerLocale('en', en);

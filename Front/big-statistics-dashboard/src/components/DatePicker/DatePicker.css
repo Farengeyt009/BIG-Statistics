@@ -1,0 +1,12 @@
+/* Исправление z-index для календаря DatePicker */
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
+.react-datepicker-wrapper {
+  z-index: 9999 !important;
+}
+
+.react-datepicker__input-container {
+  z-index: 9999 !important;
+} 

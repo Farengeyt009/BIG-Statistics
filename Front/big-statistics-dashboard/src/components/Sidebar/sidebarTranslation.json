@@ -6,7 +6,7 @@
     "orders": "Orders",
     "plan": "Plan",
     "kpi": "KPI",
-    "mes": "MES",
+    "mes": "Production",
     "tasks": "Tasks",
     "notifications": "Notif"
   },
@@ -17,7 +17,7 @@
     "orders": "客户订单",
     "plan": "计划",
     "kpi": "KPI",
-    "mes": "MES",
+    "mes": "生产",
     "tasks": "任务",
     "notifications": "通知"
   }

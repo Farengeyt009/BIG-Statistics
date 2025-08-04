@@ -34,7 +34,7 @@ const Home: React.FC = () => {
             <p className="text-gray-600">September-November</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">MES</h3>
+            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Production</h3>
             <p className="text-gray-600">October-November</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">

@@ -165,7 +165,7 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                                 <Link to="/kpi" className="block">
                                     <SidebarIcon icon={<LineChart className={iconClass} />} label={t('kpi')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                                 </Link>
-                                <Link to="/mes" className="block">
+                                <Link to="/production" className="block">
                                     <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                                 </Link>
                                 <Link to="/tasks" className="block">

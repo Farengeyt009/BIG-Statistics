@@ -214,17 +214,12 @@ const PlanCumulativeMirrorChart: React.FC<PlanCumulativeChartProps> = ({
 
   /* ---------- JSX ---------- */
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="bg-white p-4">
       {/* ----------- TEXT BLOCK ----------- */}
-      <div style={{ marginLeft: 0, marginBottom: 16, lineHeight: 1.25, textAlign: 'left' }}>
-        <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 4 }}>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">
           Monthly Plan Performance by Working-Time Fund
-        </div>
-        <div style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.5, marginBottom: 2 }}>
-          X-axis = labour-hours (rounded to the nearest thousand).<br/>
-          Y-axis = calendar days of the month.<br/>
-          Centre labels give the overall completion %.
-        </div>
+        </h3>
         {/* 4-я строка: проверка на отставание по двум группам */}
         {(() => {
           // Определяем сегодняшнее число (или максимум в данных)
@@ -270,53 +265,35 @@ const PlanCumulativeMirrorChart: React.FC<PlanCumulativeChartProps> = ({
       </div>
 
       {/* ----------- ТАБ-ПЕРЕКЛЮЧАТЕЛЬ ----------- */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, marginLeft: 0 }}>
-        <span style={{ color: '#374151', fontSize: 14, fontWeight: 600, marginRight: 6, userSelect: 'none', whiteSpace: 'nowrap', letterSpacing: 0.2 }}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-semibold text-gray-700">
           Select
         </span>
-        <span style={{ color: '#a3a3a3', fontSize: 18, marginRight: 10, marginLeft: 2, userSelect: 'none' }}>→</span>
+        <span className="text-gray-400">→</span>
         <button
           type="button"
           onClick={() => setChartTab('summary')}
-          style={{
-            padding: '1px 8px',
-            fontSize: 11,
-            borderRadius: 5,
-            fontWeight: 500,
-            border: '1px solid',
-            borderColor: chartTab === 'summary' ? '#0d1c3d' : '#d1d5db',
-            background: chartTab === 'summary' ? '#0d1c3d' : '#f3f4f6',
-            color: chartTab === 'summary' ? '#fff' : '#374151',
-            marginRight: 3,
-            transition: 'all 0.15s',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
+          className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+            chartTab === 'summary' 
+              ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' 
+              : 'bg-gray-100 text-gray-700 border-gray-300'
+          }`}
         >
           Summary
         </button>
         <button
           type="button"
           onClick={() => setChartTab('daily')}
-          style={{
-            padding: '1px 8px',
-            fontSize: 11,
-            borderRadius: 5,
-            fontWeight: 500,
-            border: '1px solid',
-            borderColor: chartTab === 'daily' ? '#0d1c3d' : '#d1d5db',
-            background: chartTab === 'daily' ? '#0d1c3d' : '#f3f4f6',
-            color: chartTab === 'daily' ? '#fff' : '#374151',
-            marginLeft: 3,
-            transition: 'all 0.15s',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
+          className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+            chartTab === 'daily' 
+              ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' 
+              : 'bg-gray-100 text-gray-700 border-gray-300'
+          }`}
         >
           Daily
         </button>
       </div>
-      <div style={{ height: 16 }} />
+      <div style={{ height: 8 }} />
 
       {/* ----------- CHART SHELL ----------- */}
       <div style={{ position: 'relative' /* ChartShell */ }}>

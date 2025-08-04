@@ -8,6 +8,8 @@ from Back.orders.api.CustomerOrdersInformation_table import CustomerOrdersInform
 from Back.Plan.api.Month_PlanFact_Gantt_api import init_app as planfact_init_app
 from Back.Plan.api.Month_PlanFactSummary_api import init_app as planfact_summary_init_app
 from Back.Home.api.Home_Production_api import init_app as home_production_init_app
+from Back.Production.api.Production_Efficiency_api import init_app as production_efficiency_init_app
+
 app = Flask(__name__)
 CORS(app)  # Разрешаем кросс-доменные запросы (CORS) от фронтенда
 
@@ -17,6 +19,7 @@ app.register_blueprint(CustomerOrdersInformation_table_bp)
 planfact_init_app(app)
 planfact_summary_init_app(app)
 home_production_init_app(app)
+production_efficiency_init_app(app)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

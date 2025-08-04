@@ -1,10 +1,10 @@
 // src/pages/Home/Production/Production.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { kpiData, pagesTable, refTable } from './utils/mockData';
-import { MetricCard } from './components/MetricCard';
+import { MetricCard } from '../../../components/KPICards';
 import { TrendChart } from './components/TrendChart';
 import { MiniTable } from './components/MiniTable';
-import CustomDatePicker from '../../../components/DatePicker';
+import { DatePicker as CustomDatePicker } from '../../../components/DatePicker';
 import { useTranslation } from 'react-i18next';
 import homeTranslations from '../HomeTranslation.json';
 import { ProductionProvider } from './ProductionContext';

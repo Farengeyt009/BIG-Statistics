@@ -9,6 +9,7 @@ import ordersCustomTrainingTranslation from './pages/Orders/utils/CustomTableBui
 import planTranslation from './pages/Plan/PlanTranslation.json';
 import loginPageTranslation from './pages/LoginPage/LoginPageTranslation.json';
 import homeInterfaceTranslation from './pages/Home/homeInterfaceTranslation.json';
+import productionTranslation from './pages/Production/ProductionTranslation.json';
 
 const resources = {
   en: {
@@ -18,7 +19,8 @@ const resources = {
     ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.en,
     planTranslation: planTranslation.en,
     loginPage: loginPageTranslation.en,
-    homeInterface: homeInterfaceTranslation.en
+    homeInterface: homeInterfaceTranslation.en,
+    production: productionTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
@@ -27,7 +29,8 @@ const resources = {
     ordersCustomTrainingTranslation: ordersCustomTrainingTranslation.zh,
     planTranslation: planTranslation.zh,
     loginPage: loginPageTranslation.zh,
-    homeInterface: homeInterfaceTranslation.zh
+    homeInterface: homeInterfaceTranslation.zh,
+    production: productionTranslation.zh
   }
 };
 

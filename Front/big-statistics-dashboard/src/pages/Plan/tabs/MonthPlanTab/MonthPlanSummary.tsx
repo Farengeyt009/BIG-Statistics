@@ -1,13 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { DataTableCustomColumn } from '../../../../components/DataTableCustomColumn/DataTableCustomColumn';
 import planFactSummary from "../../../../Test/PlanFactSummary.json";
 import { formatNumber, formatPercent, calcPercent, sumBy, makeKeys } from './utils/format';
 import { getTree } from './utils/tree';
-import ProgressCell from './components/ProgressCell';
+import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressCell';
 import PlanCumulativeChart from './components/PlanCumulativeChart';
-import StatisticalCardContainer from './components/StatisticalCardContainer';
+import { MetricCard, DonutChart } from '../../../../components/KPICards';
+
+// Компонент-обертка для объединения карточки и диаграммы (только для этой страницы)
+interface KPICardWithChartProps {
+  label: string;
+  value: string;
+  changePercent: number;
+  isPositiveMetric: boolean;
+  chartValue: number;
+  chartTotal?: number;
+  chartColor?: string;
+}
+
+const KPICardWithChart: React.FC<KPICardWithChartProps> = ({
+  label,
+  value,
+  changePercent,
+  isPositiveMetric,
+  chartValue,
+  chartTotal = 100,
+  chartColor
+}) => (
+  <div className="flex items-center gap-0 p-4 bg-white rounded-lg w-fit">
+    <MetricCard
+      label={label}
+      value={value}
+      changePercent={changePercent}
+      isPositiveMetric={isPositiveMetric}
+      hideArrows={true}
+      useOrangeColor={true}
+      useRussianSeparator={true}
+    />
+    <DonutChart 
+      value={chartValue} 
+      total={chartTotal} 
+      size={80} 
+      strokeWidth={8}
+      primaryColor={chartColor}
+      className="-ml-11"
+    />
+  </div>
+);
 
 // Универсальный рендерер иерархических ячеек
 function renderHierarchyCell(level: number, isOpen: boolean, label: string, onClick?: () => void, hideChevron?: boolean) {
@@ -338,55 +379,99 @@ const ALL_KEYS = [
 
 const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
   const { t } = useTranslation('planTranslation');
-  const data1 = (planFactSummary as any).table1 || [];
-  const data2 = (planFactSummary as any).table2 || [];
+  const [data1, setData1] = useState<any[]>([]);
+  const [data2, setData2] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [groupMode, setGroupMode] = useState<'largeGroup' | 'market'>('largeGroup');
   const [expandedMarkets, setExpandedMarkets] = useState<Set<string>>(new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedSubgroups, setExpandedSubgroups] = useState<Set<string>>(new Set());
   const [expandedLargeGroups, setExpandedLargeGroups] = useState<Set<string>>(new Set());
   const [expandedLargeSubgroups, setExpandedLargeSubgroups] = useState<Set<string>>(new Set());
-  const [cardViewMode, setCardViewMode] = useState<'quantity' | 'time'>('quantity');
 
-  // Подготовка данных для карточек в зависимости от режима
-  const rawDataForQuantityCard = data1.map((item: any) => ({
-    day: 1,
-    plan: cardViewMode === 'quantity' ? Number(item.PlanQty) || 0 : Number(item.PlanTime) || 0,
-    fact: cardViewMode === 'quantity' ? Number(item.FactQty) || 0 : Number(item.FactTime) || 0
-  }));
+  // Функция для загрузки данных с API
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/MonthPlanFactSummary?year=${year}&month=${month}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setData1(data.table1 || []);
+      setData2(data.table2 || []);
+    } catch (err) {
+      console.error('Ошибка загрузки данных:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+      // Fallback к статичным данным при ошибке
+      setData1((planFactSummary as any).table1 || []);
+      setData2((planFactSummary as any).table2 || []);
+    } finally {
+      setLoading(false);
+    }
+  }, [year, month]);
 
-  // Подготовка данных для второй карточки (Water heater)
-  const rawDataForWaterHeaterCard = data1
-    .filter((item: any) => item.LargeGroup === 'Water heater')
-    .map((item: any) => ({
-      day: 1,
-      plan: cardViewMode === 'quantity' ? Number(item.PlanQty) || 0 : Number(item.PlanTime) || 0,
-      fact: cardViewMode === 'quantity' ? Number(item.FactQty) || 0 : Number(item.FactTime) || 0
-    }));
+  // Загружаем данные при изменении года или месяца
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // Расчёт для первой карточки
-  const totalFactQty = rawDataForQuantityCard.reduce((sum: number, item: any) => sum + item.fact, 0);
-  const totalPlanQty = rawDataForQuantityCard.reduce((sum: number, item: any) => sum + item.plan, 0);
-  const completionPercentageQty = totalPlanQty > 0 ? Math.round((totalFactQty / totalPlanQty) * 100) : 0;
+  // Функции для расчета KPI
+  const calculateTotalQty = () => {
+    const totalPlan = data1.reduce((sum: number, item: any) => sum + (Number(item.PlanQty) || 0), 0);
+    const totalFact = data1.reduce((sum: number, item: any) => sum + (Number(item.FactQty) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
 
-  // Расчёт для второй карточки (Water heater)
-  const totalFactWaterHeater = rawDataForWaterHeaterCard.reduce((sum: number, item: any) => sum + item.fact, 0);
-  const totalPlanWaterHeater = rawDataForWaterHeaterCard.reduce((sum: number, item: any) => sum + item.plan, 0);
-  const completionPercentageWaterHeater = totalPlanWaterHeater > 0 ? Math.round((totalFactWaterHeater / totalPlanWaterHeater) * 100) : 0;
+  const calculateTotalTime = () => {
+    const totalPlan = data1.reduce((sum: number, item: any) => sum + (Number(item.PlanTime) || 0), 0);
+    const totalFact = data1.reduce((sum: number, item: any) => sum + (Number(item.FactTime) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
 
-  // Подготовка данных для третьей карточки (прочее - все кроме Water heater)
-  const rawDataForOtherCard = data1
-    .filter((item: any) => item.LargeGroup !== 'Water heater')
-    .map((item: any) => ({
-      day: 1,
-      plan: cardViewMode === 'quantity' ? Number(item.PlanQty) || 0 : Number(item.PlanTime) || 0,
-      fact: cardViewMode === 'quantity' ? Number(item.FactQty) || 0 : Number(item.FactTime) || 0
-    }));
+  const calculateWaterHeaterQty = () => {
+    const waterHeaterData = data1.filter((item: any) => item.LargeGroup === 'Water heater');
+    const totalPlan = waterHeaterData.reduce((sum: number, item: any) => sum + (Number(item.PlanQty) || 0), 0);
+    const totalFact = waterHeaterData.reduce((sum: number, item: any) => sum + (Number(item.FactQty) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
 
-  // Расчёт для третьей карточки (прочее)
-  const totalFactOther = rawDataForOtherCard.reduce((sum: number, item: any) => sum + item.fact, 0);
-  const totalPlanOther = rawDataForOtherCard.reduce((sum: number, item: any) => sum + item.plan, 0);
-  const completionPercentageOther = totalPlanOther > 0 ? Math.round((totalFactOther / totalPlanOther) * 100) : 0;
+  const calculateWaterHeaterTime = () => {
+    const waterHeaterData = data1.filter((item: any) => item.LargeGroup === 'Water heater');
+    const totalPlan = waterHeaterData.reduce((sum: number, item: any) => sum + (Number(item.PlanTime) || 0), 0);
+    const totalFact = waterHeaterData.reduce((sum: number, item: any) => sum + (Number(item.FactTime) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
+
+  const calculateHeatersQty = () => {
+    const heatersData = data1.filter((item: any) => item.LargeGroup !== 'Water heater');
+    const totalPlan = heatersData.reduce((sum: number, item: any) => sum + (Number(item.PlanQty) || 0), 0);
+    const totalFact = heatersData.reduce((sum: number, item: any) => sum + (Number(item.FactQty) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
+
+  const calculateHeatersTime = () => {
+    const heatersData = data1.filter((item: any) => item.LargeGroup !== 'Water heater');
+    const totalPlan = heatersData.reduce((sum: number, item: any) => sum + (Number(item.PlanTime) || 0), 0);
+    const totalFact = heatersData.reduce((sum: number, item: any) => sum + (Number(item.FactTime) || 0), 0);
+    const percentage = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+    return { plan: totalPlan, fact: totalFact, percentage };
+  };
+
+  // Получаем данные для KPI
+  const totalQtyData = calculateTotalQty();
+  const totalTimeData = calculateTotalTime();
+  const waterHeaterQtyData = calculateWaterHeaterQty();
+  const waterHeaterTimeData = calculateWaterHeaterTime();
+  const heatersQtyData = calculateHeatersQty();
+  const heatersTimeData = calculateHeatersTime();
 
   const columnsAll = [
     { id: 'LargeGroup', accessorKey: 'LargeGroup', header: () => t('svodTable.LargeGroup') },
@@ -399,201 +484,130 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
     : [expandedMarkets, expandedGroups, expandedSubgroups];
   const treeData = getTree(data1, groupKeys, ...expandedSets);
 
-  return (
-    <div className="p-4">
-      <div style={{ display: 'flex', flexDirection: 'row', gap: 12, justifyContent: 'center' }}>
-        {/* Карточки статистики */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          {/* Заголовок и селектор */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'flex-start', 
-            width: '100%'
-          }}>
-            <div style={{ 
-              fontWeight: 600, 
-              fontSize: 20, 
-              marginBottom: 4,
-              textAlign: 'left'
-            }}>
-              Plan Snapshot
-            </div>
-            <div style={{ 
-              color: '#6b7280', 
-              fontSize: 14, 
-              lineHeight: 1.5, 
-              marginBottom: 2,
-              textAlign: 'left'
-            }}>
-              At‑a‑glance view of<br/>
-              monthly plan totals,<br/>
-              actual outputs, and<br/>
-              overall completion %.
-            </div>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 0, 
-              minHeight: 36 
-            }}>
-              <span style={{ 
-                color: '#374151', 
-                fontSize: 14, 
-                fontWeight: 600, 
-                marginRight: 6, 
-                userSelect: 'none', 
-                whiteSpace: 'nowrap', 
-                letterSpacing: 0.2 
-              }}>
-                Select
-              </span>
-              <span style={{ 
-                color: '#a3a3a3', 
-                fontSize: 18, 
-                marginRight: 10, 
-                marginLeft: 2, 
-                userSelect: 'none' 
-              }}>→</span>
-              <button
-                type="button"
-                onClick={() => setCardViewMode('quantity')}
-                style={{
-                  padding: '1px 8px',
-                  fontSize: 11,
-                  borderRadius: 5,
-                  fontWeight: 500,
-                  border: '1px solid',
-                  borderColor: cardViewMode === 'quantity' ? '#0d1c3d' : '#d1d5db',
-                  background: cardViewMode === 'quantity' ? '#0d1c3d' : '#f3f4f6',
-                  color: cardViewMode === 'quantity' ? '#fff' : '#374151',
-                  marginRight: 3,
-                  transition: 'all 0.15s',
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Quantity
-              </button>
-              <button
-                type="button"
-                onClick={() => setCardViewMode('time')}
-                style={{
-                  padding: '1px 8px',
-                  fontSize: 11,
-                  borderRadius: 5,
-                  fontWeight: 500,
-                  border: '1px solid',
-                  borderColor: cardViewMode === 'time' ? '#0d1c3d' : '#d1d5db',
-                  background: cardViewMode === 'time' ? '#0d1c3d' : '#f3f4f6',
-                  color: cardViewMode === 'time' ? '#fff' : '#374151',
-                  marginLeft: 3,
-                  transition: 'all 0.15s',
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Time
-              </button>
-            </div>
-          </div>
-          <div style={{ height: 12 }} />
-          {/* Первая карточка */}
-          <StatisticalCardContainer
-            rawData={rawDataForQuantityCard}
-            headline={`${completionPercentageQty}%`}
-            subtext={`Total plan, ${cardViewMode === 'quantity' ? 'psc' : 'hrs'}`}
-          />
-          <div style={{ height: 12 }} />
-          {/* Вторая карточка (прочее - все кроме Water heater) */}
-          <StatisticalCardContainer
-            rawData={rawDataForOtherCard}
-            headline={`${completionPercentageOther}%`}
-            subtext={`Heater, ${cardViewMode === 'quantity' ? 'psc' : 'hrs'}`}
-          />
-          <div style={{ height: 12 }} />
-          {/* Третья карточка (Water heater) */}
-          <StatisticalCardContainer
-            rawData={rawDataForWaterHeaterCard}
-            headline={`${completionPercentageWaterHeater}%`}
-            subtext={`Water heater, ${cardViewMode === 'quantity' ? 'psc' : 'hrs'}`}
-          />
+  // Показываем индикатор загрузки
+  if (loading) {
+    return (
+      <div className="container">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-gray-600">Загрузка данных...</div>
         </div>
-        {/* Вертикальная разделительная линия между карточками и графиком */}
-        <div style={{ width: 0, borderLeft: '1px solid #D1D5DB', margin: '0 8px', alignSelf: 'stretch', minHeight: 420 }} />
+      </div>
+    );
+  }
+
+  // Показываем ошибку
+  if (error) {
+    return (
+      <div className="container">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-red-600">
+            Ошибка загрузки данных: {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      {/* KPI карточки горизонтально вверху */}
+      <div className="flex flex-wrap gap-14 mb-2">
+        <KPICardWithChart
+          label="Total, pcs"
+          value={`${Math.round(totalQtyData.plan / 1000)}K`}
+          changePercent={Math.round(totalQtyData.fact)}
+          isPositiveMetric={true}
+          chartValue={totalQtyData.percentage}
+        />
+        <KPICardWithChart
+          label="Total, h"
+          value={`${Math.round(totalTimeData.plan / 1000)}K`}
+          changePercent={Math.round(totalTimeData.fact)}
+          isPositiveMetric={false}
+          chartValue={totalTimeData.percentage}
+        />
+        <KPICardWithChart
+          label="Heaters, pcs"
+          value={`${Math.round(heatersQtyData.plan / 1000)}K`}
+          changePercent={Math.round(heatersQtyData.fact)}
+          isPositiveMetric={true}
+          chartValue={heatersQtyData.percentage}
+          chartColor="#15803d"
+        />
+        <KPICardWithChart
+          label="Heaters, h"
+          value={`${Math.round(heatersTimeData.plan / 1000)}K`}
+          changePercent={Math.round(heatersTimeData.fact)}
+          isPositiveMetric={true}
+          chartValue={heatersTimeData.percentage}
+          chartColor="#15803d"
+        />
+        <KPICardWithChart
+          label="Water heater, pcs"
+          value={`${Math.round(waterHeaterQtyData.plan / 1000)}K`}
+          changePercent={Math.round(waterHeaterQtyData.fact)}
+          isPositiveMetric={true}
+          chartValue={waterHeaterQtyData.percentage}
+          chartColor="#dc2626"
+        />
+        <KPICardWithChart
+          label="Water heater, h"
+          value={`${Math.round(waterHeaterTimeData.plan / 1000)}K`}
+          changePercent={Math.round(waterHeaterTimeData.fact)}
+          isPositiveMetric={false}
+          chartValue={waterHeaterTimeData.percentage}
+          chartColor="#dc2626"
+        />
+      </div>
+
+      {/* Горизонтальная линия на всю ширину */}
+      <div className="mt-1 mb-4">
+        <hr className="border-gray-300 border-t-2" />
+      </div>
+
+      {/* Графики и таблицы внизу */}
+      <div className="flex flex-col lg:flex-row gap-4 -mt-4 relative">
         {/* Второй график (существующий) */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="flex-1">
           <PlanCumulativeChart table2={data2} year={year} month={month} />
         </div>
-        {/* Вертикальная разделительная линия */}
-        <div style={{ width: 0, borderLeft: '1px solid #D1D5DB', margin: '0 12px', alignSelf: 'stretch', minHeight: 420 }} />
+
         {/* Таблица */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div
-            className="bg-white p-4"
-            style={{
-              display: 'inline-block',
-              zoom: 0.96,
-              transform: 'scale(1)',
-              transformOrigin: 'top left'
-            }}
-          >
+        <div className="flex-1">
+          <div className="bg-white p-4">
             {/* Заголовок и пояснение */}
-            <div style={{ marginLeft: 0, marginTop: -18, marginBottom: 18 }}>
-              <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 4 }}>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">
                 Monthly Plan Performance – Quantity & Time
-              </div>
-              <div style={{ color: '#6b7280', fontSize: 14, lineHeight: 1.5, marginBottom: 2 }}>
-                Analyze plan fulfillment in the following breakdowns:<br/>
-                • Large Group → Model (en)<br/>
-                • Market → Large Group → Model (en)
-              </div>
-              <div style={{ color: '#a3a3a3', fontSize: 13, marginTop: 2 }}>
+              </h3>
+              <p className="text-gray-400 text-xs">
                 Click the ▸ icon to view details.
-              </div>
+              </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 14, minHeight: 36 }}>
-              <span style={{ color: '#374151', fontSize: 14, fontWeight: 600, marginRight: 6, userSelect: 'none', whiteSpace: 'nowrap', letterSpacing: 0.2 }}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-sm font-semibold text-gray-700">
                 Select
               </span>
-              <span style={{ color: '#a3a3a3', fontSize: 18, marginRight: 10, marginLeft: 2, userSelect: 'none' }}>→</span>
+              <span className="text-gray-400">→</span>
               <button
                 type="button"
                 onClick={() => setGroupMode('largeGroup')}
-                style={{
-                  padding: '1px 8px',
-                  fontSize: 11,
-                  borderRadius: 5,
-                  fontWeight: 500,
-                  border: '1px solid',
-                  borderColor: groupMode === 'largeGroup' ? '#0d1c3d' : '#d1d5db',
-                  background: groupMode === 'largeGroup' ? '#0d1c3d' : '#f3f4f6',
-                  color: groupMode === 'largeGroup' ? '#fff' : '#374151',
-                  marginRight: 3,
-                  transition: 'all 0.15s',
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
+                className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                  groupMode === 'largeGroup' 
+                    ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' 
+                    : 'bg-gray-100 text-gray-700 border-gray-300'
+                }`}
               >
                 Large Group
               </button>
               <button
                 type="button"
                 onClick={() => setGroupMode('market')}
-                style={{
-                  padding: '1px 8px',
-                  fontSize: 11,
-                  borderRadius: 5,
-                  fontWeight: 500,
-                  border: '1px solid',
-                  borderColor: groupMode === 'market' ? '#0d1c3d' : '#d1d5db',
-                  background: groupMode === 'market' ? '#0d1c3d' : '#f3f4f6',
-                  color: groupMode === 'market' ? '#fff' : '#374151',
-                  marginLeft: 3,
-                  transition: 'all 0.15s',
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
+                className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                  groupMode === 'market' 
+                    ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' 
+                    : 'bg-gray-100 text-gray-700 border-gray-300'
+                }`}
               >
                 Market
               </button>
