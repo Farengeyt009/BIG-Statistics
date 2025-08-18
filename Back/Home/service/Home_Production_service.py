@@ -206,13 +206,10 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
                DPF.OrderNumber,
                DPF.NomenclatureNumber,
                PG.GroupName,
-        
+
                SUM(DPF.Plan_QTY)                                             AS Plan_QTY,
-               SUM(CASE
-                       WHEN DPF.Scan_QTY IS NULL THEN DPF.CloseWork_QTY
-                       ELSE DPF.Scan_QTY
-                   END)                                                      AS FACT_QTY
-        FROM  Import_1C.Daily_PlanFact AS DPF
+               SUM(FACT_QTY)                                                 AS FACT_QTY
+        FROM  Views_For_Plan.DailyPlan_CustomWS AS DPF
         LEFT  JOIN Ref.Product_Guide   AS PG
                ON  DPF.NomenclatureNumber = PG.FactoryNumber
         WHERE (DPF.WorkShopName_CH = N'装配车间'
@@ -222,21 +219,19 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
                DPF.OnlyDate,
                DPF.WorkShopName_CH,
                DPF.WorkCentor_CN,
+               DPF.Line_No,
                DPF.OrderNumber,
                DPF.NomenclatureNumber,
                PG.GroupName
-        ORDER  BY WorkShopName_CH, WorkCentor_CN, OrderNumber;
+        ORDER  BY WorkShopName_CH, WorkCentor_CN, Line_No, OrderNumber
         
         /* ---------- ② агрегаты TOTAL_* по WorkShopName_CH + WorkCentor_CN -*/
         SELECT
                DPF.WorkShopName_CH,
                DPF.WorkCentor_CN,
                SUM(DPF.Plan_QTY) AS TOTAL_Plan_QTY,
-               SUM(CASE
-                       WHEN DPF.Scan_QTY IS NULL THEN DPF.CloseWork_QTY
-                       ELSE DPF.Scan_QTY
-                   END) AS TOTAL_FACT_QTY
-        FROM  Import_1C.Daily_PlanFact AS DPF
+               SUM(FACT_QTY) AS TOTAL_FACT_QTY
+        FROM  Views_For_Plan.DailyPlan_CustomWS AS DPF
         LEFT  JOIN Ref.Product_Guide   AS PG
                ON  DPF.NomenclatureNumber = PG.FactoryNumber
         WHERE (DPF.WorkShopName_CH = N'装配车间'
@@ -256,6 +251,24 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
     table4_details = table4_results[0] if len(table4_results) > 0 else []
     table4_totals = table4_results[1] if len(table4_results) > 1 else []
     
+    # Форматируем даты в русский формат (DD.MM.YYYY)
+    def format_dates_in_data(data_list):
+        for row in data_list:
+            if 'OnlyDate' in row and row['OnlyDate']:
+                if isinstance(row['OnlyDate'], str):
+                    from datetime import datetime
+                    try:
+                        date_obj = datetime.fromisoformat(row['OnlyDate'].split('T')[0])
+                        row['OnlyDate'] = date_obj.strftime('%d.%m.%Y')
+                    except:
+                        pass
+                elif hasattr(row['OnlyDate'], 'strftime'):
+                    row['OnlyDate'] = row['OnlyDate'].strftime('%d.%m.%Y')
+    
+    # Форматируем даты во всех таблицах
+    format_dates_in_data(table1_data)
+    format_dates_in_data(table4_details)
+    
     return {
         "table1": table1_data,
         "table2": table2_data[0] if table2_data else {},  # Берем первую (и единственную) запись
@@ -264,5 +277,5 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
             "details": table4_details,
             "totals": table4_totals
         },
-        "selected_date": selected_date.isoformat()
+        "selected_date": selected_date.strftime('%d.%m.%Y')
     } 

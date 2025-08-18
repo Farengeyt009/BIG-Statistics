@@ -1,8 +1,12 @@
+// DataTable.tsx – Excel-like таблица (копирование, навигация, статистика)
+// ----------------------------------------------------------------------
+
 import React, {
   useState,
   useMemo,
   useEffect,
   useRef,
+  useCallback,
 } from 'react';
 import {
   ColumnDef,
@@ -20,22 +24,68 @@ import { CSS } from '@dnd-kit/utilities';
 import FilterPopover from './FilterPopover';
 
 /* ------------------------------------------------------------------ */
-/*                               TYPES                                */
+/*                                TYPES                               */
 /* ------------------------------------------------------------------ */
 export interface DataTableProps<T extends RowData> {
   data: T[];
   columnsOverrides?: Record<string, Partial<ColumnDef<T>>>;
   columnsOrder?: string[];
-  defaultVisible?: string[];
   onTableReady?: (table: Table<T>) => void;
   virtualized?: boolean | { overscan?: number };
-  /**
-   * Список колонок, которые нужно суммировать в <tfoot>.
-   * Если проп не передан, DataTable использует автоматический детектор
-   * (колонка считается числовой, если во всех строках либо число, либо '').
-   */
   numericKeys?: string[];
+  language?: 'en' | 'zh';
 }
+
+type Stats =
+  | null
+  | { count: number; numCount: number; sum: number; avg: number | null };
+
+// Расширенный тип метаданных для колонки
+export interface ColumnMetaEx {
+  excelHeader?: string;
+  charWidth?: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*                     helpers для selection/copy                      */
+/* ------------------------------------------------------------------ */
+const keyCell = (r: number, c: number) => `${r}-${c}`;
+
+const makeRect = (r1: number, c1: number, r2: number, c2: number) => {
+  const [rs, re] = r1 < r2 ? [r1, r2] : [r2, r1];
+  const [cs, ce] = c1 < c2 ? [c1, c2] : [c2, c1];
+  const set = new Set<string>();
+  for (let r = rs; r <= re; r++)
+    for (let c = cs; c <= ce; c++) set.add(keyCell(r, c));
+  return set;
+};
+
+/* ------------------------------------------------------------------ */
+/*                     helpers для определения языка                   */
+/* ------------------------------------------------------------------ */
+// Функция для определения языка содержимого колонки
+const detectColumnLanguage = (data: any[], columnId: string): 'en' | 'zh' => {
+  if (!data.length) return 'en';
+  
+  // Проверяем первые 10 строк для определения языка
+  const sampleSize = Math.min(10, data.length);
+  let chineseCount = 0;
+  let totalCount = 0;
+  
+  for (let i = 0; i < sampleSize; i++) {
+    const value = String(data[i]?.[columnId] ?? '');
+    if (value.trim()) {
+      totalCount++;
+      // Проверяем наличие китайских символов
+      if (/[\u4e00-\u9fff]/.test(value)) {
+        chineseCount++;
+      }
+    }
+  }
+  
+  // Если больше 30% значений содержат китайские символы, считаем колонку китайской
+  return (chineseCount / totalCount) > 0.3 ? 'zh' : 'en';
+};
 
 /* ------------------------------------------------------------------ */
 /*                         MAIN COMPONENT                             */
@@ -44,208 +94,382 @@ export function DataTable<T extends Record<string, any>>({
   data,
   columnsOverrides = {},
   columnsOrder,
-  defaultVisible,
   onTableReady,
   virtualized = true,
   numericKeys,
+  language = 'en',
 }: DataTableProps<T>) {
-  /* --------------------------- filters --------------------------- */
+  /* --------------------------- фильтры --------------------------- */
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
   const filteredData = useMemo(() => {
     if (!data.length) return [];
     return data.filter((row) =>
-      Object.keys(row).every((k) => {
-        const sel = filters[k];
-        if (!sel?.length) return true;
-        return sel.includes(String(row[k] ?? ''));
-      }),
+      Object.keys(row).every(
+        (k) =>
+          !filters[k]?.length || filters[k].includes(String(row[k] ?? '')),
+      ),
     );
   }, [data, filters]);
 
-  /* уникальные значения для FilterPopover (каскадно) */
-  const uniqueValuesByKey = useMemo(() => {
-    const res: Record<string, string[]> = {};
-    if (!data.length) return res;
-
+  const uniqueByKey = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    if (!data.length) return map;
     Object.keys(data[0]).forEach((k) => {
-      const cascade = data.filter((row) =>
-        Object.keys(row).every((key) => {
-          if (key === k) return true;
-          const sel = filters[key];
-          if (!sel?.length) return true;
-          return sel.includes(String(row[key] ?? ''));
-        }),
+      const subset = data.filter((row) =>
+        Object.keys(row).every(
+          (key) =>
+            key === k ||
+            !filters[key]?.length ||
+            filters[key].includes(String(row[key] ?? '')),
+        ),
       );
-      res[k] = Array.from(new Set(cascade.map((r) => String(r[k] ?? '')))).sort();
+      map[k] = [...new Set(subset.map((r) => String(r[k] ?? '')))].sort();
     });
-    return res;
+    return map;
   }, [data, filters]);
 
-  /* -------------------- numeric totals -------------------- */
-  const numericColumns = useMemo<string[]>(() => {
+  /* -------------------- numeric cols & sums -------------------- */
+  const numericCols = useMemo(() => {
     if (!filteredData.length) return [];
-
-    const candidateKeys = numericKeys ?? Object.keys(filteredData[0]);
-
-    return candidateKeys.filter((k) =>
-      filteredData.every((r) => r[k] === '' || r[k] === null || !isNaN(Number(r[k]))),
+    const cand = numericKeys ?? Object.keys(filteredData[0]);
+    return cand.filter((k) =>
+      filteredData.every(
+        (r) => r[k] === '' || r[k] === null || !isNaN(Number(r[k])),
+      ),
     );
   }, [filteredData, numericKeys]);
 
-  const numericSums = useMemo<Record<string, number>>(() => {
+  const numericSums = useMemo(() => {
     const sums: Record<string, number> = {};
-    numericColumns.forEach((k) => {
-      sums[k] = filteredData.reduce((acc, row) => acc + (Number(row[k]) || 0), 0);
-    });
+    numericCols.forEach(
+      (k) => (sums[k] = filteredData.reduce((a, r) => a + (+r[k] || 0), 0)),
+    );
     return sums;
-  }, [filteredData, numericColumns]);
+  }, [filteredData, numericCols]);
 
-  /* --------------------- drag & drop ---------------------- */
-  const [columnOrder, setColumnOrder] = useState<string[]>([]);
-
-  /* ----------------------- columns ----------------------- */
+  /* ------------------------ columns ------------------------ */
   const columns = useMemo<ColumnDef<T>[]>(() => {
     if (!data.length) return [];
-
-    /* 1. базовые */
     const base = Object.keys(data[0]).map((k) => ({ id: k, accessorKey: k }));
-
-    /* 2. merge overrides */
     let merged = base.map((c) => ({ ...c, ...(columnsOverrides[c.id] ?? {}) }));
 
-    /* 2a. фильтруем лишние колонки */
     if (columnsOrder?.length) {
       merged = merged.filter((c) => columnsOrder.includes(c.id as string));
-    }
-
-    /* 3. custom order */
-    if (columnsOrder?.length) {
       merged.sort(
-        (a, b) => columnsOrder.indexOf(a.id as string) - columnsOrder.indexOf(b.id as string),
+        (a, b) =>
+          columnsOrder.indexOf(a.id as string) -
+          columnsOrder.indexOf(b.id as string),
       );
     }
 
-    /* 4. header + FilterPopover + meta.excelHeader */
     return merged.map((c) => {
-      const rawHeader =
+      const hdr =
         typeof c.header === 'string'
           ? (c.header as string)
           : (columnsOverrides[c.id]?.header as string) ?? (c.id as string);
 
       return {
         ...c,
-        meta: { ...c.meta, excelHeader: c.meta?.excelHeader ?? rawHeader },
+        meta: { ...c.meta, excelHeader: c.meta?.excelHeader ?? hdr },
         header: () => (
           <>
-            {rawHeader}
+            {hdr}
             <FilterPopover
               columnId={c.id}
               data={filteredData}
-              uniqueValues={uniqueValuesByKey[c.id] ?? []}
+              uniqueValues={uniqueByKey[c.id] ?? []}
               selectedValues={filters[c.id] ?? []}
-              onFilterChange={(sel) => setFilters((p) => ({ ...p, [c.id]: sel }))}
+              onFilterChange={(sel) =>
+                setFilters((p) => ({ ...p, [c.id]: sel }))
+              }
             />
           </>
         ),
       } as ColumnDef<T>;
     });
-  }, [data, columnsOverrides, columnsOrder, filteredData, filters, uniqueValuesByKey]);
+  }, [data, columnsOverrides, columnsOrder, filteredData, filters, uniqueByKey]);
 
-  useEffect(() => {
-    setColumnOrder(columns.map((c) => c.id as string));
-  }, [columns]);
-
-  /* ------------------- virtualizer ------------------- */
-  const rowHeight = 34;
-  const overscan = typeof virtualized === 'object' ? virtualized.overscan ?? 10 : 10;
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  const rowVirtualizer = useVirtualizer({
-    count: filteredData.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => rowHeight,
-    overscan,
-  });
-
-  /* -------------------- react-table ------------------ */
+  /* -------------------- react-table -------------------- */
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { columnOrder },
-    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
   });
+  useEffect(() => onTableReady?.(table), [table, onTableReady]);
 
-  useEffect(() => {
-    onTableReady?.(table);
-  }, [table, onTableReady]);
+  /* -------------------- virtualizer -------------------- */
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirt = useVirtualizer({
+    count: filteredData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 34,
+    overscan:
+      typeof virtualized === 'object' ? virtualized.overscan ?? 10 : 10,
+  });
+  const vRows = rowVirt.getVirtualItems();
+  const padTop = vRows[0]?.start ?? 0;
+  const padBot = rowVirt.getTotalSize() - (vRows.at(-1)?.end ?? 0);
 
-  /* -------------- colgroup widths ----------------- */
-  const columnWidths = useMemo<Record<string, number>>(() => {
+  /* -------------------- col widths -------------------- */
+  const colWidths = useMemo(() => {
     if (!filteredData.length) return {};
-    const pxPerChar = 8;
-    const basePadding = 16;
+    const base = 16;
+    const filterIconWidth = language === 'zh' ? 35 : 20; // ← было 20 / 16
+    const map: Record<string, number> = {};
+    columns.forEach((c) => {
+      const id = c.id as string;
+      const headerLen = (c.meta?.excelHeader ?? id).toString().length;
+      
+      // Используем meta.charWidth если задан, иначе определяем язык автоматически
+      const meta = c.meta as ColumnMetaEx | undefined;
+      let charForColumn = meta?.charWidth;
+      
+      if (charForColumn === undefined) {
+        // Автоматическое определение языка для колонки
+        const columnLanguage = detectColumnLanguage(filteredData, id);
+        charForColumn = columnLanguage === 'zh' ? 12 : 8;
+      }
+      
+      // Расчет ширины заголовка с учетом языка интерфейса
+      const headerText = (c.meta?.excelHeader ?? id).toString();
+      const headerHasChinese = /[\u4e00-\u9fff]/.test(headerText);
+      const headerCharWidth = headerHasChinese ? 12 : 8;
+      const headerWidthNoIcon = headerLen * headerCharWidth + base;
+      
+      const maxCell = filteredData.reduce((m, r) => {
+        const value = r[id];
+        let displayValue = String(value ?? '');
+        if (numericCols.includes(id)) {
+          if (value !== '' && value !== null && value !== undefined) {
+            displayValue = Number(value).toLocaleString('ru-RU');
+          } else {
+            displayValue = '';
+          }
+        }
+        return Math.max(m, displayValue.length);
+      }, 0);
+      
+      const dataWidth = maxCell * charForColumn + base;
 
-    const res: Record<string, number> = {};
+      // итог: берём большее из header/data и ДОБАВЛЯЕМ запас под иконку
+      const widthCore = Math.max(headerWidthNoIcon, dataWidth);
+      map[id] = Math.min(Math.max(widthCore + filterIconWidth, 80), 400);
+      
+      // Отладочная информация для колонки DATE
+      if (id === 'OnlyDate') {
+        console.log(`Column ${id}:`, {
+          headerText,
+          headerLen,
+          headerCharWidth,
+          headerWidthNoIcon,
+          maxCell,
+          charForColumn,
+          dataWidth,
+          widthCore,
+          finalWidth: map[id]
+        });
+      }
+    });
+    return map;
+  }, [columns, filteredData, language, numericCols]);
 
-    columns.forEach((col) => {
-      const colId = col.id as string;
-      const headerLen = (col.meta?.excelHeader ?? colId).length;
-      const cellLen = filteredData.reduce(
-        (m, r) => Math.max(m, String((r as Record<string, any>)[colId] ?? '').length),
-        0,
-      );
+  /* ---------------- selection state ---------------- */
+  const leaf = table.getVisibleLeafColumns();
+  const leafIdx: Record<string, number> = {};
+  leaf.forEach((c, i) => (leafIdx[c.id as string] = i));
 
-      const px = Math.min(
-        Math.max(Math.max(headerLen, cellLen) * pxPerChar + basePadding, 80),
-        400,
-      );
-      res[colId] = px;
+  const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
+  const [cursor, setCursor] = useState<{ r: number; c: number } | null>(null);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+
+  const focusGrid = () => parentRef.current?.focus();
+
+  const selectSingle = (r: number, c: number) => {
+    setAnchor({ r, c });
+    setCursor({ r, c });
+    setSel(new Set([keyCell(r, c)]));
+  };
+
+  /* ---------------- stats for banner ---------------- */
+  const stats: Stats = useMemo(() => {
+    if (sel.size <= 1) return null;
+
+    let count = 0,
+      numCount = 0,
+      sum = 0;
+
+    sel.forEach((k) => {
+      const [rr, cc] = k.split('-').map(Number);
+      const raw = filteredData[rr]?.[leaf[cc].id as string];
+      count++;
+
+      const n = Number(raw);
+      if (!isNaN(n) && raw !== '' && raw !== null) {
+        numCount++;
+        sum += n;
+      }
     });
 
-    return res;
-  }, [columns, filteredData]);
+    return { count, numCount, sum, avg: numCount ? sum / numCount : null };
+  }, [sel, filteredData, leaf]);
 
-  /* -------------- virtual row paddings -------------- */
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const paddingTop = virtualRows[0]?.start ?? 0;
-  const paddingBottom = rowVirtualizer.getTotalSize() - (virtualRows.at(-1)?.end ?? 0);
+  /* ---------------- mouse ---------------- */
+  const handleMouseDown = (r: number, c: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    focusGrid();
 
-  /* ----------------------- render ----------------------- */
+    if (e.shiftKey && anchor) {
+      setCursor({ r, c });
+      setSel(makeRect(anchor.r, anchor.c, r, c));
+    } else if (e.ctrlKey || e.metaKey) {
+      setSel((prev) => {
+        const n = new Set(prev);
+        const k = keyCell(r, c);
+        n.has(k) ? n.delete(k) : n.add(k);
+        return n;
+      });
+      setAnchor({ r, c });
+      setCursor({ r, c });
+    } else {
+      selectSingle(r, c);
+    }
+  };
+
+  const handleMouseOver = (r: number, c: number, pressed: boolean) => {
+    if (pressed && anchor) {
+      setCursor({ r, c });
+      setSel(makeRect(anchor.r, anchor.c, r, c));
+    }
+  };
+
+  /* ---------------- keyboard ---------------- */
+  const handleKey = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const { key, code, shiftKey, ctrlKey, metaKey } = e;
+
+      /* --- copy --- */
+      const keyLower = key.toLowerCase();
+      const isCopy =
+        (ctrlKey || metaKey) &&
+        (code === 'KeyC' || keyLower === 'c' || keyLower === 'с');
+
+      if (isCopy) {
+        if (!sel.size) return;
+        e.preventDefault();
+
+        const rows: Record<number, Record<number, string>> = {};
+        sel.forEach((k) => {
+          const [rr, cc] = k.split('-').map(Number);
+          rows[rr] ??= {};
+          rows[rr][cc] = String(filteredData[rr][leaf[cc].id as string] ?? '');
+        });
+
+        const allCols = [
+          ...new Set(
+            Object.values(rows).flatMap((r) => Object.keys(r).map(Number)),
+          ),
+        ].sort((a, b) => a - b);
+
+        const tsv = Object.keys(rows)
+          .map(Number)
+          .sort((a, b) => a - b)
+          .map((rr) =>
+            allCols
+              .map((cc) => rows[rr][cc] ?? '')
+              .join('\t'),
+          )
+          .join('\n');
+
+        navigator.clipboard?.writeText(tsv).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = tsv;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        });
+
+        return requestAnimationFrame(() => parentRef.current?.focus());
+      }
+
+      /* --- navigation --- */
+      if (!cursor) return;
+      let { r, c } = cursor;
+      switch (key) {
+        case 'ArrowUp':
+          r = Math.max(0, r - 1);
+          break;
+        case 'ArrowDown':
+          r = Math.min(filteredData.length - 1, r + 1);
+          break;
+        case 'ArrowLeft':
+          c = Math.max(0, c - 1);
+          break;
+        case 'ArrowRight':
+          c = Math.min(leaf.length - 1, c + 1);
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+
+      if (shiftKey && anchor) {
+        setCursor({ r, c });
+        setSel(makeRect(anchor.r, anchor.c, r, c));
+      } else {
+        selectSingle(r, c);
+      }
+
+      rowVirt.scrollToIndex(r);
+      requestAnimationFrame(() => parentRef.current?.focus());
+    },
+    [anchor, cursor, sel, filteredData, leaf, rowVirt],
+  );
+
+  /* --------------------------- RENDER --------------------------- */
   return (
     <DndContext
       onDragEnd={({ active, over }: DragEndEvent) => {
         if (!over || active.id === over.id) return;
-        setColumnOrder((prev) =>
-          arrayMove(prev, prev.indexOf(active.id as string), prev.indexOf(over.id as string)),
+        table.setColumnOrder((prev) =>
+          arrayMove(
+            prev,
+            prev.indexOf(active.id as string),
+            prev.indexOf(over.id as string),
+          ),
         );
       }}
     >
-      <div ref={parentRef} className="max-h-[80vh] overflow-auto rounded-t-lg bg-white border border-slate-200">
-        <table
-          className="min-w-max w-max text-sm table-auto bg-white border-collapse -mt-px">
-          {/* colgroup */}
+      <>
+        <div
+          ref={parentRef}
+          tabIndex={0}
+          onKeyDown={handleKey}
+          className="max-h-[80vh] overflow-auto border bg-white focus:outline-none"
+        >
+          <table className="min-w-max w-max text-sm border-collapse select-none">
           <colgroup>
-            {table
-              .getHeaderGroups()[0]
-              ?.headers.filter((h) => typeof h.id === 'string')
-              .map((h) => (
-                <col key={h.id} style={{ width: `${columnWidths[h.id as string]}px` }} />
+              {leaf.map((col) => (
+                <col
+                  key={col.id}
+                  style={{ width: `${colWidths[col.id as string]}px` }}
+                />
               ))}
           </colgroup>
 
           {/* thead */}
-          <thead className="select-none sticky top-0 z-20
-                         bg-[color:var(--tbl-head-bg)] text-[color:var(--tbl-head-text)]
-                         text-[11px] font-semibold uppercase tracking-wide">
-            <SortableContext items={columnOrder}>
+            <thead className={`sticky top-0 bg-slate-100 uppercase font-semibold ${language === 'zh' ? 'text-[14px]' : 'text-[11px]'}`}>
+              <SortableContext items={table.getState().columnOrder}>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((h) => (
-                    <SortableTh key={h.id} id={h.id as string}>
+                      <ThSortable key={h.id} id={h.id as string}>
                       {flexRender(h.column.columnDef.header, h.getContext())}
-                    </SortableTh>
+                      </ThSortable>
                   ))}
                 </tr>
               ))}
@@ -254,41 +478,55 @@ export function DataTable<T extends Record<string, any>>({
 
           {/* tbody */}
           <tbody>
-            {paddingTop > 0 && (
-              <tr style={{ height: `${paddingTop}px` }}>
-                <td colSpan={columns.length} />
+              {padTop > 0 && (
+                <tr style={{ height: padTop }}>
+                  <td />
               </tr>
             )}
 
-            {virtualRows.map((vRow) => {
-              const row = table.getRowModel().rows[vRow.index];
-
-              /* подсветка строк с Delay */
-              const rawDelay = (row.original as Record<string, any>)['Delay'];
-              const hasDelay =
-                rawDelay !== undefined && rawDelay !== null && String(rawDelay).trim() !== '' && String(rawDelay) !== '0';
-
+              {vRows.map((vr) => {
+                const row = table.getRowModel().rows[vr.index];
               return (
-                <tr
-                  key={row.id}
-                  style={{ height: rowHeight }}
-                  className={`${hasDelay ? 'bg-red-100' :
-                                    vRow.index%2 ? 'bg-[color:var(--tbl-row-zebra)]' : ''}
-                             hover:bg-[color:var(--tbl-row-hover)] transition-colors`}
-                >
+                  <tr key={row.id} style={{ height: vr.size }}>
                   {row.getVisibleCells().map((cell) => {
-                    const colId = cell.column.id as string;
-                    const raw = cell.getValue();
-                    const display = numericColumns.includes(colId)
-                      ? raw !== undefined && raw !== null && raw !== ''
-                        ? Number(raw).toLocaleString('ru-RU')
-                        : ''
-                      : flexRender(cell.column.columnDef.cell, cell.getContext());
+                      const colIdx = leafIdx[cell.column.id as string];
+                      const k = keyCell(vr.index, colIdx);
+                      const isSel = sel.has(k);
+
+                      const isNum = numericCols.includes(
+                        cell.column.id as string,
+                      );
+                      const display = isNum
+                        ? cell.getValue() !== '' &&
+                          cell.getValue() !== null &&
+                          cell.getValue() !== undefined
+                          ? Number(cell.getValue()).toLocaleString('ru-RU')
+                          : ''
+                        : flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          );
+
                     return (
                       <td
                         key={cell.id}
-                        className={`border-t px-3 py-1 whitespace-nowrap overflow-hidden text-ellipsis
-                                   ${numericColumns.includes(colId) ? 'text-right tabular-nums' : ''}`}
+                          onMouseDown={(e) =>
+                            handleMouseDown(vr.index, colIdx, e)
+                          }
+                          onMouseOver={(e) =>
+                            handleMouseOver(
+                              vr.index,
+                              colIdx,
+                              e.buttons === 1,
+                            )
+                          }
+                          className={`border-t px-3 py-1 whitespace-nowrap ${
+                            isNum ? 'text-right tabular-nums' : ''
+                          } ${
+                            isSel
+                              ? 'bg-blue-50/70 outline outline-2 outline-blue-200'
+                              : ''
+                          }`}
                       >
                         {display}
                       </td>
@@ -298,24 +536,27 @@ export function DataTable<T extends Record<string, any>>({
               );
             })}
 
-            {paddingBottom > 0 && (
-              <tr style={{ height: `${paddingBottom}px` }}>
-                <td colSpan={columns.length} />
+              {padBot > 0 && (
+                <tr style={{ height: padBot }}>
+                  <td />
               </tr>
             )}
           </tbody>
 
-          {/* tfoot: sums of numeric columns */}
-          {!!filteredData.length && !!numericColumns.length && (
+            {/* tfoot */}
+            {!!filteredData.length && !!numericCols.length && (
             <tfoot className="bg-slate-50">
               <tr>
-                {table.getVisibleLeafColumns().map((col) =>
-                  numericColumns.includes(col.id as string) ? (
-                    <td key={col.id} className="font-semibold text-right text-[color:var(--tbl-head-bg)] bg-gray-50 border-t">
-                      {numericSums[col.id as string].toLocaleString('ru-RU')}
+                  {leaf.map((c) =>
+                    numericCols.includes(c.id as string) ? (
+                      <td
+                        key={c.id}
+                        className="border-t text-right font-semibold"
+                      >
+                        {numericSums[c.id as string].toLocaleString('ru-RU')}
                     </td>
                   ) : (
-                    <td key={col.id} />
+                      <td key={c.id} />
                   ),
                 )}
               </tr>
@@ -323,29 +564,62 @@ export function DataTable<T extends Record<string, any>>({
           )}
         </table>
       </div>
+
+        {/* stats banner */}
+        <StatsBanner stats={stats} />
+      </>
     </DndContext>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*                        DRAGGABLE <TH>                              */
+/*               Баннер с количеством, суммой, средним                */
 /* ------------------------------------------------------------------ */
-function SortableTh({ id, children }: { id: string; children: React.ReactNode }) {
-  const { setNodeRef, transform, transition, attributes, listeners } = useSortable({ id });
+function StatsBanner({ stats }: { stats: Stats }) {
+  if (!stats) return null;
 
+  const { count, numCount, sum, avg } = stats;
+  return (
+    <div
+      className="fixed bottom-4 right-4 bg-slate-800 text-white text-xs
+                 rounded shadow-lg px-3 py-2 space-x-3 pointer-events-none
+                 select-none z-50"
+    >
+      <span>{count} яч.</span>
+      {numCount > 0 && (
+        <>
+          <span>Σ {sum.toLocaleString('ru-RU')}</span>
+          <span>
+            ̅x {avg!.toLocaleString('ru-RU', { maximumFractionDigits: 2 })}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*                         Draggable TH                               */
+/* ------------------------------------------------------------------ */
+function ThSortable({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, attributes, listeners, transform, transition } =
+    useSortable({ id });
   return (
     <th
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
-      className="px-3 py-[10px] text-center whitespace-nowrap
-                 first:rounded-tl-lg last:rounded-tr-lg"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className="px-3 py-[10px] text-center first:rounded-tl-lg last:rounded-tr-lg"
     >
-      <div className="flex items-center gap-1 justify-center w-full">
-        <span {...listeners} className="cursor-move font-medium whitespace-nowrap flex items-center gap-1">
+      <span {...listeners} className="cursor-move">
           {children}
         </span>
-      </div>
     </th>
   );
-}
+} 

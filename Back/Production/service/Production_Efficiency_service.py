@@ -46,12 +46,29 @@ def get_production_efficiency_data(start_date: date, end_date: date) -> Dict[str
         FACT_TIME
     from Views_For_Plan.DailyPlan_CustomWS
     WHERE OnlyDate between ? and ?
-    ORDER BY OnlyDate, WorkShopName_CH, WorkCenter_Custom_CN, OrderNumber
+    ORDER BY OnlyDate, WorkShopName_CH, WorkCenter_Custom_CN, Line_No
     """
     
     try:
         with get_connection() as conn:
             data = _fetch_query(conn, sql, (start_date, end_date))
+            
+            # Форматируем даты в русский формат (DD.MM.YYYY)
+            for row in data:
+                if 'OnlyDate' in row and row['OnlyDate']:
+                    # Преобразуем дату в русский формат
+                    if isinstance(row['OnlyDate'], str):
+                        # Если дата уже в строковом формате, парсим её
+                        from datetime import datetime
+                        try:
+                            date_obj = datetime.fromisoformat(row['OnlyDate'].split('T')[0])
+                            row['OnlyDate'] = date_obj.strftime('%d.%m.%Y')
+                        except:
+                            # Если не удалось распарсить, оставляем как есть
+                            pass
+                    elif hasattr(row['OnlyDate'], 'strftime'):
+                        # Если это объект date
+                        row['OnlyDate'] = row['OnlyDate'].strftime('%d.%m.%Y')
             
             return {
                 "data": data,
@@ -64,54 +81,4 @@ def get_production_efficiency_data(start_date: date, end_date: date) -> Dict[str
         raise Exception(f"Ошибка при получении данных о эффективности производства: {str(e)}")
 
 
-def get_production_efficiency_summary(start_date: date, end_date: date) -> Dict[str, Any]:
-    """
-    Возвращает сводные данные о эффективности производства за выбранный период
-    
-    Args:
-        start_date: Начальная дата периода
-        end_date: Конечная дата периода
-    
-    Returns:
-        Словарь со сводными данными
-    """
-    
-    # SQL запрос для получения сводных данных
-    sql = """
-    SELECT
-        WorkShopName_CH,
-        WorkCenter_Custom_CN,
-        COUNT(DISTINCT OrderNumber) as TotalOrders,
-        SUM(Plan_QTY) as TotalPlanQty,
-        SUM(FACT_QTY) as TotalFactQty,
-        SUM(Plan_TIME) as TotalPlanTime,
-        SUM(FACT_TIME) as TotalFactTime,
-        CASE 
-            WHEN SUM(Plan_QTY) > 0 
-            THEN ROUND((SUM(FACT_QTY) * 100.0 / SUM(Plan_QTY)), 2)
-            ELSE 0 
-        END as QtyEfficiency,
-        CASE 
-            WHEN SUM(Plan_TIME) > 0 
-            THEN ROUND((SUM(FACT_TIME) * 100.0 / SUM(Plan_TIME)), 2)
-            ELSE 0 
-        END as TimeEfficiency
-    FROM Views_For_Plan.DailyPlan_CustomWS
-    WHERE OnlyDate between ? and ?
-    GROUP BY WorkShopName_CH, WorkCenter_Custom_CN
-    ORDER BY WorkShopName_CH, WorkCenter_Custom_CN
-    """
-    
-    try:
-        with get_connection() as conn:
-            summary_data = _fetch_query(conn, sql, (start_date, end_date))
-            
-            return {
-                "summary": summary_data,
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "total_work_centers": len(summary_data)
-            }
-            
-    except Exception as e:
-        raise Exception(f"Ошибка при получении сводных данных о эффективности производства: {str(e)}") 
+ 

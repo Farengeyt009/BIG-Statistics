@@ -82,7 +82,7 @@ const CustomTableBuilder = forwardRef<CustomTableHandle<Order>, Props>(
           <DataTable
             data={displayedData}
             columnsOverrides={columnsOverrides}
-            defaultVisible={selectedKeys}
+            columnsOrder={selectedKeys} 
             numericKeys={NUMERIC_KEYS}      
             onTableReady={onTableReady}
           />

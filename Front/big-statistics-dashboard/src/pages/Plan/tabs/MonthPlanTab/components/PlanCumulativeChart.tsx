@@ -43,6 +43,23 @@ const human = (v: number | null | undefined) =>
 const pct = (num: number, den: number) =>
   den === 0 ? '—' : `${Math.round((num / den) * 100)} %`;
 
+// Функция для парсинга даты в русском формате DD.MM.YYYY
+const parseRussianDate = (dateStr: string): Date => {
+  if (!dateStr) return new Date();
+  
+  // Проверяем, является ли дата в русском формате DD.MM.YYYY
+  const russianDateRegex = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+  const match = dateStr.match(russianDateRegex);
+  
+  if (match) {
+    const [, day, month, year] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  // Если не русский формат, пробуем стандартный парсинг
+  return new Date(dateStr);
+};
+
 /* ---------- подготовка данных ---------- */
 function buildData(rows: PlanCumulativeChartProps['table2']): DataPoint[] {
   let othP = 0,
@@ -51,7 +68,7 @@ function buildData(rows: PlanCumulativeChartProps['table2']): DataPoint[] {
     whF = 0;
 
   const arr: DataPoint[] = rows.map((row) => {
-    const day = new Date(row.Date).getDate().toString().padStart(2, '0');
+    const day = parseRussianDate(row.Date).getDate().toString().padStart(2, '0');
 
     othP += toNum(row.OtherPlanTime);
     whP += toNum(row.WaterHeaterPlanTime);
@@ -80,7 +97,7 @@ function buildData(rows: PlanCumulativeChartProps['table2']): DataPoint[] {
 // Для Daily: без накопления, просто значения за каждый день
 function buildDataDaily(rows: PlanCumulativeChartProps['table2']): DataPoint[] {
   let arr: DataPoint[] = rows.map((row) => {
-    const day = new Date(row.Date).getDate().toString().padStart(2, '0');
+    const day = parseRussianDate(row.Date).getDate().toString().padStart(2, '0');
     const othPlan = toNum(row.OtherPlanTime);
     const whPlan = toNum(row.WaterHeaterPlanTime);
     const othFact = toNum(row.OtherFactTime);
@@ -231,12 +248,15 @@ const PlanCumulativeMirrorChart: React.FC<PlanCumulativeChartProps> = ({
               : 0;
           // Суммируем часы по группам за первые (today-1) дней
           let planHeater = 0, factHeater = 0, planWH = 0, factWH = 0;
-          for (let i = 0; i < table2.length && i < today - 1; ++i) {
+          for (let i = 0; i < table2.length; ++i) {
             const row = table2[i];
-            planHeater += toNum(row.OtherPlanTime);
-            factHeater += toNum(row.OtherFactTime);
-            planWH += toNum(row.WaterHeaterPlanTime);
-            factWH += toNum(row.WaterHeaterFactTime);
+            const dayOfMonth = parseRussianDate(row.Date).getDate();
+            if (dayOfMonth <= today - 1) {
+              planHeater += toNum(row.OtherPlanTime);
+              factHeater += toNum(row.OtherFactTime);
+              planWH += toNum(row.WaterHeaterPlanTime);
+              factWH += toNum(row.WaterHeaterFactTime);
+            }
           }
           const diffHeater = factHeater - planHeater;
           const diffWH = factWH - planWH;

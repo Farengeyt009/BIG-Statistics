@@ -58,7 +58,7 @@ export default function ExportButton<T>({
     );
 
     const cols = maxLens.map((len) => ({
-      wch: Math.min(len + 2, 50), // +2 — небольшой отступ; 50 — максимум
+      wch: Math.max(11, Math.min(len + 2, 50)), // минимальная ширина 11 единиц Excel, +2 — небольшой отступ; 50 — максимум
     }));
 
     /* ---------- 4. формируем лист ---------- */

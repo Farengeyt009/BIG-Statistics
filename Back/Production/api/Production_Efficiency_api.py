@@ -47,6 +47,9 @@ def production_efficiency_endpoint():
     
     try:
         data = get_production_efficiency_data(start_date, end_date)
+        # Обновляем формат дат в ответе API
+        data['start_date'] = start_date.strftime('%d.%m.%Y')
+        data['end_date'] = end_date.strftime('%d.%m.%Y')
         return jsonify(data), 200
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

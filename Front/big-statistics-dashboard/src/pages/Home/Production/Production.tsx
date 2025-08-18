@@ -4,7 +4,7 @@ import { kpiData, pagesTable, refTable } from './utils/mockData';
 import { MetricCard } from '../../../components/KPICards';
 import { TrendChart } from './components/TrendChart';
 import { MiniTable } from './components/MiniTable';
-import { DatePicker as CustomDatePicker } from '../../../components/DatePicker';
+import { DateRangePickerPro } from '../../../components/DatePicker';
 import { useTranslation } from 'react-i18next';
 import homeTranslations from '../HomeTranslation.json';
 import { ProductionProvider } from './ProductionContext';
@@ -221,12 +221,14 @@ export default function Production() {
         </div>
 
                  {/* Блок с пикером ― прижат к правому краю благодаря ml-auto */}
-         <div className="ml-auto">
-           <CustomDatePicker
-             selectedDate={selectedDate}
-             onChange={setSelectedDate}
+         <div className="mr-auto">
+           <DateRangePickerPro
+             mode="single"
+             startDate={selectedDate}
+             onApply={(date) => setSelectedDate(date)}
              placeholder=""
              locale="en"
+             position="right"
            />
          </div>
       </section>

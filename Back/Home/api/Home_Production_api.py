@@ -40,6 +40,9 @@ def production_endpoint():
     
     try:
         data = get_production_data(selected_date)
+        # Обновляем формат даты в ответе API
+        if selected_date:
+            data['selected_date'] = selected_date.strftime('%d.%m.%Y')
         return jsonify(data), 200
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

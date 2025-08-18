@@ -39,6 +39,15 @@ def _fetch_query(conn, sql: str, *params) -> List[Dict[str, Any]]:
     return [dict(zip(cols, row)) for row in cur.fetchall()]
 
 
+def _format_date_ru(date_obj) -> str:
+    """Форматирует дату в российском формате DD.MM.YYYY."""
+    if date_obj is None:
+        return ""
+    if hasattr(date_obj, 'strftime'):
+        return date_obj.strftime("%d.%m.%Y")
+    return str(date_obj)
+
+
 # --------------------------------------------------------------------------- #
 # public API                                                                  #
 # --------------------------------------------------------------------------- #
@@ -95,6 +104,11 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
     with get_connection() as conn:
         t1 = _fetch_query(conn, sql_table1, first_day, last_day)
         t2 = _fetch_query(conn, sql_table2, first_day, last_day)
+        
+        # Форматируем даты в таблице 2 в русский формат
+        for row in t2:
+            if 'Date' in row and row['Date']:
+                row['Date'] = _format_date_ru(row['Date'])
 
     return {
         "year": year,

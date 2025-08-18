@@ -15,7 +15,7 @@ import datetime as _dt
 from collections import defaultdict
 from typing import Any, Dict
 
-from database.db_connector import get_connection
+from Back.database.db_connector import get_connection
 
 # ---------------------------------------------------------------------------
 # helpers

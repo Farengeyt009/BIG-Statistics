@@ -64,6 +64,9 @@ module.exports = {
         '88': '22rem',
         '128': '32rem',
       },
+      gridTemplateColumns: {
+        '16': 'repeat(16, minmax(0, 1fr))',
+      },
       borderRadius: {
         'xl': '0.75rem',
         '2xl': '1rem',

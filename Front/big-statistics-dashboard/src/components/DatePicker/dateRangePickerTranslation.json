@@ -1,0 +1,35 @@
+{
+  "en": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7days": "Last 7 days",
+    "last30days": "Last 30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "cancel": "Cancel",
+    "apply": "Apply",
+    "selectDate": "Select date"
+  },
+  "zh": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "last7days": "最近7天",
+    "last30days": "最近30天",
+    "thisMonth": "本月",
+    "lastMonth": "上月",
+    "cancel": "取消",
+    "apply": "应用",
+    "selectDate": "选择日期"
+  },
+  "ru": {
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "last7days": "Последние 7 дней",
+    "last30days": "Последние 30 дней",
+    "thisMonth": "Этот месяц",
+    "lastMonth": "Прошлый месяц",
+    "cancel": "Отмена",
+    "apply": "Применить",
+    "selectDate": "Выберите дату"
+  }
+} 

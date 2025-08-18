@@ -1,6 +1,7 @@
 # Run_Server.py
 
-from flask import Flask
+import os
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 
 from Back.orders.api.CustomerOrdersInformation_views import CustomerOrdersInformation_views_bp
@@ -9,8 +10,16 @@ from Back.Plan.api.Month_PlanFact_Gantt_api import init_app as planfact_init_app
 from Back.Plan.api.Month_PlanFactSummary_api import init_app as planfact_summary_init_app
 from Back.Home.api.Home_Production_api import init_app as home_production_init_app
 from Back.Production.api.Production_Efficiency_api import init_app as production_efficiency_init_app
+from Back.Production.api.Working_Calendar.WorkingCalendar_api import init_app as working_calendar_init_app
+from Back.Production.api.Working_Calendar.WorkingSchedules_api import working_calendar_api
+from Back.Production.api.Working_Calendar.Assign_Work_Schedules_api import init_app as assign_work_schedules_init_app
 
-app = Flask(__name__)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+FRONT_DIST_DIR = os.path.join(BASE_DIR, 'Front', 'big-statistics-dashboard', 'dist')
+
+# static_url_path="" → статика доступна с корня (/, /assets/*)
+app = Flask(__name__, static_folder=FRONT_DIST_DIR, static_url_path='')
 CORS(app)  # Разрешаем кросс-доменные запросы (CORS) от фронтенда
 
 # Регистрация маршрутов
@@ -20,6 +29,26 @@ planfact_init_app(app)
 planfact_summary_init_app(app)
 home_production_init_app(app)
 production_efficiency_init_app(app)
+working_calendar_init_app(app)
+app.register_blueprint(working_calendar_api, url_prefix='/api/working-calendar')
+assign_work_schedules_init_app(app)
+
+# ----- Раздача собранного фронтенда (SPA) -----
+
+@app.route('/')
+def index():
+    # Главная страница SPA
+    return send_from_directory(app.static_folder, 'index.html')
+
+
+@app.route('/<path:path>')
+def static_proxy(path):
+    # Если запрашиваемый файл существует в dist — отдаём его
+    full_path = os.path.join(app.static_folder or '', path)
+    if app.static_folder and os.path.exists(full_path):
+        return send_from_directory(app.static_folder, path)
+    # Иначе — SPA fallback на index.html (для маршрутов React Router)
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

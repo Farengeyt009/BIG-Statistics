@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
-from database.db_connector import get_connection
+from Back.database.db_connector import get_connection
 
 def try_convert_value(value):
     if value is None:
@@ -10,9 +10,9 @@ def try_convert_value(value):
     if isinstance(value, Decimal):
         return float(value)
 
-    # Уже дата/время → в ISO
+    # Уже дата/время → в русский формат
     if isinstance(value, (datetime, date)):
-        return value.strftime("%Y-%m-%d")
+        return value.strftime("%d.%m.%Y")
 
     # Строка → попытка преобразовать
     if isinstance(value, str):
@@ -29,7 +29,7 @@ def try_convert_value(value):
             if v.endswith("GMT"):
                 v = v.replace("GMT", "").strip()
                 dt = datetime.strptime(v, "%a, %d %b %Y %H:%M:%S")
-                return dt.strftime("%Y-%m-%d")
+                return dt.strftime("%d.%m.%Y")
         except ValueError:
             pass
 

@@ -1,4 +1,4 @@
-from database.db_connector import get_connection
+from Back.database.db_connector import get_connection
 from collections import defaultdict
 import datetime
 import decimal

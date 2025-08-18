@@ -9,7 +9,7 @@ export default defineConfig({
     port: 3000, // Стандартный порт для React приложений
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000', // Локальный бэкенд на этой же машине
         changeOrigin: true,
       },
     },

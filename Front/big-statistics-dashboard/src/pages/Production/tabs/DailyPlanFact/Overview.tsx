@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { DataTableCustomColumn } from '../../../../components/DataTableCustomColumn/DataTableCustomColumn';
 import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressCell';
 import { ChevronRight, ChevronDown } from "lucide-react";
-import { DateRangePicker } from '../../../../components/DatePicker';
+
 import productionTranslations from '../../ProductionTranslation.json';
 
 // Универсальный рендерер иерархических ячеек (точно как в Plan)
@@ -49,6 +49,12 @@ function formatPercent(value: any): string {
 // Функция форматирования даты в русский формат
 function formatDate(dateString: any): string {
   if (!dateString || dateString === '') return '—';
+  
+  // Если дата уже в русском формате DD.MM.YYYY, возвращаем как есть
+  if (typeof dateString === 'string' && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateString)) {
+    return dateString;
+  }
+  
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '—';
@@ -257,17 +263,18 @@ function processWorkshop(
   }
 }
 
-const Overview: React.FC = () => {
+interface OverviewProps {
+  data: any[];
+  loading: boolean;
+  error: string | null;
+}
+
+const Overview: React.FC<OverviewProps> = ({ data, loading, error }) => {
   const { t, i18n } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh';
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedWorkshops, setExpandedWorkshops] = useState<Set<string>>(new Set());
   const [expandedWorkCenters, setExpandedWorkCenters] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [startDate, setStartDate] = useState<Date | null>(new Date());
-  const [endDate, setEndDate] = useState<Date | null>(new Date());
 
   /** -------------------- функция перевода названий цехов -------------------- */
   const translateWorkShop = (workShopName: string) => {
@@ -283,38 +290,7 @@ const Overview: React.FC = () => {
     return translation ? translation : trimmedName;
   };
 
-  // Функция для загрузки данных с API
-  const fetchData = useCallback(async (start: Date | null, end: Date | null) => {
-    if (!start || !end) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Форматируем даты для API
-      const startFormatted = start.toISOString().split('T')[0];
-      const endFormatted = end.toISOString().split('T')[0];
-      
-      const response = await fetch(`/api/Production/Efficiency?start_date=${startFormatted}&end_date=${endFormatted}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      setData(result.data || []);
-    } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  // Загрузка данных при изменении дат
-  useEffect(() => {
-    fetchData(startDate, endDate);
-  }, [startDate, endDate, fetchData]);
 
   // Получаем данные для таблицы с группировкой
   const treeData = getProductionTree(data, expandedWorkshops, expandedWorkCenters, expandedDates, translateWorkShop, translateWorkCenter);
@@ -426,23 +402,6 @@ const Overview: React.FC = () => {
   return (
     <div className="mt-6">
       <div className="bg-white p-4">
-        <div className="mb-3">
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="block font-bold text-lg text-[#0d1c3d] mb-1 text-center">
-                Select Date
-              </label>
-              <DateRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                placeholder="Select date range"
-                className="w-64"
-              />
-            </div>
-          </div>
-        </div>
         
                         <div className="w-fit">
           <DataTableCustomColumn

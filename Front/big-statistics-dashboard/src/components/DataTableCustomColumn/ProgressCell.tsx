@@ -7,7 +7,7 @@ interface ProgressCellProps {
 const ProgressCell: React.FC<ProgressCellProps> = ({ value }) => {
   const percentNum = Number(String(value).replace(/[^\d.-]/g, ''));
   let barColor = '#93c5fd'; // тусклый синий
-  if (percentNum >= 100) barColor = '#86efac'; // тусклый зеленый
+  if (percentNum >= 95) barColor = '#86efac'; // тусклый зеленый
   return (
     <div style={{ minWidth: 60, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{
