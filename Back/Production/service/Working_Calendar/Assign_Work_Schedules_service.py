@@ -77,6 +77,28 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
     
     # SQL запрос для Table1: получение списка цехов и рабочих центров с данными о выпуске
     sql_table1 = """
+    ;WITH DP_Agg AS (
+        SELECT
+            WorkShopName_CH,
+            WorkCenter_Custom_CN,
+            SUM(Plan_QTY)  AS Plan_QTY,
+            SUM(FACT_QTY)  AS FACT_QTY,
+            SUM(Plan_TIME) AS Plan_TIME,
+            SUM(FACT_TIME) AS FACT_TIME
+        FROM Views_For_Plan.DailyPlan_CustomWS
+        WHERE OnlyDate = ?
+        GROUP BY WorkShopName_CH, WorkCenter_Custom_CN
+    ),
+    WSBD_Agg AS (
+        SELECT
+            WorkShopID,
+            WorkCenterID,
+            SUM(PeopleWorkHours) AS Shift_Time
+        FROM TimeLoss.WorkSchedules_ByDay
+        WHERE DeleteMark = 0                  -- активные строки
+          AND OnlyDate   = ?
+        GROUP BY WorkShopID, WorkCenterID
+    )
     SELECT
         WS.WorkShop_CustomWS,
         WS.WorkCenter_CustomWS,
@@ -84,28 +106,22 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
         WS.WorkShopName_EN,
         WS.WorkCenterName_ZH,
         WS.WorkCenterName_EN,
-        COALESCE(SUM(DP.Plan_QTY), 0)  AS Plan_QTY,
-        COALESCE(SUM(DP.FACT_QTY), 0)  AS FACT_QTY,
-        COALESCE(SUM(DP.Plan_TIME), 0) AS Plan_TIME,
-        COALESCE(SUM(DP.FACT_TIME), 0) AS FACT_TIME,
-        CAST(0 AS int) AS Shift_Time, 
-        CAST(0 AS int) AS Time_Loss, 
-        CAST(0 AS int) AS People
+        COALESCE(DP.Plan_QTY,  0) AS Plan_QTY,
+        COALESCE(DP.FACT_QTY,  0) AS FACT_QTY,
+        COALESCE(DP.Plan_TIME, 0) AS Plan_TIME,
+        COALESCE(DP.FACT_TIME, 0) AS FACT_TIME,
+        COALESCE(WA.Shift_Time, 0) AS Shift_Time,
+        CAST(0 AS int) AS Time_Loss
     FROM Ref.WorkShop_CustomWS AS WS
-    LEFT JOIN Views_For_Plan.DailyPlan_CustomWS AS DP
-        ON WS.WorkShop_CustomWS   = DP.WorkShopName_CH
-       AND WS.WorkCenter_CustomWS = DP.WorkCenter_Custom_CN
-       AND DP.OnlyDate = ?
-    GROUP BY
-        WS.WorkShop_CustomWS,
-        WS.WorkCenter_CustomWS,
-        WS.WorkShopName_ZH,
-        WS.WorkShopName_EN,
-        WS.WorkCenterName_ZH,
-        WS.WorkCenterName_EN
+    LEFT JOIN DP_Agg  AS DP
+           ON WS.WorkShop_CustomWS   = DP.WorkShopName_CH
+          AND WS.WorkCenter_CustomWS = DP.WorkCenter_Custom_CN
+    LEFT JOIN WSBD_Agg AS WA
+           ON WS.WorkShop_CustomWS   = WA.WorkShopID
+          AND WS.WorkCenter_CustomWS = WA.WorkCenterID
     ORDER BY WS.WorkShop_CustomWS, WS.WorkCenter_CustomWS
     """
-    
+
     # SQL запрос для Table2: получение графиков работ с агрегированными данными
     sql_table2 = """
     SELECT 
@@ -156,11 +172,11 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
     WHERE ws.IsDeleted = 0
     ORDER BY ws.IsFavorite DESC, ws.ScheduleID DESC;
     """
-    
+
     try:
         with get_connection() as conn:
-            # Получаем данные для Table1 с передачей даты
-            table1_data = _fetch_query(conn, sql_table1, (selected_date,))
+            # Получаем данные для Table1 с передачей даты (два параметра для двух CTE)
+            table1_data = _fetch_query(conn, sql_table1, (selected_date, selected_date))
             
             # Получаем данные для Table2 (графики работ с агрегированными данными)
             table2_data = _fetch_query(conn, sql_table2)

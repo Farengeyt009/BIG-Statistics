@@ -1,5 +1,5 @@
 import pyodbc
-from Back.config import DB_CONFIG
+from config import DB_CONFIG
 
 def get_connection():
     try:

@@ -12,6 +12,7 @@ import json
 working_calendar_api = Blueprint('working_calendar_api', __name__)
 working_calendar_service = WorkingCalendarService()
 
+
 @working_calendar_api.route('/work-centers', methods=['GET'])
 def get_work_centers():
     """
@@ -20,16 +21,16 @@ def get_work_centers():
     """
     try:
         work_centers = working_calendar_service.get_work_centers()
-        
+
         response = {
             'success': True,
             'data': work_centers,
             'message': 'Work centers retrieved successfully',
             'count': len(work_centers)
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -39,6 +40,7 @@ def get_work_centers():
         }
         return jsonify(error_response), 500
 
+
 @working_calendar_api.route('/work-centers/<work_center_id>', methods=['GET'])
 def get_work_center_by_id(work_center_id: str):
     """
@@ -47,7 +49,7 @@ def get_work_center_by_id(work_center_id: str):
     """
     try:
         work_center = working_calendar_service.get_work_center_by_id(work_center_id)
-        
+
         if work_center:
             response = {
                 'success': True,
@@ -62,7 +64,7 @@ def get_work_center_by_id(work_center_id: str):
                 'message': f'Work center with ID {work_center_id} not found'
             }
             return jsonify(response), 404
-            
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -70,6 +72,7 @@ def get_work_center_by_id(work_center_id: str):
             'message': f'Error retrieving work center: {str(e)}'
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/work-centers/count', methods=['GET'])
 def get_work_centers_count():
@@ -79,15 +82,15 @@ def get_work_centers_count():
     """
     try:
         count = working_calendar_service.get_work_centers_count()
-        
+
         response = {
             'success': True,
             'data': {'count': count},
             'message': 'Work centers count retrieved successfully'
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -95,6 +98,7 @@ def get_work_centers_count():
             'message': f'Error retrieving work centers count: {str(e)}'
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/work-schedule-types', methods=['GET'])
 def get_work_schedule_types():
@@ -104,16 +108,16 @@ def get_work_schedule_types():
     """
     try:
         work_schedule_types = working_calendar_service.get_work_schedule_types()
-        
+
         response = {
             'success': True,
             'data': work_schedule_types,
             'message': 'Work schedule types retrieved successfully',
             'count': len(work_schedule_types)
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -122,6 +126,7 @@ def get_work_schedule_types():
             'count': 0
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/health', methods=['GET'])
 def health_check():
@@ -133,7 +138,7 @@ def health_check():
         # Проверяем подключение к БД, получая количество рабочих центров и типов графиков
         work_centers_count = working_calendar_service.get_work_centers_count()
         work_schedule_types = working_calendar_service.get_work_schedule_types()
-        
+
         response = {
             'success': True,
             'data': {
@@ -144,9 +149,9 @@ def health_check():
             },
             'message': 'Working_Calendar API is healthy'
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -160,6 +165,7 @@ def health_check():
         }
         return jsonify(error_response), 500
 
+
 # НОВЫЕ ENDPOINTS ДЛЯ РАБОТЫ С ГРАФИКАМИ
 
 @working_calendar_api.route('/work-schedules', methods=['GET'])
@@ -171,29 +177,29 @@ def get_work_schedules():
     try:
         workshop_id = request.args.get('workshopId')
         include_deleted = request.args.get('includeDeleted', 'false').lower() == 'true'
-        
+
         # ✅ ОТЛАДКА: Логируем параметры запроса
         print(f"🔍 API: Received request - workshop_id: {workshop_id}, include_deleted: {include_deleted}")
-        
+
         schedules = working_calendar_service.get_work_schedules(
             workshop_id=workshop_id,
             include_deleted=include_deleted
         )
-        
+
         # ✅ ОТЛАДКА: Логируем результат
         print(f"🔍 API: Retrieved {len(schedules)} schedules")
         if schedules:
             print(f"🔍 API: First schedule workshop_id: {schedules[0].get('workshopId')}")
-        
+
         response = {
             'success': True,
             'data': schedules,
             'message': 'Work schedules retrieved successfully',
             'count': len(schedules)
         }
-        
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         print(f"🔍 API: Error in get_work_schedules: {str(e)}")
         error_response = {
@@ -204,6 +210,7 @@ def get_work_schedules():
         }
         return jsonify(error_response), 500
 
+
 @working_calendar_api.route('/work-schedules/<int:schedule_id>', methods=['GET'])
 def get_work_schedule_by_id(schedule_id: int):
     """
@@ -212,7 +219,7 @@ def get_work_schedule_by_id(schedule_id: int):
     """
     try:
         schedule = working_calendar_service.get_work_schedule_by_id(schedule_id)
-        
+
         if schedule:
             response = {
                 'success': True,
@@ -227,7 +234,7 @@ def get_work_schedule_by_id(schedule_id: int):
                 'message': f'Work schedule with ID {schedule_id} not found'
             }
             return jsonify(response), 404
-            
+
     except Exception as e:
         error_response = {
             'success': False,
@@ -235,6 +242,7 @@ def get_work_schedule_by_id(schedule_id: int):
             'message': f'Error retrieving work schedule: {str(e)}'
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/work-schedules', methods=['POST'])
 def create_work_schedule():
@@ -244,7 +252,7 @@ def create_work_schedule():
     """
     try:
         data = request.get_json()
-        
+
         # Валидация данных
         required_fields = ['workshopId', 'name', 'isFavorite', 'lines']
         for field in required_fields:
@@ -254,9 +262,9 @@ def create_work_schedule():
                     'error': 'VALIDATION_FAILED',
                     'message': f'Missing required field: {field}'
                 }), 400
-        
+
         result = working_calendar_service.create_work_schedule(data)
-        
+
         # result ожидаем вида: {'scheduleId': new_id, 'scheduleCode': 'WS-...', 'updatedAt': '...'}
         response = {
             'success': True,
@@ -264,17 +272,17 @@ def create_work_schedule():
             'message': 'Work schedule created successfully'
         }
         return jsonify(response), 201
-            
-    except ConflictError as e:   # ✅ чтобы не превращалось в 500
+
+    except ConflictError as e:  # ✅ чтобы не превращалось в 500
         return jsonify({
-            'success': False, 
-            'error': 'CONFLICT', 
+            'success': False,
+            'error': 'CONFLICT',
             'message': str(e)
         }), 409
     except ValidationError as e:
         return jsonify({
-            'success': False, 
-            'error': 'VALIDATION_FAILED', 
+            'success': False,
+            'error': 'VALIDATION_FAILED',
             'message': str(e)
         }), 400
     except Exception as e:
@@ -285,6 +293,7 @@ def create_work_schedule():
         }
         return jsonify(error_response), 500
 
+
 @working_calendar_api.route('/work-schedules/<int:schedule_id>', methods=['PUT'])
 def update_work_schedule(schedule_id: int):
     """
@@ -293,7 +302,7 @@ def update_work_schedule(schedule_id: int):
     """
     try:
         data = request.get_json()
-        
+
         # Валидация данных
         required_fields = ['workshopId', 'name', 'isFavorite', 'lines', 'updatedAt']
         for field in required_fields:
@@ -303,9 +312,9 @@ def update_work_schedule(schedule_id: int):
                     'error': 'VALIDATION_FAILED',
                     'message': f'Missing required field: {field}'
                 }), 400
-        
+
         result = working_calendar_service.update_work_schedule(schedule_id, data)
-        
+
         # result ожидаем вида: {'scheduleId': new_id, 'scheduleCode': 'WS-...', 'updatedAt': '...'}
         response = {
             'success': True,
@@ -313,17 +322,17 @@ def update_work_schedule(schedule_id: int):
             'message': 'Work schedule replaced successfully'
         }
         return jsonify(response), 200
-            
+
     except ConflictError as e:
         return jsonify({
-            'success': False, 
-            'error': 'CONFLICT', 
+            'success': False,
+            'error': 'CONFLICT',
             'message': str(e)
         }), 409
     except ValidationError as e:
         return jsonify({
-            'success': False, 
-            'error': 'VALIDATION_FAILED', 
+            'success': False,
+            'error': 'VALIDATION_FAILED',
             'message': str(e)
         }), 400
     except Exception as e:
@@ -334,6 +343,7 @@ def update_work_schedule(schedule_id: int):
         }
         return jsonify(error_response), 500
 
+
 @working_calendar_api.route('/work-schedules/<int:schedule_id>', methods=['DELETE'])
 def delete_work_schedule(schedule_id: int):
     """
@@ -342,7 +352,7 @@ def delete_work_schedule(schedule_id: int):
     """
     try:
         success = working_calendar_service.delete_work_schedule(schedule_id)
-        
+
         if success:
             return '', 204
         else:
@@ -351,13 +361,14 @@ def delete_work_schedule(schedule_id: int):
                 'message': 'Failed to delete work schedule'
             }
             return jsonify(response), 500
-            
+
     except Exception as e:
         error_response = {
             'success': False,
             'message': f'Error deleting work schedule: {str(e)}'
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/work-schedules/<int:schedule_id>/restore', methods=['POST'])
 def restore_work_schedule(schedule_id: int):
@@ -367,7 +378,7 @@ def restore_work_schedule(schedule_id: int):
     """
     try:
         success = working_calendar_service.restore_work_schedule(schedule_id)
-        
+
         if success:
             response = {
                 'success': True,
@@ -380,13 +391,14 @@ def restore_work_schedule(schedule_id: int):
                 'message': 'Failed to restore work schedule'
             }
             return jsonify(response), 500
-            
+
     except Exception as e:
         error_response = {
             'success': False,
             'message': f'Error restoring work schedule: {str(e)}'
         }
         return jsonify(error_response), 500
+
 
 @working_calendar_api.route('/work-schedules/<int:schedule_id>/clone', methods=['POST'])
 def clone_work_schedule(schedule_id: int):
@@ -397,9 +409,9 @@ def clone_work_schedule(schedule_id: int):
     try:
         data = request.get_json() or {}
         new_name = data.get('name')
-        
+
         result = working_calendar_service.clone_work_schedule(schedule_id, new_name)
-        
+
         # result ожидаем вида: {'scheduleId': new_id, 'scheduleCode': 'WS-...', 'updatedAt': '...'}
         response = {
             'success': True,
@@ -407,11 +419,11 @@ def clone_work_schedule(schedule_id: int):
             'message': 'Work schedule cloned successfully'
         }
         return jsonify(response), 201
-            
+
     except NotFoundError as e:
         return jsonify({
-            'success': False, 
-            'error': 'NOT_FOUND', 
+            'success': False,
+            'error': 'NOT_FOUND',
             'message': str(e)
         }), 404
     except Exception as e:

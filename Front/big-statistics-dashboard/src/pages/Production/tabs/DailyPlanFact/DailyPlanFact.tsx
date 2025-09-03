@@ -1,10 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import Overview from './Overview';
 import Table from './Table';
 import type { Table as TableType } from '@tanstack/react-table';
 import ExportButton from '../../../../components/ExportButton';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+
+// Форматирование локальной даты без сдвига часового пояса
+const toYmdLocal = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const DailyPlanFact: React.FC = () => {
   const { i18n } = useTranslation();
@@ -15,36 +24,26 @@ const DailyPlanFact: React.FC = () => {
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [tableRef, setTableRef] = useState<TableType<any> | null>(null);
   const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Функция загрузки данных
-  const fetchData = useCallback(async (start: Date | null, end: Date | null) => {
-    if (!start || !end) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Форматируем даты для API
-      const startFormatted = start.toISOString().split('T')[0];
-      const endFormatted = end.toISOString().split('T')[0];
-      
-      const response = await fetch(`/api/Production/Efficiency?start_date=${startFormatted}&end_date=${endFormatted}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
+  // React Query: загрузка эффективности
+  const { data: rqData, isLoading, isFetching, error } = useQuery({
+    queryKey: ['efficiency', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
+    enabled: Boolean(startDate && endDate),
+    queryFn: async ({ signal }) => {
+      const startFormatted = toYmdLocal(startDate!);
+      const endFormatted = toYmdLocal(endDate!);
+      const response = await fetch(`/api/Production/Efficiency?start_date=${startFormatted}&end_date=${endFormatted}`, { signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
-      setData(result.data || []);
-    } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return result?.data || [];
+    },
+    keepPreviousData: true,
+  });
+
+  // синхронизируем локальное состояние таблиц с данными запроса (опционально)
+  React.useEffect(() => {
+    if (Array.isArray(rqData)) setData(rqData);
+  }, [rqData]);
 
   const handleDateRangeApply = (from: Date, to?: Date) => {
     setStartDate(from);
@@ -52,14 +51,9 @@ const DailyPlanFact: React.FC = () => {
   };
 
   // Отладочная информация
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('TableRef updated:', tableRef);
   }, [tableRef]);
-
-  // Загрузка данных при изменении дат
-  useEffect(() => {
-    fetchData(startDate, endDate);
-  }, [startDate, endDate, fetchData]);
 
   return (
     <div className="p-4">
@@ -111,8 +105,8 @@ const DailyPlanFact: React.FC = () => {
           )}
         </div>
       </div>
-      {activeTab === 'overview' && <Overview data={data} loading={loading} error={error} />}
-      {activeTab === 'table' && <Table data={data} loading={loading} error={error} onTableReady={setTableRef} />}
+      {activeTab === 'overview' && <Overview data={data} loading={isLoading && !data.length} error={error ? String((error as any)?.message || error) : null} />}
+      {activeTab === 'table' && <Table data={data} loading={isLoading && !data.length} error={error ? String((error as any)?.message || error) : null} onTableReady={setTableRef} />}
     </div>
   );
 };

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { WorkshopGroupProps } from './types';
 import WorkCenterAssignmentRow from './WorkCenterAssignmentRow';
@@ -11,7 +12,9 @@ const WorkshopGroup: React.FC<WorkshopGroupProps> = ({
   onAddAssignment,
   onUpdateAssignment,
   onRemoveAssignment,
-  getExistingWorkCenterIds
+  getExistingWorkCenterIds,
+  invalidAssignmentIds,
+  emptyWorkCenterIds
 }) => {
   const { t } = useTranslation('production');
 
@@ -68,25 +71,85 @@ const WorkshopGroup: React.FC<WorkshopGroupProps> = ({
             {t('noAssignments')}
           </div>
         ) : (
-          <div className="space-y-0">
-            {assignments.map((assignment, index) => (
-              <WorkCenterAssignmentRow
-                key={assignment.id}
-                assignment={assignment}
-                workCenters={workshopWorkCenters}
-                workSchedules={workshopWorkSchedules}
-                onUpdate={onUpdateAssignment}
-                onRemove={onRemoveAssignment}
-                existingWorkCenterIds={getExistingWorkCenterIds(assignment.id)}
-                showHeader={index === 0}
-                isFirstRow={index === 0}
-              />
-            ))}
-          </div>
+          (() => {
+            // Виртуализация при длинных списках
+            if (assignments.length < 30) {
+              return (
+                <div className="space-y-0">
+                  {assignments.map((assignment, index) => (
+                    <div key={assignment.id} className={`${emptyWorkCenterIds?.has(assignment.id) || invalidAssignmentIds?.has(assignment.id) ? 'ring-1 ring-red-400 rounded' : ''}`}>
+                      <WorkCenterAssignmentRow
+                        assignment={assignment}
+                        workCenters={workshopWorkCenters}
+                        workSchedules={workshopWorkSchedules}
+                        onUpdate={onUpdateAssignment}
+                        onRemove={onRemoveAssignment}
+                        existingWorkCenterIds={getExistingWorkCenterIds(assignment.id)}
+                        showHeader={index === 0}
+                        isFirstRow={index === 0}
+                        isDuplicate={Boolean(invalidAssignmentIds?.has(assignment.id))}
+                        isEmptyWorkCenter={Boolean(emptyWorkCenterIds?.has(assignment.id))}
+                      />
+                      {(emptyWorkCenterIds?.has(assignment.id) || invalidAssignmentIds?.has(assignment.id)) && (
+                        <div className="px-2 py-1 text-xs text-red-600 bg-red-50 border-t border-red-200">
+                          {emptyWorkCenterIds?.has(assignment.id) ? t('assignmentValidation.workCenterRequired') : t('assignmentValidation.duplicateAssignment')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+
+            const parentRef = useRef<HTMLDivElement | null>(null);
+            const rowVirtualizer = useVirtualizer({
+              count: assignments.length,
+              getScrollElement: () => parentRef.current,
+              estimateSize: () => 48,
+              overscan: 8,
+              measureElement: (el) => el?.getBoundingClientRect().height || 48,
+            });
+            const items = rowVirtualizer.getVirtualItems();
+            return (
+              <div ref={parentRef} className="space-y-0 max-h-[480px] overflow-auto relative">
+                <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {items.map(vi => {
+                    const assignment = assignments[vi.index];
+                    return (
+                      <div
+                        key={assignment.id}
+                        ref={rowVirtualizer.measureElement}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${vi.start}px)` }}
+                        className={`${emptyWorkCenterIds?.has(assignment.id) || invalidAssignmentIds?.has(assignment.id) ? 'ring-1 ring-red-400 rounded' : ''}`}
+                      >
+                        <WorkCenterAssignmentRow
+                          assignment={assignment}
+                          workCenters={workshopWorkCenters}
+                          workSchedules={workshopWorkSchedules}
+                          onUpdate={onUpdateAssignment}
+                          onRemove={onRemoveAssignment}
+                          existingWorkCenterIds={getExistingWorkCenterIds(assignment.id)}
+                          showHeader={vi.index === 0}
+                          isFirstRow={vi.index === 0}
+                          isDuplicate={Boolean(invalidAssignmentIds?.has(assignment.id))}
+                          isEmptyWorkCenter={Boolean(emptyWorkCenterIds?.has(assignment.id))}
+                        />
+                        {(emptyWorkCenterIds?.has(assignment.id) || invalidAssignmentIds?.has(assignment.id)) && (
+                          <div className="px-2 py-1 text-xs text-red-600 bg-red-50 border-t border-red-200">
+                            {emptyWorkCenterIds?.has(assignment.id) ? t('assignmentValidation.workCenterRequired') : t('assignmentValidation.duplicateAssignment')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()
         )}
       </div>
     </div>
   );
 };
 
-export default WorkshopGroup;
+export default memo(WorkshopGroup);

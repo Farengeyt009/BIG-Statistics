@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkCenterAssignmentRowProps, DayAssignment, WorkCenterRow, WorkCenterShift } from './types';
+import { API_ENDPOINTS } from '../../../../config/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   assignment,
@@ -10,7 +12,9 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   onRemove,
   existingWorkCenterIds,
   showHeader = true,
-  isFirstRow = false
+  isFirstRow = false,
+  isDuplicate = false,
+  isEmptyWorkCenter = false
 }) => {
   // Константы для ширины колонок основной строки
   const MAIN_ROW_COLUMN_WIDTHS = {
@@ -41,22 +45,27 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
     delete: 'w-16'
   };
   
-  const { t } = useTranslation('production');
+  const { t, i18n } = useTranslation('production');
+  const queryClient = useQueryClient();
   const isInternalUpdate = useRef(false); // Флаг для отслеживания внутренних обновлений
   
   // ✅ НОВОЕ СОСТОЯНИЕ: Преобразуем DayAssignment в WorkCenterRow
   const [workCenterRow, setWorkCenterRow] = useState<WorkCenterRow>(() => {
     // Преобразуем старую структуру в новую
+    const initialShifts: WorkCenterShift[] = (assignment.shifts && assignment.shifts.length > 0)
+      ? assignment.shifts
+      : (assignment.scheduleId ? [{
+          id: `${assignment.id}_shift_1`,
+          scheduleId: assignment.scheduleId,
+          peopleCount: assignment.peopleCount,
+          notes: assignment.notes
+        }] : []);
+
     return {
       id: assignment.id,
       date: assignment.date,
       workCenterId: assignment.workCenterId,
-      shifts: assignment.scheduleId ? [{
-        id: `${assignment.id}_shift_1`,
-        scheduleId: assignment.scheduleId,
-        peopleCount: assignment.peopleCount,
-        notes: assignment.notes
-      }] : [],
+      shifts: initialShifts,
       production: assignment.production,
       shiftTime: assignment.shiftTime,
       timeLoss: assignment.timeLoss,
@@ -66,6 +75,10 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isExpanded, setIsExpanded] = useState(false); // Для показа/скрытия подстрок смен
+  // Локальный кастомный confirm-баннер
+  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; message: string; onConfirm?: () => void }>({ visible: false, message: '' });
+  const openConfirm = (message: string, onConfirm: () => void) => setConfirmDialog({ visible: true, message, onConfirm });
+  const closeConfirm = () => setConfirmDialog({ visible: false, message: '', onConfirm: undefined });
 
   // ✅ НОВАЯ ЛОГИКА: Автоматическое создание смены для данных о выпуске
   useEffect(() => {
@@ -114,6 +127,7 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
       assignment.workCenterId !== workCenterRow.workCenterId ||
       assignment.scheduleId !== (workCenterRow.shifts[0]?.scheduleId || '') ||
       assignment.peopleCount !== (workCenterRow.shifts[0]?.peopleCount || 0) ||
+      JSON.stringify(assignment.shifts || []) !== JSON.stringify(workCenterRow.shifts || []) ||
       JSON.stringify(assignment.production) !== JSON.stringify(workCenterRow.production) ||
       assignment.shiftTime !== workCenterRow.shiftTime ||
       assignment.timeLoss !== workCenterRow.timeLoss ||
@@ -122,16 +136,20 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
     if (hasRealChanges) {
       const wasExpanded = isExpanded; // Сохраняем текущее состояние раскрытия
       
+      const nextShifts: WorkCenterShift[] = (assignment.shifts && assignment.shifts.length > 0)
+        ? assignment.shifts
+        : (assignment.scheduleId ? [{
+            id: `${assignment.id}_shift_1`,
+            scheduleId: assignment.scheduleId,
+            peopleCount: assignment.peopleCount,
+            notes: assignment.notes
+          }] : []);
+
       setWorkCenterRow({
         id: assignment.id,
         date: assignment.date,
         workCenterId: assignment.workCenterId,
-        shifts: assignment.scheduleId ? [{
-          id: `${assignment.id}_shift_1`,
-          scheduleId: assignment.scheduleId,
-          peopleCount: assignment.peopleCount,
-          notes: assignment.notes
-        }] : [],
+        shifts: nextShifts,
         production: assignment.production,
         shiftTime: assignment.shiftTime,
         timeLoss: assignment.timeLoss,
@@ -145,7 +163,7 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   }, [assignment]);
 
   // ✅ НОВАЯ ФУНКЦИЯ: Добавление новой смены
-  const addShift = () => {
+  const addShift = useCallback(() => {
     const newShift: WorkCenterShift = {
       id: `${workCenterRow.id}_shift_${Date.now()}`,
       scheduleId: '',
@@ -165,29 +183,37 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
     if (!isExpanded) {
       setIsExpanded(true);
     }
-  };
+  }, [workCenterRow, isExpanded]);
 
-  // ✅ НОВАЯ ФУНКЦИЯ: Удаление смены
-  const removeShift = (shiftId: string) => {
-    // Проверяем, можно ли удалить смену
-    const hasProductionData = workCenterRow.production && 
-      (workCenterRow.production.planQty > 0 || 
-       workCenterRow.production.factQty > 0 || 
-       workCenterRow.production.planHours > 0 || 
-       workCenterRow.production.factHours > 0);
-    
-    // Если есть данные о выпуске и это последняя смена, не удаляем
-    if (hasProductionData && workCenterRow.shifts.length === 1) {
-      return;
-    }
-    
-    const updatedRow = {
-      ...workCenterRow,
-      shifts: workCenterRow.shifts.filter(shift => shift.id !== shiftId)
-    };
-    
-    setWorkCenterRow(updatedRow);
-    updateParentAssignment(updatedRow);
+  // ✅ Удаление смены немедленно через API (если есть lineId)
+  const removeShift = async (shiftId: string) => {
+    openConfirm(t('confirmDeleteShift') || 'Delete this shift?', async () => {
+      const target = workCenterRow.shifts.find(s => s.id === shiftId);
+      // Если сгенерированный id (нет lineId из БД), просто удаляем локально
+      const isDbLine = target && /[a-f0-9\-]{36}/i.test(String(target.id));
+      try {
+        if (isDbLine) {
+          await fetch(`${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES_LINE_DELETE}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lineId: target!.id })
+          });
+        }
+      } catch (e) {
+        console.warn('Soft-delete shift failed:', e);
+      }
+
+      const updatedRow = {
+        ...workCenterRow,
+        shifts: workCenterRow.shifts.filter(shift => shift.id !== shiftId)
+      };
+      setWorkCenterRow(updatedRow);
+      updateParentAssignment(updatedRow);
+      closeConfirm();
+      // Инвалидации для обновления данных модалки и календаря
+      queryClient.invalidateQueries({ queryKey: ['assign'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar'] });
+    });
   };
 
   // ✅ НОВАЯ ФУНКЦИЯ: Обновление смены
@@ -219,7 +245,8 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
       production: row.production,
       shiftTime: row.shiftTime,
       timeLoss: row.timeLoss,
-      different: row.different
+      different: row.different,
+      shifts: row.shifts
     };
     
     onUpdate(updatedAssignment);
@@ -292,7 +319,27 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
      workCenterRow.production.factHours === 0);
 
   return (
-    <div className={`border-l border-r border-b ${isFirstRow ? 'border-t' : ''} border-gray-300 text-xs overflow-hidden`}>
+    <div className={`relative border-l border-r border-b ${isFirstRow ? 'border-t' : ''} border-gray-300 text-xs overflow-hidden ${isDuplicate || isEmptyWorkCenter ? 'ring-1 ring-red-400' : ''}`}>
+      {/* Локальный confirm-баннер */}
+      {confirmDialog.visible && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="bg-white border border-gray-300 shadow-2xl rounded px-5 py-4 w-[560px] min-h-[150px] flex flex-col justify-center">
+            <div className="text-gray-900 text-sm font-medium mb-2">
+              {t('areYouSureDelete', {
+                defaultValue: {
+                  en: 'Are you sure you want to delete?',
+                  zh: '您确定要删除吗？',
+                  ru: 'Вы уверены, что хотите удалить?'
+                }[i18n.language] || 'Вы уверены, что хотите удалить?'
+              })}
+            </div>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200" onClick={closeConfirm}>Cancel</button>
+              <button className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700" onClick={() => confirmDialog.onConfirm && confirmDialog.onConfirm()}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Основная строка - Рабочий центр */}
       <div className="flex">
         {/* Рабочий центр */}
@@ -516,7 +563,27 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
             {canDelete && (
               <button
                 type="button"
-                onClick={() => onRemove(workCenterRow.id)}
+                onClick={() => {
+                  openConfirm(t('confirmDeleteRow') || 'Delete this row?', async () => {
+                    try {
+                      const endpoint = (API_ENDPOINTS.WORKING_CALENDAR as any).WORK_CENTER_ASSIGNMENT_DELETE;
+                      if (endpoint) {
+                        await fetch(`${endpoint}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ assignmentId: workCenterRow.id })
+                        });
+                      }
+                      onRemove(workCenterRow.id);
+                      closeConfirm();
+                      queryClient.invalidateQueries({ queryKey: ['assign'] });
+                      queryClient.invalidateQueries({ queryKey: ['calendar'] });
+                    } catch (e) {
+                      console.error('Error deleting assignment:', e);
+                      alert(t('errorDeletingAssignment'));
+                    }
+                  });
+                }}
                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                 title={t('removeAssignment')}
               >
@@ -564,7 +631,7 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
               </tr>
             </thead>
 
-                      <tbody>
+            <tbody>
               {/* Список смен */}
               {workCenterRow.shifts.map((shift, index) => {
                 // Находим выбранный график для отображения дополнительной информации
@@ -621,31 +688,8 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                       <button
                         type="button"
                         onClick={() => removeShift(shift.id)}
-                        disabled={workCenterRow.production && 
-                          (workCenterRow.production.planQty > 0 || 
-                           workCenterRow.production.factQty > 0 || 
-                           workCenterRow.production.planHours > 0 || 
-                           workCenterRow.production.factHours > 0) && 
-                          workCenterRow.shifts.length === 1}
-                        className={`p-1 rounded transition-colors ${
-                          workCenterRow.production && 
-                          (workCenterRow.production.planQty > 0 || 
-                           workCenterRow.production.factQty > 0 || 
-                           workCenterRow.production.planHours > 0 || 
-                           workCenterRow.production.factHours > 0) && 
-                          workCenterRow.shifts.length === 1
-                            ? 'text-gray-400 cursor-not-allowed'
-                            : 'text-red-600 hover:bg-red-50'
-                        }`}
-                        title={workCenterRow.production && 
-                          (workCenterRow.production.planQty > 0 || 
-                           workCenterRow.production.factQty > 0 || 
-                           workCenterRow.production.planHours > 0 || 
-                           workCenterRow.production.factHours > 0) && 
-                          workCenterRow.shifts.length === 1
-                            ? t('cannotDeleteProductionData')
-                            : t('removeShift')
-                        }
+                        className="p-1 rounded transition-colors text-red-600 hover:bg-red-50"
+                        title={t('removeShift')}
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -656,7 +700,7 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                 );
               })}
 
-                        {/* Строка для добавления новой смены */}
+              {/* Строка для добавления новой смены */}
               <tr className="border-b border-gray-200">
                 <td className={`${SHIFT_ROW_COLUMN_WIDTHS.workCenter} px-2 py-1 border-r border-gray-200`}>
                   <button

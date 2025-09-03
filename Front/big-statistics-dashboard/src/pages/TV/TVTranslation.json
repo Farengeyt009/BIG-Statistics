@@ -1,0 +1,74 @@
+{
+  "en": {
+    "pageTitle": "TV",
+    "tv": "TV",
+    "table": "Table",
+    "kpi": {
+      "dailyPlanCompl": "Daily Plan Compl.%",
+      "uncompletedQty": "Uncompleted QTY",
+      "downtime": "Downtime",
+      "nextBreak": "Next break",
+      "endOfWorkTime": "End of Work Time",
+      "people": "People"
+    },
+    "units": {
+      "min": "min.",
+      "hours": "hours"
+    },
+    "legend": {
+      "plan": "Plan",
+      "fact": "Fact",
+      "noPlan": "No Plan"
+    },
+    "tableHeaders": {
+      "timeSlot": "Time Slot",
+      "orderNo": "Order No",
+      "articleNumber": "Article Number",
+      "name": "Name",
+      "totalPlan": "Total Plan",
+      "plan": "Plan",
+      "fact": "Fact",
+      "compl": "Compl.",
+      "different": "Different",
+      "taktTime": "Takt time",
+      "lqcQty": "Lqc Qty",
+      "lqcPct": "Lqc %"
+    }
+  },
+  "zh": {
+    "pageTitle": "电视",
+    "tv": "电视",
+    "table": "表格",
+    "kpi": {
+      "dailyPlanCompl": "日计划达成率",
+      "uncompletedQty": "未完成数量",
+      "downtime": "停线时间",
+      "nextBreak": "下一个休息时间",
+      "endOfWorkTime": "下班时间",
+      "people": "人数"
+    },
+    "units": {
+      "min": "分钟",
+      "hours": "小时"
+    },
+    "legend": {
+      "plan": "计划",
+      "fact": "实际",
+      "noPlan": "无计划"
+    },
+    "tableHeaders": {
+      "timeSlot": "时间段",
+      "orderNo": "订单号",
+      "articleNumber": "成品编码",
+      "name": "名称",
+      "totalPlan": "总计划",
+      "plan": "计划数量",
+      "fact": "实际数量",
+      "compl": "完成率",
+      "different": "差异",
+      "taktTime": "节拍",
+      "lqcQty": "拉QC数量",
+      "lqcPct": "拉QC %"
+    }
+  }
+}

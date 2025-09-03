@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DayStatistics } from './mockData';
+import { DayStatistics } from './types';
 
 interface DayStatisticsPanelProps {
   statistics: DayStatistics | null;
@@ -121,4 +121,4 @@ const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
   );
 };
 
-export default DayStatisticsPanel;
+export default memo(DayStatisticsPanel);

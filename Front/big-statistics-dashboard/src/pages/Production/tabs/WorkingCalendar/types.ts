@@ -86,6 +86,10 @@ export interface DayAssignment {
     factHours: number;
     completionPercentageHours: number;
   };
+  // ✅ НОВОЕ: Полный список смен для строки (если есть)
+  shifts?: WorkCenterShift[];
+  // ✅ ПОДСКАЗКА ДЛЯ ГРУППИРОВКИ, когда workCenterId ещё не выбран
+  workshopHint?: string;
 }
 
 
@@ -106,6 +110,12 @@ export interface DayAssignmentModalProps {
   onSave: (assignments: DayAssignment[]) => void;
   // Данные о выпуске по РЦ для выбранной даты
   productionData?: WorkCenterProduction[];
+  // Список выбранных цехов из основного компонента (для фильтрации данных в модалке)
+  selectedWorkShopIds?: string[];
+  // Полный список цехов (id + name) из основного компонента — для отображения опций в селекторе модалки
+  allWorkshops?: Array<{ id: string; name: string }>;
+  // Коллбэк для двусторонней синхронизации выбора с основным компонентом
+  onChangeSelectedWorkShopIds?: (ids: string[]) => void;
 }
 
 // Интерфейс для группировки назначений по цеху
@@ -124,6 +134,9 @@ export interface WorkCenterAssignmentRowProps {
   existingWorkCenterIds: string[];
   showHeader?: boolean;
   isFirstRow?: boolean;
+  // 🔴 Валидация
+  isDuplicate?: boolean;
+  isEmptyWorkCenter?: boolean;
 }
 
 // Интерфейс для пропсов группы цеха
@@ -136,6 +149,9 @@ export interface WorkshopGroupProps {
   onUpdateAssignment: (assignment: DayAssignment) => void;
   onRemoveAssignment: (assignmentId: string) => void;
   getExistingWorkCenterIds: (currentAssignmentId: string) => string[];
+  // 🔴 Валидация на уровне группы
+  invalidAssignmentIds?: Set<string>;
+  emptyWorkCenterIds?: Set<string>;
 }
 
 // Новый интерфейс для данных календаря из API
@@ -152,4 +168,15 @@ export interface CalendarApiResponse {
   year: number;
   month: number;
   total_records: number;
+}
+
+// Интерфейс для статистики дня
+export interface DayStatistics {
+  planCompletionpcs: number; // процент выполнения плана по штукам
+  planCompletionh: number; // процент выполнения плана по часам
+  efficiency: number; // эффективность = (сумма FACT_TIME / Shift_Time) * 100
+  totalTasks: number; // количество строк с Plan_QTY > 0
+  completedTasks: number; // количество строк с FACT_QTY > 0
+  totalPlanQty: number; // суммарный план по штукам
+  totalFactQty: number; // суммарный факт по штукам
 }

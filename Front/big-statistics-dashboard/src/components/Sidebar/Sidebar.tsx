@@ -4,6 +4,7 @@ import {
     Calendar,
     LineChart,
     Factory,
+    Tv,
     CircleCheckBig,
     ChevronLeft,
     ChevronRight,
@@ -75,6 +76,20 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
             onComplete: handleSidebarAnimationComplete,
         });
     }, [expanded]);
+
+    // Экспортируем ширину сайдбара в CSS-переменную для позиционирования фиксированной шапки
+    useEffect(() => {
+        const updateCssVar = (v: number) => {
+            if (typeof document !== 'undefined') {
+                document.documentElement.style.setProperty('--sidebar-width', `${Math.round(v)}px`);
+            }
+        };
+        updateCssVar(widthSpring.get());
+        const unsubscribe = widthSpring.on('change', updateCssVar);
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [widthSpring]);
 
     function handleSidebarAnimationComplete() {
         if (expanded) {
@@ -167,6 +182,9 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                                 </Link>
                                 <Link to="/production" className="block">
                                     <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                                </Link>
+                                <Link to="/tv" className="block">
+                                    <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                                 </Link>
                                 <Link to="/tasks" className="block">
                                     <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />

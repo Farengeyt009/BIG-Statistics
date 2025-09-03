@@ -149,7 +149,7 @@ export const DateRangePickerPro: React.FC<DateRangePickerProProps> = ({
           )}`
         : defaultPlaceholder
       : range[0].startDate
-      ? format(range[0].startDate, "MM.yyyy")
+      ? format(range[0].startDate, "dd.MM.yyyy")
       : defaultPlaceholder;
 
   /* handlers */
@@ -192,12 +192,12 @@ export const DateRangePickerPro: React.FC<DateRangePickerProProps> = ({
         onClick={() => setIsOpen((o) => !o)}
         className="relative w-full cursor-pointer"
       >
-        <CalendarPlus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#0d1c3d]" />
+        <CalendarPlus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <input
           readOnly
           value={display}
           placeholder={defaultPlaceholder}
-          className="w-full rounded-md border border-[#0d1c3d] bg-white px-8 py-2 text-sm focus:border-[#0d1c3d] focus:ring-1 focus:ring-[#0d1c3d]"
+          className="w-full rounded-md border border-gray-300 bg-white px-8 py-2 text-sm focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
         />
       </div>
 

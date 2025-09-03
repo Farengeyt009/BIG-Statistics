@@ -6,6 +6,8 @@ import Plan from './pages/Plan/Plan';
 import LoginPage from './pages/LoginPage/LoginPage';
 import Home from './pages/Home/Home';
 import Production from './pages/Production/Production';
+import TVPage from './pages/TV/TV';
+import KPI from './pages/Home/KPI/KPI';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -59,6 +61,8 @@ function AppContent() {
                     <Route path="/uncompleted-orders" element={<RequireAuth><CustomerOrdersInformation /></RequireAuth>} />
                     <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
                     <Route path="/production" element={<RequireAuth><Production /></RequireAuth>} />
+                    <Route path="/kpi" element={<RequireAuth><KPI /></RequireAuth>} />
+                    <Route path="/tv" element={<RequireAuth><TVPage /></RequireAuth>} />
                 </Routes>
             </main>
         </div>

@@ -4,11 +4,19 @@ from Back.config import DB_CONFIG
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
+
 # ==== публичные ошибки сервиса ====
 class ConflictError(Exception): ...
+
+
 class ValidationError(Exception): ...
+
+
 class NotFoundError(Exception): ...
+
+
 class DbError(Exception): ...
+
 
 class WorkingCalendarService:
     def __init__(self):
@@ -19,6 +27,7 @@ class WorkingCalendarService:
             f"UID={DB_CONFIG['UID']};"
             f"PWD={DB_CONFIG['PWD']};"
             f"TrustServerCertificate={DB_CONFIG['TrustServerCertificate']};"
+            f"MARS_Connection=Yes;"
         )
 
     def get_work_centers(self) -> List[Dict[str, Any]]:
@@ -28,26 +37,26 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 query = """
                 SELECT DISTINCT WorkShop_CustomWS, WorkShopName_ZH, WorkShopName_EN 
                 FROM Ref.WorkShop_CustomWS 
                 ORDER BY WorkShop_CustomWS
                 """
-                
+
                 cursor.execute(query)
                 rows = cursor.fetchall()
-                
+
                 work_centers = []
                 for row in rows:
                     work_centers.append({
                         'id': row[0],  # WorkShop_CustomWS как ID
                         'nameZH': row[1] if row[1] else row[0],  # WorkShopName_ZH или fallback
-                        'nameEN': row[2] if row[2] else row[0]   # WorkShopName_EN или fallback
+                        'nameEN': row[2] if row[2] else row[0]  # WorkShopName_EN или fallback
                     })
-                
+
                 return work_centers
-                
+
         except Exception as e:
             print(f"Error in get_work_centers: {str(e)}")
             return []
@@ -59,16 +68,16 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 query = """
                 SELECT DISTINCT WorkShop_CustomWS, WorkShopName_ZH, WorkShopName_EN 
                 FROM Ref.WorkShop_CustomWS 
                 WHERE WorkShop_CustomWS = ?
                 """
-                
+
                 cursor.execute(query, (work_center_id,))
                 row = cursor.fetchone()
-                
+
                 if row:
                     return {
                         'id': row[0],
@@ -77,7 +86,7 @@ class WorkingCalendarService:
                     }
                 else:
                     return {}
-                    
+
         except Exception as e:
             print(f"Error in get_work_center_by_id: {str(e)}")
             return {}
@@ -89,17 +98,17 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 query = """
                 SELECT COUNT(DISTINCT WorkShop_CustomWS) 
                 FROM Ref.WorkShop_CustomWS
                 """
-                
+
                 cursor.execute(query)
                 count = cursor.fetchone()[0]
-                
+
                 return count
-                
+
         except Exception as e:
             print(f"Error in get_work_centers_count: {str(e)}")
             return 0
@@ -111,26 +120,26 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 query = """
                 SELECT TypeID, TypeName_EN, TypeName_ZH 
                 FROM TimeLoss.WorkScheduleTypes 
                 ORDER BY TypeID
                 """
-                
+
                 cursor.execute(query)
                 rows = cursor.fetchall()
-                
+
                 work_schedule_types = []
                 for row in rows:
                     work_schedule_types.append({
                         'id': row[0],  # TypeID как ID
                         'nameEN': row[1] if row[1] else f"Type {row[0]}",  # TypeName_EN или fallback
-                        'nameZH': row[2] if row[2] else f"类型 {row[0]}"   # TypeName_ZH или fallback
+                        'nameZH': row[2] if row[2] else f"类型 {row[0]}"  # TypeName_ZH или fallback
                     })
-                
+
                 return work_schedule_types
-                
+
         except Exception as e:
             print(f"Error in get_work_schedule_types: {str(e)}")
             return []
@@ -197,7 +206,7 @@ class WorkingCalendarService:
                     lines = [{
                         'typeId': r[0],
                         'start': self._time_to_str(r[1]),
-                        'end':   self._time_to_str(r[2]),
+                        'end': self._time_to_str(r[2]),
                         'crossesMidnight': bool(r[3]),
                         'spanMinutes': int(r[4])
                     } for r in rows]
@@ -206,9 +215,9 @@ class WorkingCalendarService:
                         'scheduleId': h[0],
                         'scheduleCode': h[1],
                         'workshopId': h[2],
-                        'workShopId': h[2],     # алиас
+                        'workShopId': h[2],  # алиас
                         'name': h[3],
-                        'scheduleName': h[3],   # алиас
+                        'scheduleName': h[3],  # алиас
                         'isFavorite': bool(h[4]),
                         'isDeleted': bool(h[5]),
                         'createdAt': self._to_iso_utc(h[6]),
@@ -264,33 +273,33 @@ class WorkingCalendarService:
                 lines = [{
                     'typeId': r[0],
                     'start': self._time_to_str(r[1]),
-                    'end':   self._time_to_str(r[2]),
+                    'end': self._time_to_str(r[2]),
                     'crossesMidnight': bool(r[3]),
                     'spanMinutes': int(r[4])
                 } for r in rows]
 
                 # старый формат для формы
                 records = [{
-                    'recordType': r[0],                 # 'WORKSHIFT' / 'BREAKS'
-                    'startTime':  self._time_to_str(r[1]),
-                    'endTime':    self._time_to_str(r[2])
+                    'recordType': r[0],  # 'WORKSHIFT' / 'BREAKS'
+                    'startTime': self._time_to_str(r[1]),
+                    'endTime': self._time_to_str(r[2])
                 } for r in rows]
 
                 return {
-                    'scheduleId':   h[0],
+                    'scheduleId': h[0],
                     'scheduleCode': h[1],
-                    'workshopId':   h[2],               # новый
-                    'workShopId':   h[2],               # алиас для совместимости
-                    'name':         h[3],               # новый
-                    'scheduleName': h[3],               # алиас для фронта
-                    'isFavorite':   bool(h[4]),
-                    'isDeleted':    bool(h[5]),
-                    'createdAt':    self._to_iso_utc(h[6]),
-                    'updatedAt':    self._to_iso_utc(h[7]),
-                    'createdBy':    h[8],
-                    'updatedBy':    h[9],
-                    'lines':        lines,              # новый формат
-                    'records':      records             # старый формат (для модалки)
+                    'workshopId': h[2],  # новый
+                    'workShopId': h[2],  # алиас для совместимости
+                    'name': h[3],  # новый
+                    'scheduleName': h[3],  # алиас для фронта
+                    'isFavorite': bool(h[4]),
+                    'isDeleted': bool(h[5]),
+                    'createdAt': self._to_iso_utc(h[6]),
+                    'updatedAt': self._to_iso_utc(h[7]),
+                    'createdBy': h[8],
+                    'updatedBy': h[9],
+                    'lines': lines,  # новый формат
+                    'records': records  # старый формат (для модалки)
                 }
         except Exception as e:
             print(f"Error in get_work_schedule_by_id: {str(e)}")
@@ -303,7 +312,7 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 # Вызываем процедуру создания
                 cursor.execute("""
                     EXEC TimeLoss.sp_WorkingSchedule_Create
@@ -319,7 +328,7 @@ class WorkingCalendarService:
                     json.dumps(schedule_data['lines'], ensure_ascii=False),
                     schedule_data.get('actor', 'api')
                 ))
-                
+
                 result = cursor.fetchone()
                 if result:
                     return {
@@ -327,9 +336,9 @@ class WorkingCalendarService:
                         'scheduleCode': result[1],
                         'updatedAt': self._to_iso_utc(result[2])
                     }
-                
+
                 raise DbError("Stored procedure returned no rows")
-                
+
         except pyodbc.Error as e:
             self._raise_for_db_error(e)
         except Exception as e:
@@ -354,8 +363,8 @@ class WorkingCalendarService:
 
             # 1) Дельты
             lines_changed = (self._norm_lines(current["lines"]) != self._norm_lines(schedule_data["lines"]))
-            name_changed  = current["name"].strip() != str(schedule_data["name"]).strip()
-            fav_changed   = bool(current["isFavorite"]) != bool(schedule_data["isFavorite"])
+            name_changed = current["name"].strip() != str(schedule_data["name"]).strip()
+            fav_changed = bool(current["isFavorite"]) != bool(schedule_data["isFavorite"])
             force_new_on_rename = bool(schedule_data.get("forceNewOnRename", True))  # ⬅ по умолчанию ВКЛ.
 
             # 2) Ничего не поменялось
@@ -370,11 +379,11 @@ class WorkingCalendarService:
             if lines_changed or (name_changed and force_new_on_rename):
                 with pyodbc.connect(self.connection_string) as connection:
                     cursor = connection.cursor()
-                    
+
                     # Передаём updatedAt обратно в DATETIME2(0) UTC
                     upd = schedule_data['updatedAt']
                     dt2 = self._parse_iso_to_naive_utc(upd)
-                    
+
                     cursor.execute("""
                         EXEC TimeLoss.sp_WorkingSchedule_Replace
                             @OldScheduleID = ?,
@@ -393,25 +402,36 @@ class WorkingCalendarService:
                         json.dumps(schedule_data['lines'], ensure_ascii=False),
                         schedule_data.get('actor', 'api')
                     ))
-                    
+
                     result = cursor.fetchone()
+                    # На всякий случай дренируем все result sets
+                    try:
+                        while cursor.nextset():
+                            pass
+                    except pyodbc.Error:
+                        pass
+                    cursor.close()
+
                     if result:
+                        new_schedule_id = int(result[0])
+                        # ВАЖНО: никаких пересчётов здесь не делаем.
+                        # Пересчёт выполняется там, где меняют назначения: WorkSchedules_ByDay_service.py
                         return {
-                            'scheduleId': int(result[0]),
+                            'scheduleId': new_schedule_id,
                             'scheduleCode': result[1],
                             'updatedAt': self._to_iso_utc(result[2])
                         }
-                    
+
                     raise DbError("Stored procedure returned no rows")
 
             # 4) Изменились только мета-поля (имя/⭐), и НE хотим новый ID → апдейт шапки
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 # Передаём updatedAt обратно в DATETIME2(0) UTC
                 upd = schedule_data['updatedAt']
                 dt2 = self._parse_iso_to_naive_utc(upd)
-                
+
                 cursor.execute("""
                     EXEC TimeLoss.sp_WorkingSchedule_UpdateHeader
                         @ScheduleID = ?,
@@ -426,7 +446,7 @@ class WorkingCalendarService:
                     int(bool(schedule_data['isFavorite'])),
                     schedule_data.get('actor', 'api')
                 ))
-                
+
                 result = cursor.fetchone()
                 if result:
                     return {
@@ -434,9 +454,9 @@ class WorkingCalendarService:
                         'scheduleCode': result[1],
                         'updatedAt': self._to_iso_utc(result[2])
                     }
-                
+
                 raise DbError("Stored procedure returned no rows")
-                
+
         except pyodbc.Error as e:
             self._raise_for_db_error(e)
         except Exception as e:
@@ -450,15 +470,15 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 cursor.execute("""
                     EXEC TimeLoss.sp_WorkingSchedule_SoftDelete
                         @ScheduleID = ?,
                         @Actor = ?
                 """, (schedule_id, 'api'))
-                
+
                 return True
-                
+
         except pyodbc.Error as e:
             self._raise_for_db_error(e)
         except Exception as e:
@@ -472,15 +492,15 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 cursor.execute("""
                     EXEC TimeLoss.sp_WorkingSchedule_Restore
                         @ScheduleID = ?,
                         @Actor = ?
                 """, (schedule_id, 'api'))
-                
+
                 return True
-                
+
         except pyodbc.Error as e:
             self._raise_for_db_error(e)
         except Exception as e:
@@ -494,14 +514,14 @@ class WorkingCalendarService:
         try:
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
-                
+
                 cursor.execute("""
                     EXEC TimeLoss.sp_WorkingSchedule_Clone
                         @SourceScheduleID = ?,
                         @NewName = ?,
                         @Actor = ?
                 """, (schedule_id, new_name, 'api'))
-                
+
                 result = cursor.fetchone()
                 if result:
                     return {
@@ -509,9 +529,9 @@ class WorkingCalendarService:
                         'scheduleCode': result[1],
                         'updatedAt': self._to_iso_utc(result[2])
                     }
-                
+
                 raise DbError("Stored procedure returned no rows")
-                
+
         except pyodbc.Error as e:
             self._raise_for_db_error(e)
         except Exception as e:
@@ -519,7 +539,7 @@ class WorkingCalendarService:
             raise
 
     # ==== вспомогательные методы ====
-    
+
     def _to_iso_utc(self, dt: Optional[datetime]) -> Optional[str]:
         """Конвертирует datetime в ISO UTC строку"""
         if dt is None:
@@ -539,8 +559,10 @@ class WorkingCalendarService:
         num = None
         m = re.search(r'\((\d{4,5})\)', raw)
         if m:
-            try: num = int(m.group(1))
-            except: pass
+            try:
+                num = int(m.group(1))
+            except:
+                pass
 
         # 1) наш оптимистичный конфликт (только по явным маркерам)
         if 'conflict_updated_at' in low or 'conflict: schedule was changed' in low:
@@ -561,9 +583,9 @@ class WorkingCalendarService:
 
         # 5) наши русские валидации
         if ("перекры" in low or "пересека" in low or
-            "длительн" in low or "некоррект" in low or
-            ("неизвестн" in low and "type" in low) or
-            "через полноч" in low):
+                "длительн" in low or "некоррект" in low or
+                ("неизвестн" in low and "type" in low) or
+                "через полноч" in low):
             raise ValidationError(raw)
 
         # 6) not found
@@ -594,9 +616,11 @@ class WorkingCalendarService:
 
     def _norm_lines(self, lines):
         """Сравнение МУЛЬТИМНОЖЕСТВА строк без учёта порядка и регистра TypeID"""
+
         def hhmm(v):
             s = self._time_to_str(v)
             return s[:5]
+
         return sorted([
             (str(l["typeId"]).upper().strip(), hhmm(l["start"]), hhmm(l["end"]))
             for l in lines

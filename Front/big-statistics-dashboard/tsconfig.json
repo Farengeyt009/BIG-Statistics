@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "es2015",
     "lib": [
@@ -18,9 +18,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": [
+      "react",
+      "react-dom"
+    ]
   },
   "include": [
     "src"
   ]
 }
+

@@ -6,11 +6,18 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 export const API_ENDPOINTS = {
+  TV: {
+    WORKSHOPS: `${API_BASE_URL}/TV/Workshops`,
+    HOURLY_PLANFACT: `${API_BASE_URL}/TV/HourlyPlanFact`,
+    FINAL: `${API_BASE_URL}/TV/Final`,
+    WORKCENTER_DOWNTIME_DAY: `${API_BASE_URL}/TV/WorkcenterDowntimeDay`,
+  },
   WORKING_CALENDAR: {
     WORK_SCHEDULES: `${API_BASE_URL}/working-calendar/work-schedules`,
     WORK_CENTERS: `${API_BASE_URL}/working-calendar/work-centers`,
     HEALTH: `${API_BASE_URL}/working-calendar/health`,
     CALENDAR_DATA: `${API_BASE_URL}/Production/WorkingCalendar`,
+    CALENDAR_WORKSHOPS: `${API_BASE_URL}/Production/WorkingCalendar/workshops`,
     ASSIGN_WORK_SCHEDULES: `${API_BASE_URL}/Production/AssignWorkSchedules`,
     // Новые endpoints для работы с назначениями
     WORK_SCHEDULES_BY_DAY: `${API_BASE_URL}/work-schedules/day`,

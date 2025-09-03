@@ -15,7 +15,8 @@ import datetime as _dt
 from collections import defaultdict
 from typing import Any, Dict
 
-from Back.database.db_connector import get_connection
+from database.db_connector import get_connection
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -27,11 +28,13 @@ def _month_bounds(year: int, month: int) -> tuple[_dt.date, _dt.date]:
     last = _dt.date(year, month, calendar.monthrange(year, month)[1])
     return first, last
 
+
 def _format_date_ru(date_obj: _dt.date) -> str:
     """Форматирует дату в российском формате DD.MM.YYYY."""
     if date_obj is None:
         return ""
     return date_obj.strftime("%d.%m.%Y")
+
 
 # ---------------------------------------------------------------------------
 # public api
@@ -77,11 +80,11 @@ def fetch_month_planfact(year: int, month: int) -> Dict[str, Any]:
             # Безопасная обработка NULL значений
             order_no = (row.Order_No or "").strip()
             article_number = (row.Article_number or "").strip()
-            
+
             # Пропускаем записи с пустыми ключами
             if not order_no or not article_number:
                 continue
-                
+
             key = (order_no, article_number)
             rec = orders[key]
 

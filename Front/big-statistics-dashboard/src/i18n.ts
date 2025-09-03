@@ -10,6 +10,7 @@ import planTranslation from './pages/Plan/PlanTranslation.json';
 import loginPageTranslation from './pages/LoginPage/LoginPageTranslation.json';
 import homeInterfaceTranslation from './pages/Home/homeInterfaceTranslation.json';
 import productionTranslation from './pages/Production/ProductionTranslation.json';
+import tvTranslation from './pages/TV/TVTranslation.json';
 
 const resources = {
   en: {
@@ -20,7 +21,8 @@ const resources = {
     planTranslation: planTranslation.en,
     loginPage: loginPageTranslation.en,
     homeInterface: homeInterfaceTranslation.en,
-    production: productionTranslation.en
+    production: productionTranslation.en,
+    tv: tvTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
@@ -30,7 +32,8 @@ const resources = {
     planTranslation: planTranslation.zh,
     loginPage: loginPageTranslation.zh,
     homeInterface: homeInterfaceTranslation.zh,
-    production: productionTranslation.zh
+    production: productionTranslation.zh,
+    tv: tvTranslation.zh
   }
 };
 

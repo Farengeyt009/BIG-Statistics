@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import DayCell from './DayCell';
 import { CalendarDayData } from './types';
@@ -76,6 +76,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate, onDayClick, calendarDa
     return days;
   }, [currentDate]);
 
+  const handleDayClick = useCallback((date: Date) => onDayClick(date), [onDayClick]);
+
   return (
     <div className="grid grid-cols-7 gap-x-10 gap-y-2">
       {/* Day headers */}
@@ -102,7 +104,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate, onDayClick, calendarDa
           date={day.date}
           isCurrentMonth={day.isCurrentMonth}
           isToday={day.isToday}
-          onClick={() => onDayClick(day.date)}
+          onClick={() => handleDayClick(day.date)}
           calendarData={calendarData}
           loading={loading}
         />
@@ -111,4 +113,4 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate, onDayClick, calendarDa
   );
 };
 
-export default Calendar;
+export default memo(Calendar);

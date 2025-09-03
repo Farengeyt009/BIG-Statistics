@@ -7,6 +7,7 @@
     "plan": "Plan",
     "kpi": "KPI",
     "mes": "Production",
+    "tv": "TV",
     "tasks": "Tasks",
     "notifications": "Notif"
   },
@@ -18,7 +19,8 @@
     "plan": "计划",
     "kpi": "KPI",
     "mes": "生产",
+    "tv": "电视",
     "tasks": "任务",
     "notifications": "通知"
   }
-} 
+}

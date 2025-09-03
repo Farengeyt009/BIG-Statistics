@@ -45,7 +45,10 @@ type GroupOpt = { startIndex: number; endIndex: number; label: string };
 
 const workshopBracket: Plugin<'bar', { groups: GroupOpt[] }> = {
   id: 'workshopBracket',
-  beforeLayout(chart) {
+  beforeLayout(chart, _args, opts) {
+    const groups = (opts as any)?.groups as GroupOpt[] | undefined;
+    if (!Array.isArray(groups) || groups.length === 0) return; // нет групп — пропускаем
+
     const raw = chart.options.layout?.padding as Partial<
       Record<'top' | 'right' | 'bottom' | 'left', number>
     > | undefined;
@@ -53,6 +56,9 @@ const workshopBracket: Plugin<'bar', { groups: GroupOpt[] }> = {
     chart.options.layout = { ...chart.options.layout, padding: { ...raw, bottom: newBottom } };
   },
   afterDraw(chart, _args, opts) {
+    const groups = (opts as any)?.groups as GroupOpt[] | undefined;
+    if (!Array.isArray(groups) || groups.length === 0) return; // нет групп — нечего рисовать
+
     const { ctx } = chart;
     const meta = chart.getDatasetMeta(0);
     const y    = chart.chartArea.bottom + 4;
@@ -65,7 +71,7 @@ const workshopBracket: Plugin<'bar', { groups: GroupOpt[] }> = {
     ctx.textAlign   = 'center';
     ctx.textBaseline = 'top';
 
-    opts.groups.forEach(g => {
+    groups.forEach(g => {
       const start = meta.data[g.startIndex] as any;
       const end   = meta.data[g.endIndex]   as any;
       if (!start || !end) return;
@@ -92,8 +98,10 @@ Chart.register(workshopBracket);
 const stripExtraYTicks: Plugin<'bar', { ticks: { value: number; label: string }[] }> = {
   id: 'stripExtraYTicks',
   afterBuildTicks(chart, _args, opts) {
+    // Безопасно выходим, если опции плагина не переданы
+    if (!opts || !Array.isArray((opts as any).ticks)) return;
     const y = chart.scales.y;
-    y.ticks = opts.ticks.map(t => ({ ...t, major: false }));
+    y.ticks = (opts as any).ticks.map((t: any) => ({ ...t, major: false }));
   },
 };
 Chart.register(stripExtraYTicks);
