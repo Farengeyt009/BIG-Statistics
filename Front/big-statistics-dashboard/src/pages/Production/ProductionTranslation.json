@@ -87,6 +87,7 @@
     "startTime": "Start Time",
     "endTime": "End Time",
     "cancel": "Cancel",
+    "ok": "OK",
     "save": "Save",
     "saveChanges": "Save Changes",
     "pleaseSelectWorkCenter": "Please select a work center",
@@ -201,6 +202,10 @@
       "refresh": "Refresh",
       "delete": "Delete",
       "undo": "Undo"
+    ,
+      "confirmRefresh": "Are you sure you want to refresh the table? Unsaved data will be lost.",
+      "confirmSave": "Confirm saving the document.",
+      "confirmSaveWillDelete": "Some rows will be deleted."
     }
   },
   "zh": {
@@ -292,6 +297,7 @@
     "startTime": "开始时间",
     "endTime": "结束时间",
     "cancel": "取消",
+    "ok": "确定",
     "save": "保存",
     "saveChanges": "保存更改",
     "pleaseSelectWorkCenter": "请选择一个工作中心",
@@ -406,6 +412,10 @@
       "refresh": "刷新",
       "delete": "删除",
       "undo": "撤销"
+    ,
+      "confirmRefresh": "确定要刷新表格吗？未保存的数据将被清除。",
+      "confirmSave": "请确认保存文档。",
+      "confirmSaveWillDelete": "部分行将被删除。"
     }
   },
   "ru": {
@@ -496,6 +506,7 @@
     "startTime": "Время начала",
     "endTime": "Время окончания",
     "cancel": "Отмена",
+    "ok": "ОК",
     "save": "Сохранить",
     "saveChanges": "Сохранить изменения",
     "pleaseSelectWorkCenter": "Пожалуйста, выберите рабочий центр",
@@ -610,6 +621,10 @@
       "refresh": "Обновить",
       "delete": "Удалить",
       "undo": "Вернуть"
+    ,
+      "confirmRefresh": "Вы действительно хотите обновить таблицу? Несохраненные данные будут удалены.",
+      "confirmSave": "Подтвердите сохранение документа.",
+      "confirmSaveWillDelete": "Часть строк будет удалена."
     }
   }
 }

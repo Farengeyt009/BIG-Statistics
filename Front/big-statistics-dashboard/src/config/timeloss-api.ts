@@ -12,6 +12,16 @@ export async function apiGetRows(date: string): Promise<TimeLossRow[]> {
   return r.json();
 }
 
+export async function apiGetRowsRange(startDate: string, endDate: string): Promise<TimeLossRow[]> {
+  const params = new URLSearchParams({ startDate, endDate });
+  const r = await fetch(`${BASE_URL}/entries?${params.toString()}`);
+  if (!r.ok) {
+    const error = await r.json();
+    throw new Error(error.error || error.message || 'Failed to load entries');
+  }
+  return r.json();
+}
+
 export async function apiGetDicts() {
   const r = await fetch(`${BASE_URL}/dicts`);
   if (!r.ok) {

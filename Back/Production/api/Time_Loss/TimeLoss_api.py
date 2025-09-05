@@ -10,18 +10,31 @@ timeloss_router = Blueprint('timeloss', __name__)
 
 @timeloss_router.route('/timeloss/entries')
 def get_entries():
-    """Get time loss entries for a specific date"""
+    """Get time loss entries by date or date range.
+
+    Supports either:
+      - ?date=YYYY-MM-DD (single day)
+      - ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD (inclusive range)
+    Optional: &workshop=WS&workcenter=WC&limit=1000
+    """
     try:
         date = request.args.get('date')
-        if not date:
-            return jsonify({'error': 'date is required'}), 400
+        start_date = request.args.get('startDate')
+        end_date = request.args.get('endDate')
 
         workshop = request.args.get('workshop')
         workcenter = request.args.get('workcenter')
         limit = request.args.get('limit', default=500, type=int)
 
         service = TimeLossService(get_connection())
-        entries = service.get_entries(date, workshop, workcenter, limit)
+
+        if start_date and end_date:
+            entries = service.get_entries_range(start_date, end_date, workshop, workcenter, limit)
+        elif date:
+            entries = service.get_entries(date, workshop, workcenter, limit)
+        else:
+            return jsonify({'error': 'date or startDate/endDate is required'}), 400
+
         return jsonify(entries)
     except ValueError as e:
         return jsonify({'error': str(e)}), 400

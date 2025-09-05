@@ -1,267 +1,224 @@
-# timeloss_entry_loader.py
-# Usage:
-#   python timeloss_entry_loader.py
-#
-# Требует pyodbc и pandas: pip install pyodbc pandas
-#
-# ПЕРЕД ЗАПУСКОМ НАСТРОЙТЕ ПАРАМЕТРЫ ПОДКЛЮЧЕНИЯ К БД:
-# - DB_SERVER: адрес вашего SQL Server (например: localhost, 192.168.1.100)
-# - DB_DATABASE: название базы данных
-# - DB_UID: имя пользователя
-# - DB_PWD: пароль
-#
-# Или настройте переменные окружения:
-#   DB_SERVER, DB_DATABASE, DB_UID, DB_PWD
-
+# import_timeloss.py
+# -*- coding: utf-8 -*-
 import os
 import sys
 import pyodbc
 import pandas as pd
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Tuple, Dict, List, Any, Optional
+from datetime import datetime
 
-# ====== ПОДКЛЮЧЕНИЕ К БД ======
-# Настройки подключения к базе данных
-DB_DRIVER = "{ODBC Driver 18 for SQL Server}"  # Используем драйвер 18
-DB_SERVER = "localhost"  # Или IP вашего SQL Server
-DB_DATABASE = "BIG_STATISTICS"  # Или название вашей БД
-DB_UID = "sa"  # Или ваш пользователь
-DB_PWD = "your_password"  # Ваш пароль
+# === НАСТРОЙКИ ===
+DB_SERVER = "192.168.110.105"
+DB_NAME   = "WeChat_APP"
+DB_USER   = "pmc"
+DB_PWD    = "pmc"
 
-# Можно переопределить через переменные окружения
-DB_DRIVER = os.getenv("DB_DRIVER", DB_DRIVER)
-DB_SERVER = os.getenv("DB_SERVER", DB_SERVER)
-DB_DATABASE = os.getenv("DB_DATABASE", DB_DATABASE)
-DB_UID = os.getenv("DB_UID", DB_UID)
-DB_PWD = os.getenv("DB_PWD", DB_PWD)
+# Путь к файлу Excel
+EXCEL_FILE = r"C:\Users\pphea\Documents\My progect\BIG_STATISTICS\Back\SQLscript\Entry.xlsx"
+SHEET_NAME = "Лист1"
 
-CONN_STR = (
-    f"DRIVER={DB_DRIVER};SERVER={DB_SERVER};DATABASE={DB_DATABASE};"
-    f"UID={DB_UID};PWD={DB_PWD};TrustServerCertificate=Yes;MARS_Connection=Yes;"
-)
+# Таблицы/поля в БД
+TABLE_TIMELOSS = "[dbo].[TimeLoss]"  # целевая таблица
+TABLE_DIRECTNESS = "[Ref].[Directness]"      # справочник направленности
+COL_DIR_ID  = "DirectnessID"
+COL_DIR_EN  = "DirectnessName_EN"
+COL_DIR_ZH  = "DirectnessName_ZH"
 
-# ====== УТИЛИТЫ ======
-def _norm(s: Optional[str]) -> str:
-    return (s or "").strip().lower()
+TABLE_REASON = "[Ref].[ReasonGroup]"         # справочник причин (групп)
+COL_RG_ID   = "ReasonGroupID"
+COL_RG_EN   = "ReasonGroupName_EN"
+COL_RG_ZH   = "ReasonGroupName_ZH"
 
-def to_date(x) -> Optional[pd.Timestamp]:
-    if pd.isna(x) or x is None:
-        return None
-    try:
-        # Excel уже нормализован, но на всякий случай
-        return pd.to_datetime(x).date()
-    except Exception:
-        return None
+# Ожидаемые столбцы во входном Excel:
+# OnlyDate, WorkShopID, WorkCenterID,
+# DirectnessID (или DirectnessEn/DirectnessZh),
+# ReasonGroupID (или ReasonGroupEn/ReasonGroupZh),
+# CommentText, ManHours, ActionPlan, Responsible, CompletedDate
 
-def to_decimal_nonneg(x) -> Optional[Decimal]:
-    if pd.isna(x) or x is None or str(x).strip() == "":
-        return None
-    try:
-        d = Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        return d if d >= 0 else Decimal("0")
-    except Exception:
-        return None
-
-# ====== ЗАГРУЗКА СПРАВОЧНИКОВ ======
-def load_directness_map(cur) -> Dict[str, int]:
-    """
-    Ключи: нормализованные EN/ZH названия → DirectnessID
-    """
-    cur.execute("""
-        SELECT DirectnessID,
-               LTRIM(RTRIM(COALESCE(Name_EN, ''))) AS Name_EN,
-               LTRIM(RTRIM(COALESCE(Name_ZH, ''))) AS Name_ZH
-        FROM Ref.Directness WITH (NOLOCK)
-    """)
-    mp: Dict[str, int] = {}
-    for did, en, zh in cur.fetchall():
-        if en: mp[_norm(en)] = did
-        if zh: mp[_norm(zh)] = did
-    return mp
-
-def load_reason_group_map(cur) -> Dict[Tuple[str, str], int]:
-    """
-    Ключи: (WorkShopID, нормализованное EN/ZH название) → ReasonGroupID
-    """
-    cur.execute("""
-        SELECT ReasonGroupID,
-               LTRIM(RTRIM(COALESCE(WorkShopID, ''))) AS WorkShopID,
-               LTRIM(RTRIM(COALESCE(Name_EN, '')))     AS Name_EN,
-               LTRIM(RTRIM(COALESCE(Name_ZH, '')))     AS Name_ZH
-        FROM Ref.ReasonGroup WITH (NOLOCK)
-    """)
-    mp: Dict[Tuple[str, str], int] = {}
-    for rgid, wsid, en, zh in cur.fetchall():
-        if not wsid:
+def connect():
+    # Пытаемся Driver 18, затем 17
+    for drv in ("ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server"):
+        try:
+            cn = pyodbc.connect(
+                f"DRIVER={{{drv}}};SERVER={DB_SERVER};DATABASE={DB_NAME};UID={DB_USER};PWD={DB_PWD};"
+                "TrustServerCertificate=yes;Encrypt=no",
+                autocommit=False,
+            )
+            return cn
+        except pyodbc.Error:
             continue
-        if en:
-            mp[(wsid, _norm(en))] = rgid
-        if zh:
-            mp[(wsid, _norm(zh))] = rgid
-    return mp
+    raise RuntimeError("Нет подходящего ODBC драйвера (17/18). Установите Microsoft ODBC Driver for SQL Server.")
 
-# ====== ПОДГОТОВКА СТРОК К ВСТАВКЕ ======
-def prepare_rows(df: pd.DataFrame,
-                 dir_map: Dict[str, int],
-                 rg_map: Dict[Tuple[str, str], int]) -> Tuple[List[tuple], List[dict]]:
+def norm_date(val):
+    if pd.isna(val) or val == "":
+        return None
+    if isinstance(val, (pd.Timestamp, datetime)):
+        return val.date().isoformat()
+    # пробуем разные форматы
+    s = str(val).strip()
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%Y/%m/%d", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date().isoformat()
+        except ValueError:
+            pass
+    # как fallback
+    try:
+        return pd.to_datetime(s).date().isoformat()
+    except Exception:
+        return s  # оставим как есть — БД всё равно скажет, если не дата
+
+def fetch_dict_map(cursor, table, id_col, en_col, zh_col):
+    sql = f"SELECT {id_col}, {en_col}, {zh_col} FROM {table}"
+    m = {}
+    cursor.execute(sql)
+    for rid, en, zh in cursor.fetchall():
+        if en is not None:
+            m[str(en).strip().lower()] = rid
+        if zh is not None:
+            m[str(zh).strip().lower()] = rid
+        # также дадим прямой доступ по самому ID (строкой)
+        m[str(rid).strip().lower()] = rid
+    return m
+
+def resolve_id(row, id_field, en_field, zh_field, dict_map, dict_name):
     """
-    Возвращает:
-      ok_rows: список кортежей для INSERT
-      bad_rows: список описаний ошибок для отчёта
+    Возвращает ID по приоритету:
+    1) явный *ID* столбец, если есть и не пустой
+    2) zh-название
+    3) en-название
     """
-    ok_rows: List[tuple] = []
-    bad_rows: List[dict] = []
+    # явный ID
+    if id_field in row and pd.notna(row[id_field]) and str(row[id_field]).strip() != "":
+        key = str(row[id_field]).strip().lower()
+        return dict_map.get(key), None  # None = нет ошибки
 
-    required_cols = [
-        "OnlyDate", "WorkShopID", "WorkCenterID",
-        "DirectnessZh", "DirectnessEn",
-        "ReasonGroupZh", "ReasonGroupEn",
-        "CommentText", "ManHours", "ActionPlan", "Responsible", "CompletedDate"
-    ]
-    missing = [c for c in required_cols if c not in df.columns]
-    if missing:
-        raise ValueError(f"В Excel нет колонок: {missing}")
+    # zh
+    if zh_field in row and pd.notna(row[zh_field]) and str(row[zh_field]).strip() != "":
+        key = str(row[zh_field]).strip().lower()
+        if key in dict_map:
+            return dict_map[key], None
+        return None, f"{dict_name}: не найдено по ZH '{row[zh_field]}'"
 
-    for i, r in df.iterrows():
-        only_date = to_date(r["OnlyDate"])
-        wsid = str(r["WorkShopID"]).strip()
-        wcid = str(r["WorkCenterID"]).strip()
+    # en
+    if en_field in row and pd.notna(row[en_field]) and str(row[en_field]).strip() != "":
+        key = str(row[en_field]).strip().lower()
+        if key in dict_map:
+            return dict_map[key], None
+        return None, f"{dict_name}: не найдено по EN '{row[en_field]}'"
 
-        d_en = _norm(r.get("DirectnessEn"))
-        d_zh = _norm(r.get("DirectnessZh"))
-        did = dir_map.get(d_en) or dir_map.get(d_zh)
+    return None, f"{dict_name}: пустое значение (нет ID/EN/ZH)"
 
-        rg_en = _norm(r.get("ReasonGroupEn"))
-        rg_zh = _norm(r.get("ReasonGroupZh"))
-        rgid = rg_map.get((wsid, rg_en)) or rg_map.get((wsid, rg_zh))
+def main():
+    if not os.path.exists(EXCEL_FILE):
+        print(f"Файл не найден: {EXCEL_FILE}")
+        sys.exit(1)
 
-        comment = (r.get("CommentText") or "").strip()
-        action = (r.get("ActionPlan") or None)
-        resp = (r.get("Responsible") or None)
-        comp_date = to_date(r.get("CompletedDate"))
-        mh = to_decimal_nonneg(r.get("ManHours"))
+    print("Читаю Excel…")
+    df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
 
-        errs = []
-        if not only_date: errs.append("OnlyDate")
-        if not wsid: errs.append("WorkShopID")
-        if not wcid: errs.append("WorkCenterID")
-        if not did: errs.append("DirectnessID (по названию не найден)")
-        if not rgid: errs.append("ReasonGroupID (по названию+цех не найден)")
-        if mh is None: errs.append("ManHours")
+    # Подчистим названия колонок (лишние пробелы)
+    df.columns = [c.strip() for c in df.columns]
 
-        if errs:
-            bad_rows.append({"row": int(i), "errors": "; ".join(errs)})
+    # Подключение
+    cn = connect()
+    cur = cn.cursor()
+
+    # Карты соответствия названий EN/ZH → ID
+    print("Гружу справочники…")
+    dir_map = fetch_dict_map(cur, TABLE_DIRECTNESS, COL_DIR_ID, COL_DIR_EN, COL_DIR_ZH)
+    rg_map  = fetch_dict_map(cur, TABLE_REASON,     COL_RG_ID,  COL_RG_EN,  COL_RG_ZH)
+
+    # Подготовим данные к вставке
+    required = ["OnlyDate", "WorkShopID", "WorkCenterID", "ManHours"]
+    out_rows = []
+    errors = []
+
+    for idx, row in df.iterrows():
+        r = {k: row.get(k, None) for k in df.columns}
+
+        # --- даты
+        only_date = norm_date(r.get("OnlyDate"))
+        completed = norm_date(r.get("CompletedDate"))
+
+        # --- справочники
+        directness_id, e1 = resolve_id(r,
+                                       "DirectnessID",
+                                       "DirectnessEn", "DirectnessZh",
+                                       dir_map, "Directness")
+        reason_id, e2 = resolve_id(r,
+                                   "ReasonGroupID",
+                                   "ReasonGroupEn", "ReasonGroupZh",
+                                   rg_map, "ReasonGroup")
+
+        # --- обязательные поля
+        ws_id = r.get("WorkShopID")
+        wc_id = r.get("WorkCenterID")
+        man_hours = r.get("ManHours")
+
+        missing = []
+        for col in required:
+            v = {"OnlyDate": only_date, "WorkShopID": ws_id, "WorkCenterID": wc_id, "ManHours": man_hours}[col]
+            if v is None or str(v).strip() == "":
+                missing.append(col)
+
+        err_msgs = []
+        if e1: err_msgs.append(e1)
+        if e2: err_msgs.append(e2)
+        if missing:
+            err_msgs.append("Пустые обязательные поля: " + ", ".join(missing))
+
+        if err_msgs:
+            bad = dict(row)
+            bad["_ERROR"] = " | ".join(err_msgs)
+            errors.append(bad)
             continue
 
-        ok_rows.append((
-            only_date,         # OnlyDate (date)
-            wsid,              # WorkShopID (nvarchar)
-            wcid,              # WorkCenterID (nvarchar)
-            int(did),          # DirectnessID (int)
-            int(rgid),         # ReasonGroupID (int)
-            (comment if comment != "" else None),  # CommentText (nullable)
-            float(mh),         # ManHours (decimal → float ok)
-            (action if action not in ("", None) else None),  # ActionPlan
-            (resp if resp not in ("", None) else None),      # Responsible
-            comp_date          # CompletedDate (date, nullable)
+        # --- прочие поля
+        comment = r.get("CommentText")
+        action  = r.get("ActionPlan")
+        resp    = r.get("Responsible")
+
+        # Запись к вставке (EntryID автогенерится в БД)
+        out_rows.append((
+            only_date,
+            ws_id,
+            wc_id,
+            int(directness_id),
+            int(reason_id),
+            comment,
+            float(man_hours) if pd.notna(man_hours) and str(man_hours) != "" else None,
+            action,
+            resp,
+            completed
         ))
 
-    return ok_rows, bad_rows
+    if errors:
+        pd.DataFrame(errors).to_csv("import_errors.csv", index=False, encoding="utf-8-sig")
+        print(f"⚠️ Строк с ошибками: {len(errors)} (сохранены в import_errors.csv)")
 
-# ====== ВСТАВКА ======
-def insert_rows(cur, rows: List[tuple]) -> None:
-    if not rows:
+    if not out_rows:
+        print("Нет корректных строк для вставки — выходим.")
+        cn.close()
         return
-    cur.fast_executemany = True
-    cur.executemany("""
-        INSERT INTO [TimeLoss].[Entry]
-            (OnlyDate, WorkShopID, WorkCenterID, DirectnessID, ReasonGroupID,
-             CommentText, ManHours, ActionPlan, Responsible, CompletedDate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
 
-# ====== ОСНОВНОЙ ПРОЦЕСС ======
-def process_files(paths: List[str]) -> None:
-    print("Подключение к базе данных...")
-    print(f"Сервер: {DB_SERVER}")
-    print(f"База данных: {DB_DATABASE}")
-    print(f"Пользователь: {DB_UID}")
-    print(f"Драйвер: {DB_DRIVER}")
-    print()
-    
+    # Вставка пачкой
+    print(f"Вставляю в {TABLE_TIMELOSS}: {len(out_rows)} строк…")
+    insert_sql = f"""
+    INSERT INTO {TABLE_TIMELOSS}
+    (OnlyDate, WorkShopID, WorkCenterID, DirectnessID, ReasonGroupID,
+     CommentText, ManHours, ActionPlan, Responsible, CompletedDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
     try:
-        with pyodbc.connect(CONN_STR) as conn:
-            print("✅ Подключение к БД успешно!")
-            cur = conn.cursor()
-            dir_map = load_directness_map(cur)
-            rg_map = load_reason_group_map(cur)
-
-        total_ok = 0
-        errors_all: List[dict] = []
-        batch: List[tuple] = []
-
-        for p in paths:
-            df = pd.read_excel(p, sheet_name=0)
-            ok, bad = prepare_rows(df, dir_map, rg_map)
-            total_ok += len(ok)
-            errors_all.extend([{"file": os.path.basename(p), **e} for e in bad])
-            batch.extend(ok)
-
-        if batch:
-            insert_rows(cur, batch)
-            conn.commit()
-
-        print(f"OK inserted: {total_ok}")
-        print(f"Rejected:   {len(errors_all)}")
-
-        if errors_all:
-            rep = pd.DataFrame(errors_all)
-            out_name = "timeloss_entry_loader_errors.csv"
-            rep.to_csv(out_name, index=False, encoding="utf-8-sig")
-            print(f"Errors saved to {out_name}")
-    
-    except pyodbc.Error as e:
-        print(f"❌ Ошибка подключения к БД: {e}")
-        print("\nПроверьте настройки подключения в скрипте:")
-        print(f"  - Сервер: {DB_SERVER}")
-        print(f"  - База данных: {DB_DATABASE}")
-        print(f"  - Пользователь: {DB_UID}")
-        print(f"  - Драйвер: {DB_DRIVER}")
-        print("\nИли настройте переменные окружения:")
-        print("  DB_SERVER, DB_DATABASE, DB_UID, DB_PWD")
-        sys.exit(1)
+        cur.fast_executemany = True
+        cur.executemany(insert_sql, out_rows)
+        cn.commit()
+        print("✅ Готово!")
     except Exception as e:
-        print(f"❌ Неожиданная ошибка: {e}")
-        sys.exit(1)
-
-def get_excel_files_from_script_folder() -> List[str]:
-    """
-    Автоматически находит все Excel файлы в папке скрипта
-    """
-    script_dir = r"C:\Users\pphea\Documents\My progect\BIG_STATISTICS\Back\SQLscript"
-    excel_files = []
-    
-    if os.path.exists(script_dir):
-        for file in os.listdir(script_dir):
-            if file.lower().endswith(('.xlsx', '.xls')):
-                excel_files.append(os.path.join(script_dir, file))
-    
-    return excel_files
+        cn.rollback()
+        print("❌ Ошибка при вставке:", e)
+        raise
+    finally:
+        cn.close()
 
 if __name__ == "__main__":
-    # Автоматически находим Excel файлы в папке скрипта
-    excel_files = get_excel_files_from_script_folder()
-    
-    if not excel_files:
-        print("Excel файлы не найдены в папке:")
-        print(r"C:\Users\pphea\Documents\My progect\BIG_STATISTICS\Back\SQLscript")
-        print("\nУбедитесь, что Excel файлы находятся в этой папке.")
-        sys.exit(1)
-    
-    print(f"Найдены Excel файлы:")
-    for file in excel_files:
-        print(f"  - {os.path.basename(file)}")
-    print()
-    
-    # Обрабатываем все найденные файлы
-    process_files(excel_files)
+    main()

@@ -59,6 +59,41 @@ class TimeLossService:
         finally:
             cursor.close()
 
+    def get_entries_range(
+        self,
+        start_date: str,
+        end_date: str,
+        workshop: Optional[str] = None,
+        workcenter: Optional[str] = None,
+        limit: int = 2000
+    ) -> List[Dict[str, Any]]:
+        """Get time loss entries for a date range (inclusive)."""
+        cursor = self.conn.cursor()
+        try:
+            limit = max(1, min(int(limit), 10000))
+            sql = """
+                SELECT
+                    e.EntryID, e.OnlyDate, e.WorkShopID, e.WorkCenterID,
+                    e.DirectnessID, d.NameZh AS DirectnessNameZh, d.NameEn AS DirectnessNameEn,
+                    e.ReasonGroupID, g.NameZh AS ReasonGroupNameZh, g.NameEn AS ReasonGroupNameEn,
+                    e.CommentText, e.ManHours, e.ActionPlan, e.Responsible, e.CompletedDate,
+                    e.RowVer
+                FROM TimeLoss.[Entry] e
+                JOIN Ref.LossDirectness d ON d.DirectnessID = e.DirectnessID
+                JOIN Ref.ReasonGroup   g ON g.GroupID      = e.ReasonGroupID
+                WHERE e.IsDeleted = 0
+                  AND e.OnlyDate BETWEEN ? AND ?
+                  AND (? IS NULL OR e.WorkShopID  = ?)
+                  AND (? IS NULL OR e.WorkCenterID = ?)
+                ORDER BY e.OnlyDate DESC, e.EntryID DESC
+            """
+            cursor.execute(sql, (start_date, end_date, workshop, workshop, workcenter, workcenter))
+            cols = [c[0] for c in cursor.description]
+            rows = cursor.fetchmany(limit)
+            return [_row_to_dict(cols, r) for r in rows]
+        finally:
+            cursor.close()
+
     def validate_workcenter(self, workshop_id: str, workcenter_id: str) -> bool:
         """Validate that WorkCenterID belongs to WorkShopID"""
         cursor = self.conn.cursor()
