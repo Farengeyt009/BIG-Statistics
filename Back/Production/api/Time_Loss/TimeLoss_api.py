@@ -24,7 +24,7 @@ def get_entries():
 
         workshop = request.args.get('workshop')
         workcenter = request.args.get('workcenter')
-        limit = request.args.get('limit', default=500, type=int)
+        limit = request.args.get('limit', default=5000, type=int)
 
         service = TimeLossService(get_connection())
 

@@ -22,6 +22,18 @@ export async function apiGetRowsRange(startDate: string, endDate: string): Promi
   return r.json();
 }
 
+export async function apiGetRowsRangeWithLimit(startDate: string, endDate: string, limit: number, extra?: { workshop?: string; workcenter?: string }): Promise<TimeLossRow[]> {
+  const params = new URLSearchParams({ startDate, endDate, limit: String(limit) });
+  if (extra?.workshop) params.set('workshop', extra.workshop);
+  if (extra?.workcenter) params.set('workcenter', extra.workcenter);
+  const r = await fetch(`${BASE_URL}/entries?${params.toString()}`);
+  if (!r.ok) {
+    const error = await r.json();
+    throw new Error(error.error || error.message || 'Failed to load entries');
+  }
+  return r.json();
+}
+
 export async function apiGetDicts() {
   const r = await fetch(`${BASE_URL}/dicts`);
   if (!r.ok) {

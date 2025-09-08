@@ -26,6 +26,7 @@ import {
     useRef,
 } from "react";
 import LanguageSwitcher from "../LanguageSwitcher";
+import FocusModeToggle from "../focus/FocusModeToggle";
 import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
 
@@ -106,7 +107,7 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
         <SidebarWidthCtx.Provider value={widthSpring}>
             <motion.div
                 style={{ width: widthSpring }}
-                className="h-screen bg-[#0d1c3d] flex flex-col overflow-visible relative"
+                className="h-screen bg-[#0d1c3d] flex flex-col overflow-visible relative sidebar-root"
             >
                 {/* 🔷 Логотип */}
                 <motion.div
@@ -196,6 +197,8 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
 
                 {/* 🔽 Нижняя часть — уведомления и аватар */}
                 <div className="flex flex-col items-center mt-auto mb-4 gap-4">
+                  {/* переключатель фокус-режима */}
+                  <FocusModeToggle />
                   {/* колокольчик: всегда по центру, без анимаций */}
                   <div className="w-6 h-6 flex items-center justify-center">
                     <svg

@@ -1,45 +1,32 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ColumnDef, getCoreRowModel, useReactTable, flexRender } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
+import type { ColDef, CellValueChangedEvent } from '@ag-grid-community/core';
+import { AgGridReact } from '@ag-grid-community/react';
+// регистрация вынесена в src/ag-grid-modules.ts и импортируется один раз в main.tsx
+import '@ag-grid-community/styles/ag-grid.css';
+import '@ag-grid-community/styles/ag-theme-quartz.css';
 import {
+  apiAddRow,
+  apiGetDicts,
   apiGetRows,
   apiGetRowsRange,
-  apiGetDicts,
   apiPatchCell,
-  apiAddRow,
-  apiCopyRow,
-  apiSoftDelete
+  apiSoftDelete,
 } from '../../../../config/timeloss-api';
-import FilterPopover from '../../../../components/DataTable/FilterPopover';
-
-/** ==== Типы данных ==== */
-type DictItem = {
-  value: string | number;
-  label: string;        // default label
-  labelEn?: string;     // English label (optional)
-  labelZh?: string;     // Chinese label (optional)
-};
-type Dicts = {
-  workshops: DictItem[];                                      // WorkShopID
-  workcentersByWS: Record<string, DictItem[]>;                // WorkCenterID[]
-  directness: DictItem[];                                     // DirectnessID
-  reasonGroupsByWS: Record<string, DictItem[]>;               // ReasonGroupID[]
-};
 
 export type TimeLossRow = {
   EntryID: number;
-  OnlyDate: string;          // 'YYYY-MM-DD'
+  OnlyDate: string;
   WorkShopID: string;
   WorkCenterID: string;
   DirectnessID: number;
-  ReasonGroupID: number;
+  ReasonGroupID: number | null;
   CommentText: string | null;
   ManHours: number | null;
   ActionPlan: string | null;
   Responsible: string | null;
-  CompletedDate: string | null; // 'YYYY-MM-DD' | null
+  CompletedDate: string | null;
 };
 
 type LocalRow = TimeLossRow & {
@@ -49,96 +36,49 @@ type LocalRow = TimeLossRow & {
   _dirty?: Set<keyof TimeLossRow>;
 };
 
-type Props = {
-  date?: string;                        // фильтр по одной дате (для обратной совместимости)
-  startDate?: string;                   // начало диапазона, если задан диапазон
-  endDate?: string;                     // конец диапазона, если задан диапазон
-  initialWorkShop?: string;             // дефолтный цех для добавления строк
-  selectedWorkShopIds?: string[];       // фильтрация по цехам (ID из словаря)
+type DictItem = { value: string | number; label: string; labelEn?: string; labelZh?: string };
+
+type Dicts = {
+  workshops: DictItem[];
+  workcentersByWS: Record<string, DictItem[]>;
+  directness: DictItem[];
+  reasonGroupsByWS: Record<string, DictItem[]>;
 };
 
-/** ==== Редакторы ячеек ==== */
-// Приведение приходящих дат к формату YYYY-MM-DD
-function normalizeDate(value: any): string | null {
+type Props = {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  initialWorkShop?: string;
+  selectedWorkShopIds?: string[];
+};
+
+const mkId = () => Math.random().toString(36).slice(2);
+
+// AG Grid modules are registered once in src/ag-grid-modules.ts (imported in main.tsx)
+
+const normalizeDate = (value: any): string | null => {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'string') {
-    // Уже ISO без времени
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-    // Если есть время — берём только дату
     const isoMatch = value.match(/^\d{4}-\d{2}-\d{2}/);
     if (isoMatch) return isoMatch[0];
-    // Пробуем распарсить строку в дату
     const d = new Date(value);
     if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
-    return value; // как есть, если не распарсилось
+    return value;
   }
-  // Объект Date или число timestamp
   const d = new Date(value);
   if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
   return String(value);
-}
-// Нормализация строковых полей: null/undefined/"nan"/"null" -> null
-function normalizeNullableString(value: any): string | null {
-  if (value === null || value === undefined) return null;
-  const s = String(value).trim();
-  if (!s) return null;
-  const low = s.toLowerCase();
-  if (low === 'nan' || low === 'null') return null;
-  return s;
-}
-// Нормализация числовых полей: null/undefined/"nan"/"" -> null, иначе число
-function normalizeNullableNumber(value: any): number | null {
-  if (value === null || value === undefined) return null;
-  const s = String(value).trim();
-  if (!s) return null;
-  const low = s.toLowerCase();
-  if (low === 'nan' || low === 'null') return null;
-  const n = Number(s.replace(',', '.'));
-  return isNaN(n) ? null : n;
-}
-const getDictLabel = (o: DictItem, lang: string) => {
+};
+
+const getDictLabel = (o: DictItem | undefined | null, lang: string): string => {
+  if (!o) return '';
   if (lang?.startsWith('en')) return o.labelEn ?? o.label;
   if (lang?.startsWith('zh')) return o.labelZh ?? o.label;
   return o.labelEn ?? o.labelZh ?? o.label;
 };
 
-// Возвращаем текст, который реально видит пользователь в ячейке (с учётом языка)
-const displayText = (
-  field: keyof TimeLossRow,
-  row: LocalRow,
-  dicts: Dicts | null,
-  lang: string
-) => {
-  const toLabel = (o?: DictItem) => (o ? getDictLabel(o, lang) : '');
-  switch (field) {
-    case 'WorkShopID': {
-      const o = dicts?.workshops?.find(x => String(x.value) === String(row.WorkShopID));
-      return toLabel(o) || String(row.WorkShopID ?? '');
-    }
-    case 'WorkCenterID': {
-      const opts = dicts?.workcentersByWS?.[row.WorkShopID] ?? [];
-      const o = opts.find(x => String(x.value) === String(row.WorkCenterID));
-      return toLabel(o) || String(row.WorkCenterID ?? '');
-    }
-    case 'DirectnessID': {
-      const o = dicts?.directness?.find(x => Number(x.value) === Number(row.DirectnessID));
-      return toLabel(o) || String(row.DirectnessID ?? '');
-    }
-    case 'ReasonGroupID': {
-      const opts = dicts?.reasonGroupsByWS?.[row.WorkShopID] ?? [];
-      const o = opts.find(x => Number(x.value) === Number(row.ReasonGroupID));
-      return toLabel(o) || String(row.ReasonGroupID ?? '');
-    }
-    default:
-      return String((row as any)[field] ?? '');
-  }
-};
-
-// helpers для безопасной нормализации
-const safeArr = (x: any) => (Array.isArray(x) ? x : []);
-const str = (x: any) => (x === null || x === undefined ? '' : String(x));
-
-// строим workshops + workcentersByWS из Ref.WorkShop_CustomWS
 function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Record<string, DictItem[]> } {
   let list: any[] = [];
   if (Array.isArray(raw?.Ref?.WorkShop_CustomWS)) list = raw.Ref.WorkShop_CustomWS;
@@ -148,11 +88,9 @@ function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Rec
 
   const wsMap = new Map<string, DictItem>();
   const wcByWs: Record<string, DictItem[]> = {};
-
   for (const rec of list) {
-    const wsId = str(rec?.WorkShop_CustomWS);
-    const wcId = str(rec?.WorkCenter_CustomWS);
-
+    const wsId = String(rec?.WorkShop_CustomWS ?? rec?.WorkShopID ?? rec?.WorkShop ?? '');
+    const wcId = String(rec?.WorkCenter_CustomWS ?? rec?.WorkCenterID ?? rec?.WorkCenter ?? '');
     if (wsId && !wsMap.has(wsId)) {
       wsMap.set(wsId, {
         value: wsId,
@@ -161,7 +99,6 @@ function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Rec
         labelZh: rec?.WorkShopName_ZH,
       });
     }
-
     if (wsId && wcId) {
       wcByWs[wsId] ??= [];
       if (!wcByWs[wsId].some(x => String(x.value) === wcId)) {
@@ -174,242 +111,26 @@ function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Rec
       }
     }
   }
-
-  return {
-    workshops: Array.from(wsMap.values()),
-    workcentersByWS: wcByWs,
-  };
+  return { workshops: Array.from(wsMap.values()), workcentersByWS: wcByWs };
 }
 
-// Строим workshops и workcentersByWS из Ref.WorkShop_CustomWS
-function normalizeDicts(raw: any): Dicts {
-  const out: Dicts = {
-    workshops: [],
-    workcentersByWS: {},
-    directness: raw?.directness ?? [],
-    reasonGroupsByWS: raw?.reasonGroupsByWS ?? {},
-  };
-
-  const list =
-    raw?.Ref?.WorkShop_CustomWS ??
-    raw?.WorkShop_CustomWS ??
-    raw?.RefWorkShop_CustomWS ??
-    [];
-
-  const wsMap = new Map<string, DictItem>();
-  const wcByWs: Record<string, DictItem[]> = {};
-
-  for (const rec of list) {
-    const wsId = String(rec.WorkShop_CustomWS ?? rec.WorkShopID ?? rec.WorkShop);
-    const wcId = String(rec.WorkCenter_CustomWS ?? rec.WorkCenterID ?? rec.WorkCenter);
-
-    if (!wsId || !wcId) continue;
-
-    if (!wsMap.has(wsId)) {
-      wsMap.set(wsId, {
-        value: wsId,
-        label: rec.WorkShopName_EN || rec.WorkShopName_ZH || wsId,
-        labelEn: rec.WorkShopName_EN,
-        labelZh: rec.WorkShopName_ZH,
-      });
-    }
-
-    wcByWs[wsId] ??= [];
-    if (!wcByWs[wsId].some(x => String(x.value) === wcId)) {
-      wcByWs[wsId].push({
-        value: wcId,
-        label: rec.WorkCenterName_EN || rec.WorkCenterName_ZH || wcId,
-        labelEn: rec.WorkCenterName_EN,
-        labelZh: rec.WorkCenterName_ZH,
-      });
-    }
-  }
-
-  out.workshops = Array.from(wsMap.values());
-  out.workcentersByWS = wcByWs;
-  return out;
-}
-
-function SelectCell({
-  value, onChange, options, disabled, lang, name, id
-}: { value: string | number | null; onChange: (v: any)=>void; options: DictItem[]; disabled?: boolean; lang: string; name?: string; id?: string }) {
-  return (
-    <select
-      name={name}
-      id={id}
-      className="w-full h-8 bg-transparent border-0 rounded-none px-2 py-1 focus:outline-none focus:ring-0 select-text"
-      value={value ?? ''}
-      disabled={!!disabled}
-      onChange={(e)=>onChange(e.target.value === '' ? null : e.target.value)}
-    >
-      <option value="" />
-      {options.map(o => (
-        <option key={String(o.value)} value={String(o.value)}>
-          {getDictLabel(o, lang)}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function NumberCell({ value, onChange, name, id }:{ value:number|null; onChange:(v:number|null)=>void; name?: string; id?: string }) {
-  return (
-    <input
-      type="text" inputMode="decimal" pattern="[0-9]+([\.,][0-9]+)?" placeholder="0,0"
-      name={name}
-      id={id}
-      className="w-full h-8 bg-transparent border-0 rounded-none px-2 py-1 text-right focus:outline-none focus:ring-0 select-text"
-      value={value ?? ''}
-      onChange={(e)=> {
-        const raw = e.target.value.replace(/,/g,'.');
-        if (raw === '') { onChange(null); return; }
-        // допускаем только числа и одну точку
-        if (!/^\d*(?:\.\d*)?$/.test(raw)) return;
-        onChange(raw === '' ? null : Number(raw));
-      }}
-    />
-  );
-}
-
-function AutoTextArea({ value, onChange, maxLength, name, id }:{ value:string|null; onChange:(v:string|null)=>void; maxLength:number; name?: string; id?: string }) {
-  const ref = React.useRef<HTMLTextAreaElement | null>(null);
-  const sync = React.useCallback(() => {
-    const el = ref.current; if (!el) return;
-    el.style.height = '0px';
-    el.style.height = `${el.scrollHeight}px`;
-  }, []);
-  React.useEffect(() => { sync(); }, [value, sync]);
-  return (
-    <textarea
-      ref={ref}
-      name={name}
-      id={id}
-      maxLength={maxLength}
-      className="w-full min-h-[32px] bg-transparent border-0 rounded-none px-2 py-1 resize-none focus:outline-none focus:ring-0 select-text whitespace-pre-wrap break-words"
-      value={value ?? ''}
-      onChange={(e)=> { onChange(e.target.value); requestAnimationFrame(sync); }}
-    />
-  );
-}
-
-function TextCell({ value, onChange, name, id }:{ value:string|null; onChange:(v:string|null)=>void; name?: string; id?: string }) {
-  return (
-    <input
-      type="text"
-      name={name}
-      id={id}
-      className="w-full h-8 bg-transparent border-0 rounded-none px-2 py-1 focus:outline-none focus:ring-0 select-text"
-      value={value ?? ''}
-      onChange={(e)=> onChange(e.target.value)}
-    />
-  );
-}
-
-function DateCell({ value, onChange }:{ value:string|null; onChange:(v:string|null)=>void }) {
-  return (
-    <input
-      type="text" placeholder="ДД.ММ.ГГГГ"
-      className="w-full h-8 bg-transparent border-0 rounded-none px-2 py-1 [appearance:none] focus:outline-none focus:ring-0 select-text"
-      value={value ?? ''}
-      onChange={(e)=> onChange(e.target.value || null)}
-    />
-  );
-}
-
-// --- Excel selection helpers ---
-const keyCell = (r:number, c:number) => `${r}-${c}`;
-const makeRect = (r1:number,c1:number,r2:number,c2:number) => {
-  const [rs,re] = r1<r2 ? [r1,r2] : [r2,r1];
-  const [cs,ce] = c1<c2 ? [c1,c2] : [c2,c1];
-  const s = new Set<string>();
-  for (let r = rs; r <= re; r++) {
-    for (let c = cs; c <= ce; c++) s.add(keyCell(r,c));
-  }
-  return s;
-};
-
-// Проверка: клик по интерактивному элементу
-const isFormEl = (el: EventTarget | null) => {
-  if (!(el instanceof HTMLElement)) return false;
-  return !!el.closest('input,select,textarea,[contenteditable="true"]');
-};
-
-// true, если внутри input/textarea есть выделенный текст (а не просто каретка)
-const hasTextSelectionInInput = (el: EventTarget | null) => {
-  if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return false;
-  return el.selectionStart !== null && el.selectionEnd !== null && el.selectionStart !== el.selectionEnd;
-};
-
-// true если клик был по "стрелочке" селекта (правая часть ~22px)
-const isSelectArrowClick = (target: EventTarget | null, e: React.MouseEvent) => {
-  const el = target instanceof HTMLElement ? (target.closest('select') as HTMLSelectElement | null) : null;
-  if (!el) return false;
-  const r = el.getBoundingClientRect();
-  const ARROW_W = 22; // ширина области стрелки
-  return e.clientX >= r.right - ARROW_W;
-};
-
-// Поставить каретку по горизонтальной координате клика
-function placeCaretFromClick(
-  input: HTMLInputElement | HTMLTextAreaElement,
-  clientX: number
-) {
-  const rect = input.getBoundingClientRect();
-  const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-
-  const cvs = document.createElement('canvas');
-  const ctx = cvs.getContext('2d');
-  const cs = getComputedStyle(input);
-  if (!ctx) { const pos = (input.value ?? '').length; input.setSelectionRange(pos, pos); return; }
-  ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-
-  const text = input.value ?? '';
-  let acc = 0, idx = 0;
-  for (let i = 0; i < text.length; i++) {
-    const w = ctx.measureText(text[i]).width;
-    if (acc + w / 2 >= x) { idx = i; break; }
-    acc += w; idx = i + 1;
-  }
-  input.setSelectionRange(idx, idx);
-}
-
-/** ==== Основной компонент таблицы ==== */
 const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkShop, selectedWorkShopIds }) => {
   const { t, i18n } = useTranslation('production');
-  const [rows, setRows] = useState<LocalRow[]>([]);
+  const lang = i18n.language || 'zh';
+  const gridApiRef = useRef<any>(null);
+  const copiedCellsRef = useRef<Set<string>>(new Set());
+
   const [dicts, setDicts] = useState<Dicts | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [savingCell, setSavingCell] = useState<string | null>(null); // key "id:field"
+  const [rows, setRows] = useState<LocalRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState({create:0, update:0, del:0});
-  const [filters, setFilters] = useState<Record<string, string[]>>({});
-
-  // для подсветки выбранной ячейки + Ctrl+C/V (по локальному lid)
-  const [focused, setFocused] = useState<{lid:string, col:keyof TimeLossRow} | null>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
-
-  const mkId = () => Math.random().toString(36).slice(2);
-
-  // Локальный confirm-баннер (как в Assign Work Schedules)
-  const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; lines: string[]; onConfirm?: () => void }>({ visible: false, lines: [] });
-  const openConfirm = (lines: string[], onConfirm: () => void) => setConfirmDialog({ visible: true, lines, onConfirm });
-  const closeConfirm = () => setConfirmDialog({ visible: false, lines: [], onConfirm: undefined });
-
-  const markDirty = (lid:string, field:keyof TimeLossRow, value:any) => {
-    setRows(prev => prev.map(r => {
-      if (r._lid !== lid) return r;
-      const dirty = new Set(r._dirty ?? []);
-      dirty.add(field);
-      return { ...r, [field]: value, _dirty: dirty } as LocalRow;
-    }));
-  };
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
       const loadRows = async (): Promise<TimeLossRow[]> => {
         if (startDate && endDate) return apiGetRowsRange(startDate, endDate);
-        const d = date || startDate || new Date().toISOString().slice(0,10);
+        const d = date || startDate || new Date().toISOString().slice(0, 10);
         return apiGetRows(d);
       };
       const [rawDicts, r] = await Promise.all([apiGetDicts(), loadRows()]);
@@ -421,139 +142,73 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         reasonGroupsByWS: rawDicts.reasonGroupsByWS ?? {},
       };
       setDicts(dictsFinal);
-      setRows(r.map(x => ({
-        ...x,
-        OnlyDate: normalizeDate(x.OnlyDate) ?? '',
-        CompletedDate: normalizeDate(x.CompletedDate),
-        CommentText: normalizeNullableString((x as any).CommentText),
-        ManHours: normalizeNullableNumber((x as any).ManHours) as any,
-        ActionPlan: normalizeNullableString((x as any).ActionPlan),
-        Responsible: normalizeNullableString((x as any).Responsible),
-        _lid: mkId()
-      })));
+      setRows(
+        r.map(x => ({
+          ...x,
+          OnlyDate: normalizeDate(x.OnlyDate) ?? '',
+          CompletedDate: normalizeDate(x.CompletedDate),
+          _lid: mkId(),
+        }))
+      );
       setError(null);
-    } catch (e:any) {
+    } catch (e: any) {
       setError(e.message ?? 'Load error');
     } finally {
       setLoading(false);
     }
   }, [date, startDate, endDate]);
 
-  useEffect(()=> { reload(); }, [reload]);
+  useEffect(() => { reload(); }, [reload]);
 
-  /** helpers */
-  const wcOptionsByWS = useMemo(()=> dicts?.workcentersByWS ?? {}, [dicts]);
-  const rgOptionsByWS = useMemo(()=> dicts?.reasonGroupsByWS ?? {}, [dicts]);
+  const filteredRows = useMemo(() => {
+    if (!selectedWorkShopIds || !selectedWorkShopIds.length) return rows;
+    const set = new Set(selectedWorkShopIds.map(String));
+    // Показываем новые строки всегда, даже если WorkShopID ещё не выбран
+    return rows.filter(r => (r as LocalRow)._isNew || set.has(String(r.WorkShopID)));
+  }, [rows, selectedWorkShopIds]);
 
-  const handleChange = useCallback((row: LocalRow, field: keyof TimeLossRow, value:any) => {
-    // каскад валидации: сменили WorkShop → сбросить ReasonGroup/WorkCenter если невалидны
-    let patch: Partial<LocalRow> = { [field]: value };
-    if (field === 'WorkShopID') {
-      const ws = String(value || '');
-      const validWCs = new Set((wcOptionsByWS[ws] ?? []).map(x => x.value));
-      const validRGs = new Set((rgOptionsByWS[ws] ?? []).map(x => x.value));
-      if (!validWCs.has(row.WorkCenterID)) patch.WorkCenterID = '' as any;
-      if (!validRGs.has(row.ReasonGroupID)) patch.ReasonGroupID = null as any;
-    }
-    if (field === 'WorkCenterID' && (value === null || value === '')) {
-      patch.WorkCenterID = '' as any;
-    }
-    if (field === 'ManHours' && value !== null && value < 0) value = 0;
-
-    // локально
-    setRows(prev => prev.map(r => r._lid === row._lid ? ({...r, ...patch}) as LocalRow : r));
-    Object.entries(patch).forEach(([k,v]) => markDirty(row._lid, k as keyof TimeLossRow, v));
-  }, [rgOptionsByWS, wcOptionsByWS]);
-
-  // Значение для фильтрации с учетом отображаемых меток
-  const getFilterValue = useCallback((field: keyof TimeLossRow, row: LocalRow): string => {
-    const selectFields = new Set<keyof TimeLossRow>(['WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID']);
-    if (selectFields.has(field)) {
-      return String(displayText(field, row, dicts, i18n.language || 'zh'));
-    }
-    return String((row as any)[field] ?? '');
-  }, [dicts, i18n.language]);
-
-  // Отфильтрованные строки
-  const visibleRows = useMemo(() => {
-    const activeKeys = Object.keys(filters).filter(k => (filters[k] ?? []).length > 0);
-    // Базовый ряд — по цехам, если выбран фильтр по ws (независимо от поповеров)
-    const byWS = Array.isArray(selectedWorkShopIds) && selectedWorkShopIds.length
-      ? rows.filter(r => selectedWorkShopIds.includes(String(r.WorkShopID)))
-      : rows;
-    if (!activeKeys.length) return byWS;
-    return byWS.filter(r => activeKeys.every(k => {
-      const vals = filters[k] ?? [];
-      if (!vals.length) return true;
-      const v = getFilterValue(k as keyof TimeLossRow, r);
-      return vals.includes(String(v));
+  const markDirty = useCallback((rid: string, field: keyof TimeLossRow, value: any) => {
+    setRows(prev => prev.map(r => {
+      if (r._lid !== rid) return r;
+      const dirty = new Set(r._dirty ?? []);
+      dirty.add(field);
+      return { ...r, [field]: value, _dirty: dirty } as LocalRow;
     }));
-  }, [rows, filters, getFilterValue, selectedWorkShopIds]);
+  }, []);
 
-  // Уникальные значения по колонкам с учетом остальных фильтров
-  const uniqueValuesByKey = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    const all: (keyof TimeLossRow)[] = ['OnlyDate','WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID','CommentText','ManHours','ActionPlan','Responsible','CompletedDate'];
-    for (const k of all) {
-      const subset = rows.filter(r => Object.keys(filters).every(other => {
-        if (other === k) return true;
-        const vals = filters[other] ?? [];
-        if (!vals.length) return true;
-        const v = getFilterValue(other as keyof TimeLossRow, r);
-        return vals.includes(String(v));
-      }));
-      const uniq = Array.from(new Set(subset.map(r => getFilterValue(k, r))));
-      map[String(k)] = uniq.sort((a,b) => a.localeCompare(b, undefined, { numeric: true }));
-    }
-    return map;
-  }, [rows, filters, getFilterValue]);
+  const onCellValueChanged = useCallback((ev: CellValueChangedEvent<LocalRow>) => {
+    const colId = ev.colDef.field as keyof TimeLossRow | undefined;
+    if (!colId) return;
+    markDirty(ev.data._lid, colId, ev.newValue);
+  }, [markDirty]);
 
   const addRow = useCallback(() => {
-    if (!dicts) return;
-    const dir = Number(dicts.directness?.[0]?.value ?? 1);
     const todayIso = new Date().toISOString().slice(0, 10);
-
+    const dir = Number(dicts?.directness?.[0]?.value ?? 1);
     const r: LocalRow = {
       _lid: mkId(),
       _isNew: true,
-      _dirty: new Set<keyof TimeLossRow>([
-        'OnlyDate','WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID','ManHours'
-      ]),
-
+      _dirty: new Set<keyof TimeLossRow>(['OnlyDate','WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID','ManHours']),
       EntryID: 0,
       OnlyDate: todayIso,
-
-      // Пустые значения для 车间 / 条线 / 原因
-      WorkShopID: '' as any,
+      WorkShopID: '',
       WorkCenterID: '' as any,
-      ReasonGroupID: null as any,
-
-      // Остальное без изменений
+      ReasonGroupID: null,
       DirectnessID: dir,
       CommentText: null,
       ManHours: null,
       ActionPlan: null,
       Responsible: null,
-      CompletedDate: null
+      CompletedDate: null,
     };
-    setRows(prev => [...prev, r]);
+    setRows(prev => [r, ...prev]);
   }, [dicts]);
 
-  const duplicateRow = useCallback((lid:string) => {
-    setRows(prev => {
-      const src = prev.find(x => x._lid === lid);
-      if (!src) return prev;
-      const copy: LocalRow = { ...src, _lid: mkId(), _isNew: true, _dirty: new Set<keyof TimeLossRow>(['OnlyDate','WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID','ManHours']), EntryID: 0 };
-      return [copy, ...prev];
-    });
-  }, []);
-
-  const toggleDelete = useCallback((lid:string) => {
-    setRows(prev => prev.map(r => r._lid === lid ? { ...r, _isDeleted: !r._isDeleted } : r));
+  const toggleDelete = useCallback((rid: string) => {
+    setRows(prev => prev.map(r => r._lid === rid ? { ...r, _isDeleted: !r._isDeleted } : r));
   }, []);
 
   const saveAll = useCallback(async () => {
-    setError(null);
     const toCreate = rows.filter(r => r._isNew && !r._isDeleted);
     const toUpdate = rows.filter(r => !r._isNew && !r._isDeleted && r._dirty && r._dirty.size > 0);
     const toDelete = rows.filter(r => !r._isNew && r._isDeleted);
@@ -567,7 +222,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
 
       const created: LocalRow[] = [];
       for (const r of toCreate) {
-        const payload = {
+        const payload: Partial<TimeLossRow> = {
           OnlyDate: r.OnlyDate,
           WorkShopID: r.WorkShopID,
           WorkCenterID: r.WorkCenterID,
@@ -584,9 +239,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       }
 
       for (const r of toUpdate) {
-        for (const f of r._dirty!) {
-          await apiPatchCell(r.EntryID, f, (r as any)[f]);
-        }
+        for (const f of r._dirty!) await apiPatchCell(r.EntryID, f, (r as any)[f]);
       }
 
       setRows(prev => prev
@@ -598,649 +251,362 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
           if (r._dirty && r._dirty.size > 0) return { ...r, _dirty: new Set() } as LocalRow;
           return r;
         })
-        .filter(Boolean) as LocalRow[]
-      );
-    } catch (e:any) {
+        .filter(Boolean) as LocalRow[]);
+
+      setError(null);
+    } catch (e: any) {
       setError(e.message ?? 'Save failed');
     }
   }, [rows]);
 
-  // Подтверждение перед Refresh
-  const confirmAndReload = useCallback(() => {
-    const msg = t('timeLossTable.confirmRefresh') || 'Are you sure you want to refresh the table? Unsaved data will be lost.';
-    openConfirm([msg], async () => {
-      closeConfirm();
-      await reload();
-    });
-  }, [reload, t]);
-
-  // Подтверждение перед Save (и предупреждение об удалении)
-  const confirmAndSave = useCallback(() => {
-    const lines: string[] = [t('timeLossTable.confirmSave') || 'Confirm saving the document.'];
-    const hasDeletions = rows.some(r => r._isDeleted && !r._isNew);
-    if (hasDeletions) {
-      lines.push(t('timeLossTable.confirmSaveWillDelete') || 'Some rows will be deleted.');
-    }
-    openConfirm(lines, async () => {
-      closeConfirm();
-      await saveAll();
-    });
-  }, [rows, saveAll, t]);
-
-  /** ==== Определение колонок ==== */
-  // Расширяем тип meta, чтобы был ключ field
-  type ColDef = ColumnDef<LocalRow> & { meta?: { field?: keyof TimeLossRow } };
-
-  const columns = useMemo<ColDef[]>(() => {
-    const wsOpts = dicts?.workshops ?? [];
-    const lang = i18n.language || 'zh';
-    return [
-      { accessorKey:'OnlyDate', header: () => (
-          <>
-            {t('timeLossTable.date')}
-            <FilterPopover
-              columnId={'OnlyDate'}
-              uniqueValues={uniqueValuesByKey['OnlyDate'] ?? []}
-              selectedValues={filters['OnlyDate'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, OnlyDate: sel }))}
-            />
-          </>
-        ), meta:{field:'OnlyDate' as keyof TimeLossRow, excelHeader: t('timeLossTable.date')}, cell: ({row}) =>
-          <DateCell value={row.original.OnlyDate} onChange={(v)=>handleChange(row.original,'OnlyDate', v)} /> },
-
-      { accessorKey:'WorkShopID', header: () => (
-          <>
-            {t('timeLossTable.workshop')}
-            <FilterPopover
-              columnId={'WorkShopID'}
-              uniqueValues={uniqueValuesByKey['WorkShopID'] ?? []}
-              selectedValues={filters['WorkShopID'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, WorkShopID: sel }))}
-            />
-          </>
-        ), meta:{field:'WorkShopID' as keyof TimeLossRow, excelHeader: t('timeLossTable.workshop')}, cell: ({row}) =>
-          <SelectCell name="WorkShopID" id={`ws-${row.original._lid}`} lang={lang} value={row.original.WorkShopID} options={wsOpts}
-                      onChange={(v)=>handleChange(row.original,'WorkShopID', v)} /> },
-
-      { accessorKey:'WorkCenterID', header: () => (
-          <>
-            {t('timeLossTable.workCenter')}
-            <FilterPopover
-              columnId={'WorkCenterID'}
-              uniqueValues={uniqueValuesByKey['WorkCenterID'] ?? []}
-              selectedValues={filters['WorkCenterID'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, WorkCenterID: sel }))}
-            />
-          </>
-        ), meta:{field:'WorkCenterID' as keyof TimeLossRow, excelHeader: t('timeLossTable.workCenter')}, cell: ({row}) => {
-          const ws = row.original.WorkShopID;
-          const options = wcOptionsByWS[ws] ?? [];
-          return <SelectCell name="WorkCenterID" id={`wc-${row.original._lid}`} lang={lang} value={row.original.WorkCenterID} options={options}
-                             onChange={(v)=>{ handleChange(row.original,'WorkCenterID', v); ensureWidth('WorkCenterID', row.original);} } />;
-        }},
-
-      { accessorKey:'DirectnessID', header: () => (
-          <>
-            {t('timeLossTable.lossType')}
-            <FilterPopover
-              columnId={'DirectnessID'}
-              uniqueValues={uniqueValuesByKey['DirectnessID'] ?? []}
-              selectedValues={filters['DirectnessID'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, DirectnessID: sel }))}
-            />
-          </>
-        ), meta:{field:'DirectnessID' as keyof TimeLossRow, excelHeader: t('timeLossTable.lossType')}, cell: ({row}) =>
-          <SelectCell name="DirectnessID" id={`dir-${row.original._lid}`} lang={lang} value={row.original.DirectnessID} options={dicts?.directness ?? []}
-                      onChange={(v)=>{ handleChange(row.original,'DirectnessID', Number(v)); ensureWidth('DirectnessID', row.original); }} /> },
-
-      { accessorKey:'ReasonGroupID', header: () => (
-          <>
-            {t('timeLossTable.lossReason')}
-            <FilterPopover
-              columnId={'ReasonGroupID'}
-              uniqueValues={uniqueValuesByKey['ReasonGroupID'] ?? []}
-              selectedValues={filters['ReasonGroupID'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, ReasonGroupID: sel }))}
-            />
-          </>
-        ), meta:{field:'ReasonGroupID' as keyof TimeLossRow, excelHeader: t('timeLossTable.lossReason')}, cell: ({row}) => {
-          const ws = row.original.WorkShopID;
-          const options = rgOptionsByWS[ws] ?? [];
-          return <SelectCell name="ReasonGroupID" id={`rg-${row.original._lid}`} lang={lang} value={row.original.ReasonGroupID} options={options}
-                             onChange={(v)=>{ handleChange(row.original,'ReasonGroupID', Number(v)); ensureWidth('ReasonGroupID', row.original); }} />;
-        }},
-
-      { accessorKey:'CommentText', header: () => (
-          <>
-            {t('timeLossTable.comment')}
-            <FilterPopover
-              columnId={'CommentText'}
-              uniqueValues={uniqueValuesByKey['CommentText'] ?? []}
-              selectedValues={filters['CommentText'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, CommentText: sel }))}
-            />
-          </>
-        ), meta:{field:'CommentText' as keyof TimeLossRow, excelHeader: t('timeLossTable.comment')}, cell: ({row}) =>
-          <AutoTextArea name="CommentText" id={`comment-${row.original._lid}`} maxLength={500} value={row.original.CommentText} onChange={(v)=>{ handleChange(row.original,'CommentText', v); }} /> },
-
-      { accessorKey:'ManHours', header: () => (
-          <>
-            {t('timeLossTable.manHours')}
-            <FilterPopover
-              columnId={'ManHours'}
-              uniqueValues={uniqueValuesByKey['ManHours'] ?? []}
-              selectedValues={filters['ManHours'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, ManHours: sel }))}
-            />
-          </>
-        ), meta:{field:'ManHours' as keyof TimeLossRow, excelHeader: t('timeLossTable.manHours')}, cell: ({row}) =>
-          <NumberCell name="ManHours" id={`mh-${row.original._lid}`} value={row.original.ManHours ?? null} onChange={(v)=>{ handleChange(row.original,'ManHours', v); ensureWidth('ManHours', row.original);} } /> },
-
-      { accessorKey:'ActionPlan', header: () => (
-          <>
-            {t('timeLossTable.actionPlan')}
-            <FilterPopover
-              columnId={'ActionPlan'}
-              uniqueValues={uniqueValuesByKey['ActionPlan'] ?? []}
-              selectedValues={filters['ActionPlan'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, ActionPlan: sel }))}
-            />
-          </>
-        ), meta:{field:'ActionPlan' as keyof TimeLossRow, excelHeader: t('timeLossTable.actionPlan')}, cell: ({row}) =>
-          <AutoTextArea name="ActionPlan" id={`ap-${row.original._lid}`} maxLength={500} value={row.original.ActionPlan} onChange={(v)=>{ handleChange(row.original,'ActionPlan', v); }} /> },
-
-      { accessorKey:'Responsible', header: () => (
-          <>
-            {t('timeLossTable.responsible')}
-            <FilterPopover
-              columnId={'Responsible'}
-              uniqueValues={uniqueValuesByKey['Responsible'] ?? []}
-              selectedValues={filters['Responsible'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, Responsible: sel }))}
-            />
-          </>
-        ), meta:{field:'Responsible' as keyof TimeLossRow, excelHeader: t('timeLossTable.responsible')}, cell: ({row}) =>
-          <TextCell name="Responsible" id={`resp-${row.original._lid}`} value={row.original.Responsible} onChange={(v)=>{ handleChange(row.original,'Responsible', v); ensureWidth('Responsible', row.original);} } /> },
-
-      { accessorKey:'CompletedDate', header: () => (
-          <>
-            {t('timeLossTable.completedDate')}
-            <FilterPopover
-              columnId={'CompletedDate'}
-              uniqueValues={uniqueValuesByKey['CompletedDate'] ?? []}
-              selectedValues={filters['CompletedDate'] ?? []}
-              onFilterChange={(sel) => setFilters(p => ({ ...p, CompletedDate: sel }))}
-            />
-          </>
-        ), meta:{field:'CompletedDate' as keyof TimeLossRow, excelHeader: t('timeLossTable.completedDate')}, cell: ({row}) =>
-          <DateCell value={row.original.CompletedDate} onChange={(v)=>{ handleChange(row.original,'CompletedDate', v); ensureWidth('CompletedDate', row.original);} } /> },
-
-      { id:'actions', header:'', cell: ({row}) => (
-          <div className="flex gap-2 items-center">
-            <button
-              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-              onClick={()=>toggleDelete(row.original._lid)}
-              title={row.original._isDeleted ? (t('timeLossTable.undo')||'Undo') : (t('timeLossTable.delete')||'Delete')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        )}
-    ];
-  }, [dicts, handleChange, t, wcOptionsByWS, rgOptionsByWS, filters, uniqueValuesByKey, i18n.language]);
-
-  const table = useReactTable<LocalRow>({
-    data: visibleRows,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  // Автоматический расчёт ширины колонок (в пикселях) по максимальной длине контента
-  const columnWidths = useMemo(() => {
-    const widths: Record<string, number> = {};
-    // измеритель текста через canvas
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const measure = (text: string) => {
-      if (!ctx) return text.length * 9;
-      // Tailwind text-sm по умолчанию ~14px
-      ctx.font = '14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-      return ctx.measureText(text).width;
-    };
-
-    const cols = columns as any[];
-    const baseMin: Partial<Record<keyof TimeLossRow, number>> = {
-      OnlyDate: 120,
-      CompletedDate: 140,
-      WorkShopID: 160,
-      WorkCenterID: 200,
-      CommentText: 460, // фикс ширина комментариев
-      ActionPlan: 360,  // фикс ширина плана
-    };
-
-    cols.forEach(col => {
-      const key = (col.meta?.field || col.accessorKey) as keyof TimeLossRow | undefined;
-      if (!key) return;
-      const headerText = (col.meta?.excelHeader ? String(col.meta.excelHeader) : (typeof col.header === 'string' ? col.header : String(col.accessorKey ?? key)));
-      let maxW = measure(headerText);
-
-      // учитываем все варианты из словарей, не только текущие значения в данных
-      const langAll = i18n.language || 'zh';
-      if (key === 'WorkShopID') {
-        for (const o of (dicts?.workshops ?? [])) {
-          const w = measure(getDictLabel(o, langAll));
-          if (w > maxW) maxW = w;
-        }
-      } else if (key === 'WorkCenterID') {
-        const allWC = Object.values(dicts?.workcentersByWS ?? {}).flat();
-        for (const o of allWC) {
-          const w = measure(getDictLabel(o, langAll));
-          if (w > maxW) maxW = w;
-        }
-      } else if (key === 'DirectnessID') {
-        for (const o of (dicts?.directness ?? [])) {
-          const w = measure(getDictLabel(o, langAll));
-          if (w > maxW) maxW = w;
-        }
-      } else if (key === 'ReasonGroupID') {
-        const allRG = Object.values(dicts?.reasonGroupsByWS ?? {}).flat();
-        for (const o of allRG) {
-          const w = measure(getDictLabel(o, langAll));
-          if (w > maxW) maxW = w;
-        }
-      }
-      // Для текстовых колонок фиксируем ширину и не учитываем длинные значения
-      if (key !== 'CommentText' && key !== 'ActionPlan') {
-        for (const r of visibleRows) {
-          const shown = displayText(key, r as any, dicts, i18n.language || 'zh');
-          const w = measure(shown);
-          if (w > maxW) maxW = w;
-        }
-      }
-      // больше отступ для select-колонок + значок фильтра в шапке
-      const SELECT_ARROW_PX = 18; // стрелка селекта
-      const FILTER_ICON_PX = 24; // значок фильтра в заголовке
-      const selectCols = new Set<keyof TimeLossRow>(['WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID']);
-      const padding = (selectCols.has(key) ? (60 + SELECT_ARROW_PX) : 28) + FILTER_ICON_PX; // px
-      const minW = baseMin[key] ?? 110;
-      // Жестко фиксируем ширину для текстовых колонок
-      if (key === 'CommentText' || key === 'ActionPlan') {
-        widths[String(key)] = minW;
-      } else {
-        widths[String(key)] = Math.max(minW, Math.ceil(maxW + padding));
-      }
-    });
-    return widths;
-  }, [visibleRows, columns, dicts, i18n.language]);
-
-  // Ручные расширения колонки (моментально при вводе)
-  const [manualWidths, setManualWidths] = useState<Record<string, number>>({});
-  const ensureWidth = useCallback((field: keyof TimeLossRow, row: LocalRow) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const measure = (text: string) => {
-      if (!ctx) return text.length * 9;
-      ctx.font = '14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-      return ctx.measureText(text).width;
-    };
-    const s = displayText(field, row, dicts, i18n.language || 'zh');
-    const padding = 28;
-    const minW = { OnlyDate:120, CompletedDate:140, WorkShopID:160, WorkCenterID:200, CommentText:240, ActionPlan:240 } as any;
-    let w = Math.max(measure(String(field)), measure(s)) + padding;
-    const min = ((minW as any)[field] !== undefined ? (minW as any)[field] : 110);
-    if (w < min) w = min;
-    setManualWidths(prev => (w > (prev[String(field)] ?? 0) ? { ...prev, [String(field)]: Math.ceil(w) } : prev));
-  }, [dicts, i18n.language]);
-
-  const finalWidths = useMemo(() => {
-    const out: Record<string, number> = { ...columnWidths };
-    Object.keys(manualWidths).forEach(k => {
-      out[k] = Math.max(out[k] ?? 0, manualWidths[k]);
-    });
-    return out;
-  }, [columnWidths, manualWidths]);
-
-  // см. onKey ниже — Excel-подобная навигация/копипаст
-  // индексы листовых колонок
-  const leaf = useMemo(()=> table.getVisibleLeafColumns(), [table]);
-  const leafIdx = useMemo(()=>{ const m:Record<string,number>={}; leaf.forEach((c,i)=> m[c.id as string] = i); return m; }, [leaf]);
-
-  // Excel-подобное выделение
-  const [anchor, setAnchor] = useState<{r:number,c:number}|null>(null);
-  const [cursor, setCursor] = useState<{r:number,c:number}|null>(null);
-  const [sel, setSel] = useState<Set<string>>(new Set());
-  const [copiedSel, setCopiedSel] = useState<Set<string>>(new Set());
-  const gridRef = tableRef;
-  const selectSingle = (r:number,c:number) => { setAnchor({r,c}); setCursor({r,c}); setSel(new Set([keyCell(r,c)])); };
-  const handleMouseDown = (r:number,c:number,e:React.MouseEvent) => {
-    const allowNative = isSelectArrowClick(e.target, e);
-    if (!allowNative) {
-        e.preventDefault();
-      gridRef.current?.focus();
-    }
-    if (e.shiftKey && anchor) { setCursor({r,c}); setSel(makeRect(anchor.r,anchor.c,r,c)); }
-    else if (e.ctrlKey || e.metaKey) {
-      setSel(prev=>{ const n=new Set(prev); const k=keyCell(r,c); n.has(k)?n.delete(k):n.add(k); return n; });
-      setAnchor({r,c}); setCursor({r,c});
-    } else { selectSingle(r,c); }
-  };
-  const handleMouseOver = (r:number,c:number,pressed:boolean) => { if (pressed && anchor) { setCursor({r,c}); setSel(makeRect(anchor.r,anchor.c,r,c)); } };
-
-  const editableFields = new Set<keyof TimeLossRow>(['OnlyDate','WorkShopID','WorkCenterID','DirectnessID','ReasonGroupID','CommentText','ManHours','ActionPlan','Responsible','CompletedDate']);
-
-  // преобразование вставляемого текста
-  const byIdOrLabel = (list: DictItem[] = [], s: string) => {
-    const low = s.toLowerCase();
-    return list.find(x =>
-      String(x.value).toLowerCase() === low ||
-      (x.label && (x.label as any).toLowerCase?.() === low) ||
-      (x.labelEn && (x.labelEn as any).toLowerCase?.() === low) ||
-      (x.labelZh && (x.labelZh as any).toLowerCase?.() === low)
-    );
-  };
-
-  const parseClip = useCallback((field:keyof TimeLossRow, text:string, row:LocalRow) => {
-    const s = text.trim();
-    if (s==='') return null;
-    if (field==='ManHours') return Number(s.replace(',','.'));
-    if (field==='OnlyDate' || field==='CompletedDate') return normalizeDate(s);
-    if (field==='WorkShopID') { const list = dicts?.workshops ?? []; const by = byIdOrLabel(list, s); return by ? String(by.value) : s; }
-    if (field==='WorkCenterID') { const list = dicts?.workcentersByWS[row.WorkShopID] ?? []; const by = byIdOrLabel(list, s); return by ? String(by.value) : s; }
-    if (field==='DirectnessID') { const list = dicts?.directness ?? []; const by = byIdOrLabel(list, s); return by ? Number(by.value) : Number(s); }
-    if (field==='ReasonGroupID') { const list = dicts?.reasonGroupsByWS[row.WorkShopID] ?? []; const by = byIdOrLabel(list, s); return by ? Number(by.value) : Number(s); }
-    return s;
-  }, [dicts]);
-
-  const filteredRows = useMemo(()=> table.getRowModel().rows.map(r=>r.original), [table, visibleRows]);
-
-  const isPrintableKey = (e: React.KeyboardEvent) => e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-  const getStartCellPos = () => {
-    if (sel.size > 0) {
-      const coords = [...sel].map(k => k.split('-').map(Number));
-      const r = Math.min(...coords.map(([r]) => r));
-      const c = Math.min(...coords.map(([,c]) => c));
-      return { r, c };
-    }
-    return cursor ?? { r: 0, c: 0 };
-  };
-  const setNativeValue = (el: HTMLInputElement | HTMLTextAreaElement, v: string) => {
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-    const desc = Object.getOwnPropertyDescriptor(proto, 'value');
-    desc?.set?.call(el, v);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  };
-  const focusAndType = (r:number, c:number, ch:string) => {
-    const td = tableRef.current?.querySelector(`td[data-r="${r}"][data-c="${c}"]`) as HTMLTableCellElement | null;
-    if (!td) return;
-    const control = td.querySelector('input,textarea,select') as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
-    if (!control) return;
-    selectSingle(r, c);
-    if (control instanceof HTMLSelectElement) {
-      if (ch) {
-        const lc = ch.toLowerCase();
-        const match = Array.from(control.options).find(o => o.text.toLowerCase().startsWith(lc) || o.value.toLowerCase().startsWith(lc));
-        if (match) {
-          control.value = match.value;
-          control.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }
-      control.focus();
-      return;
-    }
-    control.focus();
-    setNativeValue(control as any, ch);
-    (control as HTMLInputElement).setSelectionRange?.(ch.length, ch.length);
-  };
-
-  // Виртуализация строк
-  const rowVirt = useVirtualizer({
-    count: table.getRowModel().rows.length,
-    getScrollElement: () => tableRef.current,
-    estimateSize: () => 36,
-    overscan: 8,
-    measureElement: (el) => (el as HTMLElement).getBoundingClientRect().height,
-  });
-  const vRows = rowVirt.getVirtualItems();
-  const padTop = vRows[0]?.start ?? 0;
-  const padBot = rowVirt.getTotalSize() - (vRows.at(-1)?.end ?? 0);
-
-  const onKey = useCallback(async (e:React.KeyboardEvent<HTMLDivElement>) => {
-    if (isFormEl(e.target)) return; // не перехватываем, когда пользователь печатает в контроле
-    if (!leaf.length) return;
-
-    // Печать/очистка — старт редактирования без даблклика
-    if (isPrintableKey(e) || e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault();
-      const { r, c } = getStartCellPos();
-      const ch = (e.key === 'Backspace' || e.key === 'Delete') ? '' : e.key;
-      focusAndType(r, c, ch);
-      return;
-    }
-
-    // ESC — убрать «пунктир»
-    if (e.key === 'Escape') { setCopiedSel(new Set()); return; }
-
-    const key = e.key.toLowerCase();
-    const isCopy = (e.ctrlKey||e.metaKey) && (key==='c' || (e as any).code==='KeyC');
-    if (isCopy && sel.size) {
-      e.preventDefault();
-      const map:Record<number,Record<number,string>> = {};
-      sel.forEach(k=>{ const [r,c] = k.split('-').map(Number); map[r] ??= {}; const col = leaf[c]; const field = (col.columnDef as any).meta?.field as keyof TimeLossRow|undefined; const val = (filteredRows[r] as any)?.[field ?? (col.id as any)]; map[r][c] = val==null ? '' : String(val); });
-      const rowsIdx = Object.keys(map).map(Number).sort((a,b)=>a-b);
-      const colsIdx = [...new Set(Object.values(map).flatMap(o=>Object.keys(o).map(Number)))].sort((a,b)=>a-b);
-      const tsv = rowsIdx.map(r=>colsIdx.map(c=>map[r][c] ?? '').join('\t')).join('\n');
-      await navigator.clipboard.writeText(tsv).catch(()=>{});
-      setCopiedSel(new Set(sel));
-      return;
-    }
-
-    const isPaste = (e.ctrlKey||e.metaKey) && (key==='v' || (e as any).code==='KeyV');
-    if (isPaste) {
-      e.preventDefault();
-      // 1) Пытаемся прочитать HTML (таблицу) для корректной вставки многострочных ячеек
-      let grid:string[][]|null = null;
-      try {
-        const items = await (navigator.clipboard as any).read?.();
-        if (items && items[0]) {
-          const htmlItem = items[0].types?.includes('text/html') ? items[0] : null;
-          if (htmlItem) {
-            const blob = await htmlItem.getType('text/html');
-            const html = await blob.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const table = doc.querySelector('table');
-            if (table) {
-              grid = Array.from(table.querySelectorAll('tr')).map(tr =>
-                Array.from(tr.querySelectorAll('td,th')).map(td => (td as HTMLElement).innerText.replace(/\r/g,'') )
-              );
-            }
-          }
-        }
-      } catch { /* fallback below */ }
-
-      // 2) Fallback: разбираем как TSV, сохраняя переносы строк внутри ячейки, если нет табов
-      if (!grid) {
-        const rawText = await navigator.clipboard.readText(); if (!rawText) return;
-        const text = rawText.replace(/\r/g,'');
-        if (text.includes('\t')) {
-          const lines = text.split('\n');
-          grid = lines.map(l=>l.split('\t'));
-        } else {
-          grid = [[text]]; // одна ячейка, переносы остаются внутри строки
-        }
-      }
-
-      const startR = (anchor?.r ?? 0); const startC = (anchor?.c ?? 0);
-      let targets:Set<string>;
-      if (sel.size>1) {
-        const rr=[...sel].map(k=>Number(k.split('-')[0])); const cc=[...sel].map(k=>Number(k.split('-')[1]));
-        targets = makeRect(Math.min(...rr), Math.min(...cc), Math.max(...rr), Math.max(...cc));
-      } else {
-        const endR = startR + grid.length - 1;
-        const endC = startC + Math.max(...grid.map(r=>r.length)) - 1;
-        targets = makeRect(startR,startC,endR,endC);
-      }
-
-      // Заполняем target-диапазон плиткой grid (tiling), чтобы поддержать один-ко-многим и многие-ко-многим
-      const coords = [...targets].map(k=>k.split('-').map(Number) as [number,number]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
-      const minR = Math.min(...coords.map(c=>c[0])); const minC = Math.min(...coords.map(c=>c[1]));
-      for (const [r,c] of coords) {
-        const row = rows[r]; if (!row) continue; const col = leaf[c]; const field = (col.columnDef as any).meta?.field as keyof TimeLossRow | undefined; if (!field || !editableFields.has(field)) continue;
-        const gr = (r - minR) % grid.length; const gc = (c - minC) % grid[gr].length;
-        const raw = grid[gr][gc] ?? '';
-        const val = parseClip(field, raw, row);
-        handleChange(row, field, val);
-      }
-      requestAnimationFrame(()=>gridRef.current?.focus());
-      return;
-    }
-
-    // Навигация стрелками
-    if (!cursor) return; let {r,c} = cursor;
-    if (['arrowup','arrowdown','arrowleft','arrowright'].includes(key)) {
-      e.preventDefault();
-      r += key==='arrowdown'?1:key==='arrowup'?-1:0; c += key==='arrowright'?1:key==='arrowleft'?-1:0;
-      r = Math.max(0, Math.min(rows.length-1, r)); c = Math.max(0, Math.min(leaf.length-1, c));
-      if (e.shiftKey && anchor) { setCursor({r,c}); setSel(makeRect(anchor.r,anchor.c,r,c)); } else { selectSingle(r,c); }
-      rowVirt.scrollToIndex(r);
-    }
-  }, [leaf, sel, cursor, rows, filteredRows, editableFields, parseClip, anchor, getStartCellPos, focusAndType, handleChange, rowVirt]);
-
-  /** ==== Рендер ==== */
-  if (loading) {
-    return <div className="flex justify-center items-center h-64 text-gray-600">加载中… / Загрузка…</div>;
-  }
-  if (error) {
-    return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>;
-  }
-
-  const totalManHours = visibleRows.reduce((s, r) => s + (Number(r.ManHours) || 0), 0);
-
   const actions = (
     <div className="flex items-center gap-2">
-      <button onClick={confirmAndSave} className="px-4 py-1 rounded-md text-sm font-medium border bg-emerald-600 text-white hover:bg-emerald-700">
-        {t('timeLossTable.save')}
-      </button>
-      <button
-        onClick={addRow}
-        className="px-4 py-1 rounded-md text-sm font-medium border transition-colors bg-[#0d1c3d] text-white border-[#0d1c3d] hover:bg-[#0b1733]"
-      >
-        {t('timeLossTable.addRow')}
-      </button>
-      <button
-        onClick={confirmAndReload}
-        className="px-4 py-1 rounded-md text-sm font-medium border transition-colors bg-[#0d1c3d] text-white border-[#0d1c3d] hover:bg-[#0b1733]"
-      >
-        {t('timeLossTable.refresh')}
-      </button>
+      <button onClick={saveAll} className="px-4 py-1 rounded-md text-sm font-medium border bg-emerald-600 text-white hover:bg-emerald-700">{t('timeLossTable.save')}</button>
+      <button onClick={addRow} className="px-4 py-1 rounded-md text-sm font-medium border transition-colors bg-[#0d1c3d] text-white border-[#0d1c3d] hover:bg-[#0b1733]">{t('timeLossTable.addRow')}</button>
+      <button onClick={reload} className="px-4 py-1 rounded-md text-sm font-medium border transition-colors bg-[#0d1c3d] text-white border-[#0d1c3d] hover:bg-[#0b1733]">{t('timeLossTable.refresh')}</button>
     </div>
   );
 
   const actionsSlot = typeof document !== 'undefined' ? document.getElementById('tl-actions-slot') : null;
 
+  const directnessValues = useMemo(() => (dicts?.directness ?? []).map(d => String(d.value)), [dicts]);
+  const reasonByWs = useMemo(() => dicts?.reasonGroupsByWS ?? {}, [dicts]);
+  const wcByWs = useMemo(() => dicts?.workcentersByWS ?? {}, [dicts]);
+
+  // Helpers for fast Set Filters over reference columns
+  const findByValue = useCallback((arr: DictItem[] | undefined, val: any): DictItem | undefined => {
+    return (arr ?? []).find(o => String(o.value) === String(val));
+  }, []);
+
+  const wsFilterValues = useMemo(() => (dicts?.workshops ?? []).map(w => String(w.value)), [dicts]);
+  const directnessFilterValues = useMemo(() => (dicts?.directness ?? []).map(d => String(d.value)), [dicts]);
+  const reasonFilterValues = useMemo(() => {
+    const s = new Set<string>();
+    const map = reasonByWs || {} as Record<string, DictItem[]>;
+    Object.values(map).forEach(arr => (arr || []).forEach(i => s.add(String(i.value))));
+    return Array.from(s);
+  }, [reasonByWs]);
+
+  // Глобальная карта РЦ (ID -> отображаемое имя), чтобы SetFilter мог показывать метки без привязки к строке
+  const wcValueToLabel = useMemo(() => {
+    const m = new Map<string, string>();
+    const map = wcByWs || {} as Record<string, DictItem[]>;
+    Object.values(map).forEach(arr => (arr || []).forEach(i => {
+      const k = String(i.value);
+      if (!m.has(k)) m.set(k, getDictLabel(i, lang));
+    }));
+    return m;
+  }, [wcByWs, lang]);
+
+  // Lists for Set Filters on non-reference columns
+  const onlyDateValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => { const v = r.OnlyDate; if (v) s.add(String(v)); });
+    return Array.from(s);
+  }, [rows]);
+
+  const workCenterLabelValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => {
+      const ws = String(r.WorkShopID ?? '');
+      const opts = wcByWs[ws] ?? [];
+      const lbl = getDictLabel(opts.find(o => String(o.value) === String(r.WorkCenterID)), lang);
+      if (lbl) s.add(lbl);
+    });
+    return Array.from(s);
+  }, [rows, wcByWs, lang]);
+
+  const commentValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => { const v = (r.CommentText ?? '').toString().trim(); if (v && v.toLowerCase() !== 'nan') s.add(v); });
+    return Array.from(s);
+  }, [rows]);
+
+  const actionPlanValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => { const v = (r.ActionPlan ?? '').toString().trim(); if (v && v.toLowerCase() !== 'nan') s.add(v); });
+    return Array.from(s);
+  }, [rows]);
+
+  const responsibleValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => { const v = (r.Responsible ?? '').toString().trim(); if (v && v.toLowerCase() !== 'nan') s.add(v); });
+    return Array.from(s);
+  }, [rows]);
+
+  const completedDateValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => { const v = r.CompletedDate ? String(r.CompletedDate) : ''; if (v) s.add(v); });
+    return Array.from(s);
+  }, [rows]);
+
+  const manHoursValues = useMemo(() => {
+    const s = new Set<string>();
+    rows.forEach(r => {
+      const v = r.ManHours;
+      if (v === null || v === undefined) return;
+      const n = Number(v);
+      if (!isFinite(n)) return;
+      const text = new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
+      s.add(text);
+    });
+    return Array.from(s);
+  }, [rows]);
+
+  const columns = useMemo<ColDef<LocalRow>[]>(() => [
+    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: true, filter: 'agSetColumnFilter', width: 140,
+      filterParams: { values: onlyDateValues, includeBlanksInFilter: true },
+    },
+    { field: 'WorkShopID', headerName: t('timeLossTable.workshop') as string, editable: true, filter: 'agSetColumnFilter', width: 160,
+      filterParams: {
+        values: wsFilterValues,
+        valueFormatter: (p: any) => getDictLabel(findByValue(dicts?.workshops, p.value), lang),
+        includeBlanksInFilter: true,
+      },
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: () => ({
+        values: (dicts?.workshops ?? []).map(w => String(w.value)),
+        formatValue: (id: any) => getDictLabel((dicts?.workshops ?? []).find(w => String(w.value) === String(id)), lang),
+        searchDebounceDelay: 0,
+      }),
+      valueFormatter: params => getDictLabel((dicts?.workshops ?? []).find(w => String(w.value) === String(params.value)), lang),
+    },
+    { field: 'WorkCenterID', headerName: t('timeLossTable.workCenter') as string, editable: true, filter: 'agSetColumnFilter', width: 200,
+      filterParams: {
+        includeBlanksInFilter: true,
+        keyCreator: (p: any) => wcValueToLabel.get(String(p.value)) || '',
+        valueFormatter: (p: any) => wcValueToLabel.get(String(p.value)) || '',
+      },
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (p: any) => ({
+        values: (wcByWs[p?.data?.WorkShopID] ?? []).map(w => String(w.value)),
+        formatValue: (id: any) => { const ws = p?.data?.WorkShopID; const opts = wcByWs[ws] ?? []; return getDictLabel(opts.find(o => String(o.value) === String(id)), lang); },
+        searchDebounceDelay: 0,
+      }),
+      valueFormatter: params => { const ws = (params.data as LocalRow)?.WorkShopID; const opts = wcByWs[ws] ?? []; return getDictLabel(opts.find(o => String(o.value) === String(params.value)), lang); },
+    },
+    { field: 'DirectnessID', headerName: t('timeLossTable.lossType') as string, editable: true, filter: 'agSetColumnFilter', width: 160,
+      filterParams: {
+        values: directnessFilterValues,
+        valueFormatter: (p: any) => getDictLabel(findByValue(dicts?.directness as any, p.value), lang),
+        includeBlanksInFilter: true,
+      },
+      cellEditor: 'agRichSelectCellEditor', cellEditorParams: { values: directnessValues, formatValue: (id: any) => getDictLabel((dicts?.directness ?? []).find(o => String(o.value) === String(id)), lang) },
+      valueParser: p => (p.newValue == null || p.newValue === '') ? null : Number(p.newValue),
+      valueFormatter: params => getDictLabel((dicts?.directness ?? []).find(o => Number(o.value) === Number(params.value)), lang),
+    },
+    { field: 'ReasonGroupID', headerName: t('timeLossTable.lossReason') as string, editable: true, filter: 'agSetColumnFilter', width: 200,
+      filterParams: {
+        values: reasonFilterValues,
+        valueFormatter: (p: any) => {
+          // формат по любому справочнику
+          const all: DictItem[] = ([] as DictItem[]).concat(...Object.values(reasonByWs || {} as Record<string, DictItem[]>));
+          return getDictLabel(findByValue(all, p.value), lang);
+        },
+        includeBlanksInFilter: true,
+      },
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (p: any) => ({
+        values: (reasonByWs[p?.data?.WorkShopID] ?? []).map(r => String(r.value)),
+        formatValue: (id: any) => { const ws = p?.data?.WorkShopID; const opts = reasonByWs[ws] ?? []; return getDictLabel(opts.find(o => String(o.value) === String(id)), lang); },
+        searchDebounceDelay: 0,
+      }),
+      valueParser: p => (p.newValue == null || p.newValue === '') ? null : Number(p.newValue),
+      valueFormatter: params => { const ws = (params.data as LocalRow)?.WorkShopID; const opts = reasonByWs[ws] ?? []; return getDictLabel(opts.find(o => Number(o.value) === Number(params.value)), lang); },
+    },
+    { field: 'CommentText', headerName: t('timeLossTable.comment') as string, editable: true, filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 460,
+      filterParams: { values: commentValues, includeBlanksInFilter: true },
+      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
+      cellEditor: 'agLargeTextCellEditor', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
+    },
+    { field: 'ManHours', headerName: t('timeLossTable.manHours') as string, editable: true, filter: 'agSetColumnFilter', width: 120,
+      filterParams: {
+        includeBlanksInFilter: true,
+        keyCreator: (p: any) => {
+          const v = p.value;
+          if (v === null || v === undefined) return '';
+          const n = Number(v);
+          if (!isFinite(n)) return '';
+          return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
+        },
+        valueFormatter: (p: any) => {
+          const v = p.value;
+          if (v === null || v === undefined) return '';
+          const n = Number(v);
+          if (!isFinite(n)) return '';
+          return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
+        },
+      },
+      valueParser: p => { const s = String(p.newValue ?? '').replace(',', '.'); if (s === '') return null; const n = Number(s); return isNaN(n) ? null : n; },
+      valueFormatter: params => {
+        const v = params.value;
+        if (v === null || v === undefined || v === '') return '';
+        if (typeof v === 'string' && v.trim().toLowerCase() === 'nan') return '';
+        const n = Number(v);
+        if (!isFinite(n)) return '';
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
+      },
+    },
+    { field: 'ActionPlan', headerName: t('timeLossTable.actionPlan') as string, editable: true, filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 360,
+      filterParams: { values: actionPlanValues, includeBlanksInFilter: true },
+      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
+      cellEditor: 'agLargeTextCellEditor', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
+    },
+    { field: 'Responsible', headerName: t('timeLossTable.responsible') as string, editable: true, filter: 'agSetColumnFilter', width: 160,
+      filterParams: { values: responsibleValues, includeBlanksInFilter: true },
+      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
+    },
+    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: true, filter: 'agSetColumnFilter', width: 160,
+      filterParams: { values: completedDateValues, includeBlanksInFilter: true },
+      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
+    },
+    { headerName: '', width: 60, editable: false, filter: false, cellRenderer: (p: any) => (
+      <button className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors" title={p.data?._isDeleted ? (t('timeLossTable.undo')||'Undo') : (t('timeLossTable.delete')||'Delete')} onClick={() => toggleDelete((p.data as LocalRow)._lid)}>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+      </button>
+    )},
+  ], [t, lang, dicts, wcByWs, reasonByWs, directnessValues, toggleDelete]);
+
+  const defaultColDef = useMemo<ColDef>(() => ({
+    resizable: true,
+    sortable: true,
+    filter: true,
+    editable: true,
+    cellClassRules: {
+      'copied-cell': params => copiedCellsRef.current.has(`${(params.data as LocalRow)?._lid}|${params.colDef.field}`),
+    },
+  }), []);
+
+  // Корректная обработка вставки из буфера для select-колонок: принимать метки и конвертировать в ID
+  const processCellFromClipboard = useCallback((p: any) => {
+    const colId = p?.column?.getColDef?.()?.field as keyof TimeLossRow | undefined;
+    const raw = p?.value;
+    if (!colId) return raw;
+    const normalize = (v: any): string => String(v ?? '').trim();
+    const isEmpty = (s: string) => s === '' || s.toLowerCase() === 'nan';
+
+    const text = normalize(raw);
+    if (isEmpty(text)) return null;
+
+    // helpers to find by label or value
+    const matchItem = (items: DictItem[] | undefined, s: string): string | number | null => {
+      if (!items || !items.length) return null;
+      const byValue = items.find(i => String(i.value) === s);
+      if (byValue) return byValue.value;
+      const byLabel = items.find(i => {
+        const lbl = getDictLabel(i, lang);
+        return String(lbl).trim() === s;
+      });
+      return byLabel ? byLabel.value : null;
+    };
+
+    if (colId === 'WorkShopID') {
+      const id = matchItem(dicts?.workshops, text);
+      return id != null ? String(id) : null;
+    }
+    if (colId === 'WorkCenterID') {
+      const ws = p?.node?.data?.WorkShopID ? String(p.node.data.WorkShopID) : undefined;
+      const items = ws ? wcByWs[ws] : undefined;
+      const id = matchItem(items, text);
+      return id != null ? String(id) : null;
+    }
+    if (colId === 'DirectnessID') {
+      const id = matchItem(dicts?.directness as any, text);
+      return id != null ? Number(id) : null;
+    }
+    if (colId === 'ReasonGroupID') {
+      const ws = p?.node?.data?.WorkShopID ? String(p.node.data.WorkShopID) : undefined;
+      const items = ws ? reasonByWs[ws] : undefined;
+      const id = matchItem(items as any, text);
+      return id != null ? Number(id) : null;
+    }
+    if (colId === 'ManHours') {
+      const s = text.replace(',', '.');
+      if (s === '') return null;
+      const n = Number(s);
+      return isNaN(n) ? null : n;
+    }
+    // остальные поля — как есть
+    return raw;
+  }, [dicts, wcByWs, reasonByWs, lang]);
+
+  const markCurrentSelectionFromApi = useCallback((api: any) => {
+    if (!api?.getCellRanges) return;
+    const ranges: any[] = api.getCellRanges() || [];
+    const set = new Set<string>();
+    for (const r of ranges) {
+      const cols: any[] = r?.columns || [];
+      const start = r?.startRow?.rowIndex ?? r?.startRowIndex ?? 0;
+      const end = r?.endRow?.rowIndex ?? r?.endRowIndex ?? start;
+      for (let ri = Math.min(start, end); ri <= Math.max(start, end); ri++) {
+        const node = api?.getDisplayedRowAtIndex?.(ri);
+        const lid = node?.data?._lid;
+        if (!lid) continue;
+        for (const c of cols) {
+          const field = c?.getColDef?.()?.field;
+          if (field) set.add(`${lid}|${field}`);
+        }
+      }
+    }
+    if (set.size) {
+      copiedCellsRef.current = set;
+      api?.refreshCells?.({ force: true, suppressFlash: true });
+    }
+  }, []);
+
+  if (loading) return <div className="flex justify-center items-center h-64 text-gray-600">加载中… / Загрузка…</div>;
+  if (error) return <div className="flex justify-center items-center h-64 text-red-600">{error}</div>;
+
+  const totalManHours = filteredRows.reduce((s, r) => s + (Number(r.ManHours) || 0), 0);
+
   return (
     <div className="space-y-3">
-      {confirmDialog.visible && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center">
-          <div className="bg-white border border-gray-300 shadow-2xl rounded px-5 py-4 w-[560px] min-h-[150px] flex flex-col justify-center">
-            <div className="text-gray-900 text-sm font-medium mb-2 space-y-1">
-              {confirmDialog.lines.map((line, idx) => (
-                <div key={idx}>{line}</div>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end space-x-2">
-              <button className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200" onClick={closeConfirm}>{t('cancel')}</button>
-              <button className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700" onClick={() => confirmDialog.onConfirm && confirmDialog.onConfirm()}>{t('ok') || 'OK'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {actionsSlot ? createPortal(actions, actionsSlot) : (
-        <div className="flex items-center justify-between">{actions}</div>
-      )}
-
-      <div ref={tableRef} tabIndex={0} onKeyDown={onKey} className="outline-none select-none overflow-auto max-h-[80vh]">
-        <table className="min-w-max table-fixed border-collapse border border-slate-300 rounded-lg">
-          <thead className="sticky top-0 bg-slate-100 z-10">
-            {table.getHeaderGroups().map(hg => (
-              <tr key={hg.id}>
-                {hg.headers.map(h => {
-                  const colKey = (h.column.columnDef as any).meta?.field || (h.column.columnDef as any).accessorKey;
-                  const w = colKey ? columnWidths[String(colKey)] : undefined;
-                  return (
-                    <th key={h.id}
-                        style={w ? { width: w } : undefined}
-                        className="px-2 py-1 text-center text-sm font-semibold text-slate-700 border border-slate-300">
-                    {flexRender(h.column.columnDef.header, h.getContext())}
-                  </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {padTop > 0 && (
-              <tr style={{ height: padTop }}>
-                <td />
-              </tr>
-            )}
-            {vRows.map(vr => {
-              const r = table.getRowModel().rows[vr.index];
-              const rowIdx = vr.index;
-              return (
-                <tr ref={rowVirt.measureElement} data-index={vr.index} key={r.original._lid} style={{ height: vr.size }} className={r.original._isDeleted ? 'opacity-50 line-through' : 'odd:bg-white even:bg-slate-50'}>
-                  {r.getVisibleCells().map(c => {
-                    const colKey = (c.column.columnDef as any).meta?.field as keyof TimeLossRow | undefined;
-                    const colIdx = leafIdx[c.column.id as string];
-                    const isSelected = sel.has(keyCell(rowIdx, colIdx));
-                    const isEditable = !!colKey && editableFields.has(colKey);
-
-                    return (
-                      <td key={c.id}
-                          data-r={rowIdx}
-                          data-c={colIdx}
-                          style={colKey ? { width: finalWidths[String(colKey)] } : undefined}
-                          className={`relative border border-slate-300 p-0 align-middle ${isSelected ? 'bg-blue-50/70 outline outline-2 outline-blue-200' : ''}`}
-                          onMouseDown={(e)=>handleMouseDown(rowIdx, colIdx, e)}
-                          onMouseOver={(e)=>handleMouseOver(rowIdx, colIdx, e.buttons===1)}
-                          onDoubleClick={(e)=>{
-                            setCopiedSel(new Set());
-                            const td = e.currentTarget as HTMLElement;
-                            const el = td.querySelector('input,select,textarea') as HTMLElement | null;
-                            if (!el) return;
-                            if (el instanceof HTMLSelectElement) {
-                              el.focus(); (el as any).showPicker?.(); if (!(el as any).showPicker) el.click();
-                              return;
-                            }
-                            el.focus();
-                            placeCaretFromClick(el as HTMLInputElement | HTMLTextAreaElement, e.clientX);
-                          }}>
-                        <div className="px-0.5 py-[2px]">{flexRender(c.column.columnDef.cell, c.getContext())}</div>
-                        {copiedSel.has(keyCell(rowIdx, colIdx)) && (
-                          <div className="pointer-events-none absolute inset-0 border-2 border-slate-700 border-dashed rounded-[2px]" />
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-            {padBot > 0 && (
-              <tr style={{ height: padBot }}>
-                <td />
-              </tr>
-            )}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td className="px-2 py-1 text-sm text-slate-600 border border-slate-300" colSpan={6}>{t('total') || '合计'}</td>
-              <td className="px-2 py-1 font-semibold border border-slate-300">{totalManHours.toFixed(1)}</td>
-              <td className="border border-slate-300" colSpan={4} />
-            </tr>
-          </tfoot>
-        </table>
+      {actionsSlot ? createPortal(actions, actionsSlot) : (<div className="flex items-center justify-between">{actions}</div>)}
+      <div className="ag-theme-quartz" style={{ width: '100%', height: '78vh' }}>
+        <AgGridReact<LocalRow>
+          onGridReady={(p) => { gridApiRef.current = p.api; }}
+          rowData={filteredRows}
+          columnDefs={columns}
+          defaultColDef={defaultColDef}
+          onCellValueChanged={onCellValueChanged}
+          onCellKeyDown={(e: any) => {
+            const ke = e.event as KeyboardEvent;
+            if ((ke.ctrlKey || ke.metaKey) && String(ke.key).toLowerCase() === 'c') {
+              markCurrentSelectionFromApi(e.api);
+              return;
+            }
+            if (String(ke.key) === 'Escape') {
+              if (copiedCellsRef.current.size) {
+                copiedCellsRef.current.clear();
+                e.api.refreshCells?.({ force: true, suppressFlash: true });
+              }
+            }
+          }}
+          onCellDoubleClicked={() => { if (copiedCellsRef.current.size) { copiedCellsRef.current.clear(); gridApiRef.current?.refreshCells?.({ force: true, suppressFlash: true }); } }}
+          // Excel-like selection/clipboard (Enterprise)
+          getRowId={(p: { data: LocalRow }) => p.data._lid}
+          cellSelection={true}
+          suppressClipboardPaste={false}
+          sendToClipboard={(p: any) => {
+            try { (navigator as any)?.clipboard?.writeText?.(p.data); } catch {}
+            const api: any = gridApiRef.current;
+            markCurrentSelectionFromApi(api);
+          }}
+          processCellFromClipboard={processCellFromClipboard}
+          suppressDragLeaveHidesColumns={true}
+          statusBar={{
+            statusPanels: [
+              {
+                statusPanel: 'agAggregationComponent',
+                statusPanelParams: { aggFuncs: ['count','sum','min','max','avg'] },
+                align: 'left',
+              },
+            ],
+          }}
+          rowClassRules={{ 'line-through opacity-50': (p: any) => !!(p.data as LocalRow)?._isDeleted }}
+        />
       </div>
+      <div className="px-2 py-1 text-sm text-slate-600">{(t('total') as string) || '合计'}: <span className="font-semibold">{totalManHours.toFixed(1)}</span></div>
     </div>
   );
 };

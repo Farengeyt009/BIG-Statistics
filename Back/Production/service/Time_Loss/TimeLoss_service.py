@@ -65,12 +65,12 @@ class TimeLossService:
         end_date: str,
         workshop: Optional[str] = None,
         workcenter: Optional[str] = None,
-        limit: int = 2000
+        limit: int = 20000
     ) -> List[Dict[str, Any]]:
         """Get time loss entries for a date range (inclusive)."""
         cursor = self.conn.cursor()
         try:
-            limit = max(1, min(int(limit), 10000))
+            limit = max(1, min(int(limit), 100000))
             sql = """
                 SELECT
                     e.EntryID, e.OnlyDate, e.WorkShopID, e.WorkCenterID,
