@@ -27,8 +27,8 @@ def _build_universal_sql(work_shop_ids: Optional[List[str]]) -> str:
 		ws_filter_wsbd = f"\n\t\tAND WorkShopID IN ({placeholders})"
 		ws_filter_tl = f"\n\t\tAND WorkShopID IN ({placeholders})"
 	return f"""
-	;WITH T1A AS (  -- Выпуск/Факт времени производства по дням
-		SELECT OnlyDate, SUM(FACT_TIME) AS Prod_Time
+	;WITH T1A AS (  -- Выпуск/Факт и План времени производства по дням
+		SELECT OnlyDate, SUM(FACT_TIME) AS Prod_Time, SUM(Plan_TIME) AS Plan_Time
 		FROM Views_For_Plan.DailyPlan_CustomWS
 		WHERE OnlyDate >= ?
 		  AND OnlyDate <  ?{ws_filter_dp}
@@ -51,6 +51,7 @@ def _build_universal_sql(work_shop_ids: Optional[List[str]]) -> str:
 	)
 	SELECT a.OnlyDate,
 	       a.Prod_Time,
+	       a.Plan_Time,
 	       COALESCE(b.Shift_Time, 0) AS Shift_Time,
 	       COALESCE(c.Time_Loss, 0)  AS Time_Loss,
 	       COALESCE(b.People, 0)     AS People
