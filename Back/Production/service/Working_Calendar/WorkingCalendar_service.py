@@ -17,36 +17,46 @@ def _fetch_query(conn, sql: str, *params) -> List[Dict[str, Any]]:
 
 
 def _build_universal_sql(work_shop_ids: Optional[List[str]]) -> str:
-	"""Строит универсальный SQL (CTE) с опциональным фильтром по цехам."""
+	"""Строит универсальный SQL (CTE) с опциональным фильтром по цехам и реальными данными потерь времени."""
 	ws_filter_dp = ""
 	ws_filter_wsbd = ""
+	ws_filter_tl = ""
 	if work_shop_ids:
 		placeholders = ", ".join(["?"] * len(work_shop_ids))
 		ws_filter_dp = f"\n\t\tAND WorkShopName_CH IN ({placeholders})"
 		ws_filter_wsbd = f"\n\t\tAND WorkShopID IN ({placeholders})"
+		ws_filter_tl = f"\n\t\tAND WorkShopID IN ({placeholders})"
 	return f"""
-	;WITH T1A AS (
+	;WITH T1A AS (  -- Выпуск/Факт времени производства по дням
 		SELECT OnlyDate, SUM(FACT_TIME) AS Prod_Time
 		FROM Views_For_Plan.DailyPlan_CustomWS
 		WHERE OnlyDate >= ?
 		  AND OnlyDate <  ?{ws_filter_dp}
 		GROUP BY OnlyDate
 	),
-	T2A AS (
+	T2A AS (  -- Сменное время и люди по дням
 		SELECT OnlyDate, SUM(PeopleWorkHours) AS Shift_Time, SUM(People) AS People
 		FROM TimeLoss.WorkSchedules_ByDay
 		WHERE DeleteMark = 0
 		  AND OnlyDate >= ?
 		  AND OnlyDate <  ?{ws_filter_wsbd}
 		GROUP BY OnlyDate
+	),
+	T3A AS (  -- Потери времени по дням из грид-данных потерь
+		SELECT OnlyDate, SUM(ManHours) AS Time_Loss
+		FROM TimeLoss.vw_EntryGrid
+		WHERE OnlyDate >= ?
+		  AND OnlyDate <  ?{ws_filter_tl}
+		GROUP BY OnlyDate
 	)
 	SELECT a.OnlyDate,
 	       a.Prod_Time,
 	       COALESCE(b.Shift_Time, 0) AS Shift_Time,
-	       CAST(50 AS int)           AS Time_Loss,
+	       COALESCE(c.Time_Loss, 0)  AS Time_Loss,
 	       COALESCE(b.People, 0)     AS People
 	FROM T1A a
 	LEFT JOIN T2A b ON b.OnlyDate = a.OnlyDate
+	LEFT JOIN T3A c ON c.OnlyDate = a.OnlyDate
 	ORDER BY a.OnlyDate;
 	"""
 
@@ -69,12 +79,23 @@ def _format_only_date_fields(rows: List[Dict[str, Any]]) -> None:
 
 def _get_calendar_data_universal(start_date: date, end_date_exclusive: date, work_shop_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
 	sql = _build_universal_sql(work_shop_ids)
-	params: List[Any] = [start_date, end_date_exclusive]
-	if work_shop_ids:
-		params.extend(work_shop_ids)
+	params: List[Any] = []
+	
+	# Параметры для T1A (DailyPlan_CustomWS)
 	params.extend([start_date, end_date_exclusive])
 	if work_shop_ids:
 		params.extend(work_shop_ids)
+	
+	# Параметры для T2A (WorkSchedules_ByDay)
+	params.extend([start_date, end_date_exclusive])
+	if work_shop_ids:
+		params.extend(work_shop_ids)
+	
+	# Параметры для T3A (vw_EntryGrid)
+	params.extend([start_date, end_date_exclusive])
+	if work_shop_ids:
+		params.extend(work_shop_ids)
+	
 	with get_connection() as conn:
 		rows = _fetch_query(conn, sql, tuple(params))
 		_format_only_date_fields(rows)
