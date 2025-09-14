@@ -16,6 +16,7 @@ from Back.Production.api.Working_Calendar.Assign_Work_Schedules_api import init_
 from Back.Production.api.Working_Calendar.WorkSchedules_ByDay_api import init_app as work_schedules_by_day_init_app
 from Back.TV.api.TV_api import init_app as tv_init_app
 from Back.Production.api.Time_Loss.TimeLoss_api import timeloss_router
+from Back.Production.api.Time_Loss.TimeLossDashboard_api import init_app as timeloss_dashboard_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -38,6 +39,7 @@ assign_work_schedules_init_app(app)
 work_schedules_by_day_init_app(app)
 tv_init_app(app)
 app.register_blueprint(timeloss_router, url_prefix='/api')
+timeloss_dashboard_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 

@@ -162,10 +162,8 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
           }
         }
       } else {
-        console.error('Failed to load work schedule types:', data.message);
       }
     } catch (error) {
-      console.error('Error loading work schedule types:', error);
     } finally {
       setLoadingTypes(false);
     }
@@ -227,7 +225,6 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
         setTimeRecords(records);
       }
     } catch (error) {
-      console.error('Error loading schedule for edit:', error);
     }
   };
 
@@ -240,7 +237,6 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
 
   const addTimeRecord = () => {
     if (!BREAKS_ID) {
-      console.warn('Break type not found in work schedule types');
       return;
     }
     
@@ -496,9 +492,6 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
     const scheduleData = prepareScheduleData();
     
     // ✅ ДОБАВЛЯЕМ ОТЛАДКУ
-    console.log('Schedule data being sent:', scheduleData);
-    console.log('Is edit mode:', isEditMode);
-    console.log('Editing schedule:', editingSchedule);
     
     try {
       let response;
@@ -529,12 +522,9 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
       const result = await response.json();
       
       // ✅ ДОБАВЛЯЕМ ОТЛАДКУ
-      console.log('Response status:', response.status);
-      console.log('Response result:', result);
       
       if (response.ok) {
         // ✅ Успешное сохранение
-        console.log('Schedule saved:', result);
         
         // ✅ Вызываем callback для обновления списка
         if (onScheduleUpdated) {
@@ -553,7 +543,6 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error saving schedule:', error);
       setErrorMessage('Network error while saving schedule');
     }
   };

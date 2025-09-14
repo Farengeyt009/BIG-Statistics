@@ -281,8 +281,6 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
 
   // Группировка назначений по цехам
   const workshopGroups = useMemo(() => {
-    console.log('🔍 Группируем назначения - localAssignments:', localAssignments);
-    console.log('🔍 Группируем назначения - workCenters:', workCenters);
     const groups: Record<string, DayAssignment[]> = {};
          localAssignments.forEach(assignment => {
        const workCenter = workCenters.find(wc => wc.id === assignment.workCenterId);
@@ -290,7 +288,6 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       if (!groups[groupKey]) groups[groupKey] = [];
       groups[groupKey].push(assignment);
     });
-    console.log('🔍 Результат группировки:', groups);
     return groups;
   }, [localAssignments, workCenters]);
 
@@ -476,13 +473,8 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       }
 
       const payload = { date: toYmdLocal(selectedDate), items };
-      console.log('🔍 Отправляем bulk-replace payload (diff only):', JSON.stringify(payload, null, 2));
 
       const result = await bulkReplace(payload);
-      console.log('✅ bulk-replace результат:', result);
-      if (Array.isArray(result?.items)) {
-        console.log('🔍 items:', result.items);
-      }
 
       // Сводка по сохраненным строкам с деталями из table2
       const scheduleById = new Map<string, any>();
@@ -521,7 +513,6 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       });
 
     } catch (error) {
-      console.error('Ошибка при сохранении назначений:', error);
       openInfo(`Ошибка при сохранении: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
   };

@@ -73,7 +73,6 @@ export const fetchAssignWorkSchedulesData = async (date: string): Promise<Assign
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching Assign Work Schedules data:', error);
     throw error;
   }
 };

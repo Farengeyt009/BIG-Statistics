@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import Overview from './Overview';
@@ -10,6 +11,13 @@ const TimeLoss: React.FC = () => {
   const { i18n, t } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
   const [activeTab, setActiveTab] = useState<'overview' | 'table'>('overview');
+
+  // Состояния загрузки компонентов (по умолчанию false, устанавливаются в true при начале загрузки)
+  const [isOverviewLoading, setIsOverviewLoading] = useState(false);
+  const [isTableLoading, setIsTableLoading] = useState(false);
+
+  // Глобальный лоадер показывается пока хотя бы один компонент грузится
+  const showGlobalLoader = isOverviewLoading || isTableLoading;
   // Инициализация последними 30 днями, включая сегодня
   const today = new Date();
   const start30 = new Date(today);
@@ -98,7 +106,13 @@ const TimeLoss: React.FC = () => {
   }, [selectedWorkShopIds, workshops, t]);
 
   return (
-    <div className="p-4">
+    <div className="p-4 relative">
+      {/* Глобальный оверлей пока компоненты грузятся */}
+      {showGlobalLoader && (
+        <div className="fixed inset-0 z-[1000] bg-white/60 backdrop-blur-sm flex items-center justify-center">
+          <LoadingSpinner size="xl" />
+        </div>
+      )}
       <div className="flex items-center gap-6 mb-4">
         {/* Внутренние вкладки */}
         <div className="flex gap-2">
@@ -136,73 +150,92 @@ const TimeLoss: React.FC = () => {
           />
         </div>
 
-        {/* Workshops picker (like Working Calendar) */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-2">
-            <Factory className="w-5 h-5 text-gray-600" />
-            <div className="relative" ref={pickerRef}>
-              <button
-                type="button"
-                onClick={() => { setDraftWorkshopIds(selectedWorkShopIds.length ? selectedWorkShopIds : workshops.map(w => w.id)); setIsWorkshopPickerOpen(v => !v); }}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-                title={t('workshops') || 'Workshops'}
-              >
-                {workshopsButtonLabel}
-              </button>
+        {/* Workshops picker (like Working Calendar) - только для таблицы */}
+        {activeTab === 'table' && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2">
+              <Factory className="w-5 h-5 text-gray-600" />
+              <div className="relative" ref={pickerRef}>
+                <button
+                  type="button"
+                  onClick={() => { setDraftWorkshopIds(selectedWorkShopIds.length ? selectedWorkShopIds : workshops.map(w => w.id)); setIsWorkshopPickerOpen(v => !v); }}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                  title={t('workshops') || 'Workshops'}
+                >
+                  {workshopsButtonLabel}
+                </button>
 
-              {isWorkshopPickerOpen && (
-                <div className="absolute z-50 right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-2xl">
-                  <div className="p-3 max-h-64 overflow-auto space-y-2">
-                    <label className="flex items-center space-x-2 text-sm font-medium pb-2 border-b border-gray-100">
-                      <input
-                        ref={selectAllRef}
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={() => {
-                          if (allSelected) setDraftWorkshopIds([]);
-                          else setDraftWorkshopIds(workshops.map(w => w.id));
-                        }}
-                      />
-                      <span>{t('selectAll') || 'Select All'}</span>
-                    </label>
-                    {workshops.map(w => (
-                      <label key={w.id} className="flex items-center space-x-2 text-sm">
+                {isWorkshopPickerOpen && (
+                  <div className="absolute z-50 right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-2xl">
+                    <div className="p-3 max-h-64 overflow-auto space-y-2">
+                      <label className="flex items-center space-x-2 text-sm font-medium pb-2 border-b border-gray-100">
                         <input
+                          ref={selectAllRef}
                           type="checkbox"
-                          checked={draftWorkshopIds.includes(w.id)}
-                          onChange={(e) => setDraftWorkshopIds(prev => e.target.checked ? [...prev, w.id] : prev.filter(id => id !== w.id))}
+                          checked={allSelected}
+                          onChange={() => {
+                            if (allSelected) setDraftWorkshopIds([]);
+                            else setDraftWorkshopIds(workshops.map(w => w.id));
+                          }}
                         />
-                        <span>{w.name}</span>
+                        <span>{t('selectAll') || 'Select All'}</span>
                       </label>
-                    ))}
-                    {workshops.length === 0 && (
-                      <div className="text-xs text-gray-500">{t('loading') || 'Loading...'}</div>
-                    )}
+                      {workshops.map(w => (
+                        <label key={w.id} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={draftWorkshopIds.includes(w.id)}
+                            onChange={(e) => setDraftWorkshopIds(prev => e.target.checked ? [...prev, w.id] : prev.filter(id => id !== w.id))}
+                          />
+                          <span>{w.name}</span>
+                        </label>
+                      ))}
+                      {workshops.length === 0 && (
+                        <div className="text-xs text-gray-500">{t('loading') || 'Loading...'}</div>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50 rounded-b-lg">
+                      <button className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200" onClick={() => setIsWorkshopPickerOpen(false)}>
+                        {t('cancel')}
+                      </button>
+                      <button
+                        className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                        onClick={() => { setSelectedWorkShopIds(draftWorkshopIds.length ? draftWorkshopIds : workshops.map(w => w.id)); setIsWorkshopPickerOpen(false); }}
+                      >
+                        OK
+                      </button>
+                    </div>
                   </div>
-                  <div className="px-3 py-2 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50 rounded-b-lg">
-                    <button className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200" onClick={() => setIsWorkshopPickerOpen(false)}>
-                      {t('cancel')}
-                    </button>
-                    <button
-                      className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-                      onClick={() => { setSelectedWorkShopIds(draftWorkshopIds.length ? draftWorkshopIds : workshops.map(w => w.id)); setIsWorkshopPickerOpen(false); }}
-                    >
-                      OK
-                    </button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Слот для кнопок действий таблицы */}
         <div id="tl-actions-slot" className="ml-auto flex items-center gap-2" />
       </div>
       
       {/* Содержимое табов */}
-      {activeTab === 'overview' && <Overview />}
-      {activeTab === 'table' && <Table startDate={startIso} endDate={endIso} selectedWorkShopIds={selectedWorkShopIds} />}
+      {activeTab === 'overview' && (
+        <Overview
+          startDate={startIso}
+          endDate={endIso}
+          suppressLocalLoaders={showGlobalLoader}
+          onLoadingChange={setIsOverviewLoading}
+          isActive={true}
+        />
+      )}
+      {activeTab === 'table' && (
+        <Table
+          startDate={startIso}
+          endDate={endIso}
+          selectedWorkShopIds={selectedWorkShopIds}
+          suppressLocalLoaders={showGlobalLoader}
+          onLoadingChange={setIsTableLoading}
+          isActive={true}
+        />
+      )}
     </div>
   );
 };

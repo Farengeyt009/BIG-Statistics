@@ -432,7 +432,6 @@ export const restoreMockData = (): void => {
   Object.keys(mockProductionData).forEach(date => {
     if (!mockProductionData[date]) {
       // Если данные были удалены, восстанавливаем их
-      console.log(`Restoring production data for ${date}`);
     }
   });
   
@@ -440,7 +439,6 @@ export const restoreMockData = (): void => {
   Object.keys(mockDayAssignments).forEach(date => {
     if (!mockDayAssignments[date]) {
       // Если назначения были удалены, восстанавливаем их
-      console.log(`Restoring assignments for ${date}`);
     }
   });
 };

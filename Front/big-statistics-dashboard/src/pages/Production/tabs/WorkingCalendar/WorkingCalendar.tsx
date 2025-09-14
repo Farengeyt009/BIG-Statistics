@@ -113,7 +113,6 @@ const WorkingCalendar: React.FC = () => {
           setSelectedWorkShopIds(items.map(i => String(i.id)));
         }
       } catch (e) {
-        console.warn('Failed to load workshops', e);
       }
     };
     load();
@@ -128,10 +127,8 @@ const WorkingCalendar: React.FC = () => {
       if (data.success) {
         setWorkCenters(data.data);
       } else {
-        console.error('Failed to fetch work centers:', data.message);
       }
     } catch (error) {
-      console.error('Error fetching work centers:', error);
     } finally {
       setLoading(false);
     }
@@ -141,10 +138,8 @@ const WorkingCalendar: React.FC = () => {
   const fetchProductionData = async (date: string) => {
     try {
       // TODO: Replace with real API call
-      console.log('Fetching production data for date:', date);
       return [];
     } catch (error) {
-      console.error('Error fetching production data:', error);
       return [];
     }
   };
@@ -223,7 +218,6 @@ const WorkingCalendar: React.FC = () => {
     const day = String(selectedDate.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
     // TODO: Replace with real API call to save assignments
-    console.log('Saving assignments for date:', dateString, assignments);
     setSelectedDateAssignments(assignments);
     fetchCalendarData(currentDate.getFullYear(), currentDate.getMonth() + 1);
   };

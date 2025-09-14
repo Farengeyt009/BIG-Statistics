@@ -1,8 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTableCustomColumn } from '../../../../components/DataTableCustomColumn/DataTableCustomColumn';
+import GroupedGrid from './GroupedGrid';
 import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressCell';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { ChevronRight, ChevronDown } from "lucide-react";
+import type { ColDef } from '@ag-grid-community/core';
 
 import productionTranslations from '../../ProductionTranslation.json';
 
@@ -167,6 +169,7 @@ function processWorkshop(
     _treeKey: workshop,
     _treeLevel: 0,
     groupLabel: translateWorkShop(workshop),
+    __id: `ws:${workshop}`, // Стабильный ID для цеха
   });
 
   if (expandedWorkshops.has(workshop)) {
@@ -189,6 +192,7 @@ function processWorkshop(
       const workCenterDifferQty = workCenterFactQty - workCenterPlanQty;
       const workCenterDifferTime = workCenterFactTime - workCenterPlanTime;
 
+      const wcKey = workshop + '||' + workCenter;
       result.push({
         isWorkCenterTotal: true,
         WorkShopName_CH: translateWorkCenter(workCenter),
@@ -200,12 +204,13 @@ function processWorkshop(
         FACT_TIME: workCenterFactTime,
         DifferTime: workCenterDifferTime,
         PercentTime: workCenterPercentTime,
-        _treeKey: workshop + '||' + workCenter,
+        _treeKey: wcKey,
         _treeLevel: 1,
         groupLabel: translateWorkCenter(workCenter),
+        __id: `wc:${wcKey}`, // Стабильный ID для рабочего центра
       });
 
-      if (expandedWorkCenters.has(workshop + '||' + workCenter)) {
+      if (expandedWorkCenters.has(wcKey)) {
         Object.entries(dates).forEach(([date, rows]) => {
           // Итог по дате
           let datePlanQty = 0, dateFactQty = 0;
@@ -223,6 +228,7 @@ function processWorkshop(
           const dateDifferQty = dateFactQty - datePlanQty;
           const dateDifferTime = dateFactTime - datePlanTime;
 
+          const dtKey = wcKey + '||' + date;
           result.push({
             isDateTotal: true,
             WorkShopName_CH: formatDate(date),
@@ -234,26 +240,29 @@ function processWorkshop(
             FACT_TIME: dateFactTime,
             DifferTime: dateDifferTime,
             PercentTime: datePercentTime,
-            _treeKey: workshop + '||' + workCenter + '||' + date,
+            _treeKey: dtKey,
             _treeLevel: 2,
             groupLabel: formatDate(date),
+            __id: `dt:${dtKey}`, // Стабильный ID для даты
           });
 
-          if (expandedDates.has(workshop + '||' + workCenter + '||' + date)) {
-            rows.forEach(r => {
+          if (expandedDates.has(dtKey)) {
+            rows.forEach((r, i) => {
               const differQty = Number(r.FACT_QTY) - Number(r.Plan_QTY);
               const differTime = Number(r.FACT_TIME) - Number(r.Plan_TIME);
-              result.push({ 
-                ...r, 
-                isDetail: true, 
+              const detKey = dtKey + '||' + (r.OrderNumber || '') + '||' + (r.NomenclatureNumber || '') + '||' + i;
+              result.push({
+                ...r,
+                isDetail: true,
                 WorkShopName_CH: '',
                 OrderNumber: r.OrderNumber,
                 NomenclatureNumber: r.NomenclatureNumber,
                 ProductName_CN: r.ProductName_CN,
                 DifferQty: differQty,
                 DifferTime: differTime,
-                _treeKey: workshop + '||' + workCenter + '||' + date + '||' + r.OrderNumber,
+                _treeKey: detKey,
                 _treeLevel: 3,
+                __id: `det:${detKey}`, // Стабильный ID для детали
               });
             });
           }
@@ -267,119 +276,155 @@ interface OverviewProps {
   data: any[];
   loading: boolean;
   error: string | null;
+  suppressLocalLoaders?: boolean;
 }
 
-const Overview: React.FC<OverviewProps> = ({ data, loading, error }) => {
+const Overview: React.FC<OverviewProps> = ({ data, loading, error, suppressLocalLoaders }) => {
   const { t, i18n } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh';
   const [expandedWorkshops, setExpandedWorkshops] = useState<Set<string>>(new Set());
   const [expandedWorkCenters, setExpandedWorkCenters] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
+
   /** -------------------- функция перевода названий цехов -------------------- */
-  const translateWorkShop = (workShopName: string) => {
+  const translateWorkShop = useCallback((workShopName: string) => {
     const trimmedName = workShopName?.trim();
     const translation = productionTranslations[currentLanguage]?.workshops?.[trimmedName as keyof typeof productionTranslations.en.workshops];
     return translation ? translation : trimmedName;
-  };
+  }, [currentLanguage]);
 
   /** -------------------- функция перевода названий рабочих центров -------------------- */
-  const translateWorkCenter = (workCenterName: string) => {
+  const translateWorkCenter = useCallback((workCenterName: string) => {
     const trimmedName = workCenterName?.trim();
     const translation = productionTranslations[currentLanguage]?.workCenters?.[trimmedName as keyof typeof productionTranslations.en.workCenters];
     return translation ? translation : trimmedName;
-  };
-
-
+  }, [currentLanguage]);
 
   // Получаем данные для таблицы с группировкой
-  const treeData = getProductionTree(data, expandedWorkshops, expandedWorkCenters, expandedDates, translateWorkShop, translateWorkCenter);
+  const treeData = useMemo(() =>
+    getProductionTree(data, expandedWorkshops, expandedWorkCenters, expandedDates, translateWorkShop, translateWorkCenter),
+    [data, expandedWorkshops, expandedWorkCenters, expandedDates, translateWorkShop, translateWorkCenter]
+  );
 
   // Функция для получения только видимых данных (без детальных строк) для расчета ширины колонок
   const getVisibleDataForWidthCalculation = () => {
     return treeData.filter(row => !row.isDetail);
   };
 
-  // Определение колонок (9 полей + 3 детальных поля)
-  const columns = [
-    {
-      id: 'WorkShopName_CH',
-      accessorKey: 'WorkShopName_CH',
-      header: 'Work Shop',
-    },
-    {
-      id: 'Plan_QTY',
-      accessorKey: 'Plan_QTY',
-      header: 'PLAN QTY',
-    },
-    {
-      id: 'FACT_QTY',
-      accessorKey: 'FACT_QTY',
-      header: 'FACT QTY',
-    },
-    {
-      id: 'DifferQty',
-      accessorKey: 'DifferQty',
-      header: 'DIFFER QTY',
-    },
-    {
-      id: 'PercentQty',
-      accessorKey: 'PercentQty',
-      header: 'PERCENT QTY',
-    },
-    {
-      id: 'Plan_TIME',
-      accessorKey: 'Plan_TIME',
-      header: 'PLAN TIME',
-    },
-    {
-      id: 'FACT_TIME',
-      accessorKey: 'FACT_TIME',
-      header: 'FACT TIME',
-    },
-    {
-      id: 'DifferTime',
-      accessorKey: 'DifferTime',
-      header: 'DIFFER TIME',
-    },
-    {
-      id: 'PercentTime',
-      accessorKey: 'PercentTime',
-      header: 'PERCENT TIME',
-    },
-  ];
+  // Функция для получения только видимых колонок для расчета ширины
+  const getVisibleColumnsForWidthCalculation = () => {
+    return allColumns.filter(col => !(col as any).hide);
+  };
 
-  // Добавляем детальные колонки только если есть раскрытые детали
+  // Определение колонок для AGGrid - стабильный массив с colId
   const hasExpandedDetails = treeData.some(row => row.isDetail);
-  const allColumns = hasExpandedDetails ? [
-    ...columns.slice(0, 1), // Work Shop
-    {
-      id: 'OrderNumber',
-      accessorKey: 'OrderNumber',
-      header: 'Order Number',
-    },
-    {
-      id: 'NomenclatureNumber',
-      accessorKey: 'NomenclatureNumber',
-      header: 'Nomenclature',
-    },
-    {
-      id: 'ProductName_CN',
-      accessorKey: 'ProductName_CN',
-      header: 'Product Name',
-    },
-    ...columns.slice(1), // Остальные колонки
-  ] : columns;
 
-  // Показываем индикатор загрузки
-  if (loading) {
+  const allColumns: ColDef[] = useMemo(() => [
+    {
+      colId: 'workshop',
+      field: 'WorkShopName_CH',
+      headerName: t('tableHeaders.workShopCol', 'Work Shop'),
+      minWidth: 200,
+    },
+    // Детальные колонки - скрываем/показываем через hide
+    {
+      colId: 'orderNumber',
+      field: 'OrderNumber',
+      headerName: t('tableHeaders.orderNumberCol', 'Order Number'),
+      minWidth: 120,
+      hide: !hasExpandedDetails,
+    },
+    {
+      colId: 'nomenclatureNumber',
+      field: 'NomenclatureNumber',
+      headerName: t('tableHeaders.nomenclatureCol', 'Nomenclature'),
+      minWidth: 120,
+      hide: !hasExpandedDetails,
+    },
+    {
+      colId: 'productNameCN',
+      field: 'ProductName_CN',
+      headerName: t('tableHeaders.productNameCol', 'Product Name'),
+      minWidth: 200,
+      hide: !hasExpandedDetails,
+    },
+    // Базовые метрики - всегда присутствуют (с центрированием числовых значений)
+    {
+      colId: 'planQty',
+      field: 'Plan_QTY',
+      headerName: t('tableHeaders.planQtyCol', 'PLAN QTY'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'factQty',
+      field: 'FACT_QTY',
+      headerName: t('tableHeaders.factQtyCol', 'FACT QTY'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'differQty',
+      field: 'DifferQty',
+      headerName: t('tableHeaders.differQtyCol', 'DIFFER QTY'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'percentQty',
+      field: 'PercentQty',
+      headerName: t('tableHeaders.percentQtyCol', 'PERCENT QTY'),
+      minWidth: 120,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'planTime',
+      field: 'Plan_TIME',
+      headerName: t('tableHeaders.planTimeCol', 'PLAN TIME'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'factTime',
+      field: 'FACT_TIME',
+      headerName: t('tableHeaders.factTimeCol', 'FACT TIME'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'differTime',
+      field: 'DifferTime',
+      headerName: t('tableHeaders.differTimeCol', 'DIFFER TIME'),
+      minWidth: 100,
+      cellStyle: { textAlign: 'center' },
+    },
+    {
+      colId: 'percentTime',
+      field: 'PercentTime',
+      headerName: t('tableHeaders.percentTimeCol', 'PERCENT TIME'),
+      minWidth: 120,
+      cellStyle: { textAlign: 'center' },
+    },
+  ], [hasExpandedDetails, t]);
+
+  // ПЕРВИЧНАЯ ЗАГРУЗКА
+  if (loading && suppressLocalLoaders) {
     return (
       <div className="mt-6">
-              <div className="bg-white p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600">Загрузка данных...</div>
-        </div>
+        <div className="bg-white p-4 rounded" style={{ minHeight: 256 }} />
       </div>
+    );
+  }
+
+  if (loading && !suppressLocalLoaders) {
+    return (
+      <div className="mt-6">
+        <div className="bg-white p-4 rounded">
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner size="lg" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -401,112 +446,29 @@ const Overview: React.FC<OverviewProps> = ({ data, loading, error }) => {
 
   return (
     <div className="mt-6">
-      <div className="bg-white p-4">
-        
-                        <div className="w-fit">
-          <DataTableCustomColumn
-            data={treeData}
-            columns={allColumns}
-          rowClassName={(row: any, rowIndex: number) => {
-            if (row.isWorkshopTotal) return 'font-bold bg-gray-100';
-            if (row.isWorkCenterTotal) return 'font-semibold bg-gray-50 cursor-pointer';
-            if (row.isDateTotal) return 'font-medium bg-gray-100 cursor-pointer';
-            if (row.isDetail) return 'bg-white border-t border-slate-200';
-            return '';
+      <div className="bg-white p-4 rounded">
+        <GroupedGrid
+          rowData={treeData}
+          columnDefs={allColumns}
+          showTotalRow={true}
+          t={t}
+          expandedState={{
+            workshops: Array.from(expandedWorkshops),
+            workCenters: Array.from(expandedWorkCenters),
+            dates: Array.from(expandedDates),
           }}
-                     onRowClick={(row: any) => {
-             // Универсальный обработчик раскрытия (как в Plan)
-             const level = row._treeLevel;
-             const key = row._treeKey;
-             if (typeof level === 'number' && key) {
-               if (level === 0) {
-                 setExpandedWorkshops(prev => {
-                   const next = new Set(prev);
-                   if (next.has(key)) next.delete(key);
-                   else next.add(key);
-                   return next;
-                 });
-               } else if (level === 1) {
-                 setExpandedWorkCenters(prev => {
-                   const next = new Set(prev);
-                   if (next.has(key)) next.delete(key);
-                   else next.add(key);
-                   return next;
-                 });
-               } else if (level === 2) {
-                 setExpandedDates(prev => {
-                   const next = new Set(prev);
-                   if (next.has(key)) next.delete(key);
-                   else next.add(key);
-                   return next;
-                 });
-               }
-             }
-           }}
-                     cellRenderers={{
-             WorkShopName_CH: (value: any, row: any) => {
-               if (row._treeLevel != null && row.groupLabel) {
-                 const sets = [expandedWorkshops, expandedWorkCenters, expandedDates];
-                 const isOpen = sets[row._treeLevel]?.has(row._treeKey);
-                 // Не показывать стрелку только на детальном уровне
-                 const isLastLevel = row._treeLevel === 3;
-                 return renderHierarchyCell(row._treeLevel, !!isOpen, row.groupLabel, isLastLevel ? undefined : (() => {}), isLastLevel);
-               }
-               return value || '—';
-             },
-             OrderNumber: (value: any, row: any) => {
-               return value || '—';
-             },
-             NomenclatureNumber: (value: any, row: any) => {
-               return value || '—';
-             },
-             ProductName_CN: (value: any, row: any) => {
-               if (!value) return '—';
-               // Ограничиваем до 34 символов и добавляем многоточие
-               const truncatedValue = value.length > 34 ? value.substring(0, 34) + '...' : value;
-               return (
-                 <span style={{ textAlign: 'left', display: 'block' }}>
-                   {truncatedValue}
-                 </span>
-               );
-             },
-            PercentQty: (value: any, row: any) => {
-              if (row.isWorkshopTotal || row.isWorkCenterTotal || row.isDateTotal) {
-                return <ProgressCell value={value} />;
-              }
-              return <span style={{ color: '#6b7280' }}>{formatPercent(value)}</span>;
-            },
-            PercentTime: (value: any, row: any) => {
-              if (row.isWorkshopTotal || row.isWorkCenterTotal || row.isDateTotal) {
-                return <ProgressCell value={value} />;
-              }
-              return <span style={{ color: '#6b7280' }}>{formatPercent(value)}</span>;
-            },
-            Plan_QTY: (value: any, row: any) => {
-              return <span style={{ color: '#6b7280' }}>{formatNumber(value)}</span>;
-            },
-                         FACT_QTY: (value: any, row: any) => {
-               return <span style={{ color: '#6b7280' }}>{formatNumber(value)}</span>;
-             },
-             DifferQty: (value: any, row: any) => {
-               const numValue = Number(value);
-               const color = numValue >= 0 ? '#10b981' : '#ef4444';
-               return <span style={{ color }}>{formatNumber(value)}</span>;
-             },
-             Plan_TIME: (value: any, row: any) => {
-               return <span style={{ color: '#6b7280' }}>{formatNumber(value)}</span>;
-             },
-             FACT_TIME: (value: any, row: any) => {
-               return <span style={{ color: '#6b7280' }}>{formatNumber(value)}</span>;
-             },
-             DifferTime: (value: any, row: any) => {
-               const numValue = Number(value);
-               const color = numValue >= 0 ? '#10b981' : '#ef4444';
-               return <span style={{ color }}>{formatNumber(value)}</span>;
-             },
+          onExpandedChange={(state: { workshops?: string[]; workCenters?: string[]; dates?: string[] }) => {
+            if (state.workshops) {
+              setExpandedWorkshops(new Set(state.workshops));
+            }
+            if (state.workCenters) {
+              setExpandedWorkCenters(new Set(state.workCenters));
+            }
+            if (state.dates) {
+              setExpandedDates(new Set(state.dates));
+            }
           }}
         />
-        </div>
       </div>
     </div>
   );

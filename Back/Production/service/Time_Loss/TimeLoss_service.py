@@ -149,11 +149,40 @@ class TimeLossService:
                 if db_bytes != cli_bytes:
                     raise ValueError("ROWVER_MISMATCH")
 
-            # Special validations
-            if field == 'ManHours':
+            # Load current values for cross-field validations
+            cursor.execute("""SELECT WorkShopID, WorkCenterID, ReasonGroupID
+                              FROM TimeLoss.[Entry]
+                              WHERE EntryID=? AND IsDeleted=0""", (entry_id,))
+            cur = cursor.fetchone()
+            if not cur:
+                raise ValueError("Entry not found")
+            cur_ws, cur_wc, cur_rg = cur
+
+            # Normalize by field
+            if field in ('DirectnessID', 'ReasonGroupID'):
+                if value is None:
+                    raise ValueError(f"{field} cannot be NULL")
+                value = int(value)
+            elif field in ('WorkShopID', 'WorkCenterID'):
+                value = str(value) if value is not None else value
+            elif field == 'ManHours':
                 value = Decimal(str(value)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
                 if value < 0:
                     raise ValueError("ManHours cannot be negative")
+
+            # Subject validations
+            if field == 'WorkShopID':
+                new_ws = value
+                if not self.validate_workcenter(new_ws, cur_wc):
+                    raise ValueError("Invalid WorkCenterID for WorkShopID")
+                if cur_rg is not None and not self.validate_reason_group(cur_rg, new_ws):
+                    raise ValueError("Invalid ReasonGroupID for WorkShopID")
+            elif field == 'WorkCenterID':
+                if not self.validate_workcenter(cur_ws, value):
+                    raise ValueError("Invalid WorkCenterID for WorkShopID")
+            elif field == 'ReasonGroupID':
+                if not self.validate_reason_group(value, cur_ws):
+                    raise ValueError("Invalid ReasonGroupID for WorkShopID")
 
             # Update the field
             sql = f"UPDATE TimeLoss.[Entry] SET {field} = ? WHERE EntryID = ? AND IsDeleted = 0"
@@ -283,22 +312,26 @@ class TimeLossService:
             if not self.validate_reason_group(entry['ReasonGroupID'], entry['WorkShopID']):
                 raise ValueError("Invalid ReasonGroupID for WorkShopID")
 
-            # Insert entry
+            # Insert entry (including optional columns)
             sql = """
                 INSERT INTO TimeLoss.[Entry] (
-                    OnlyDate, WorkShopID, WorkCenterID, DirectnessID,
-                    ReasonGroupID, ManHours
+                    OnlyDate, WorkShopID, WorkCenterID, DirectnessID, ReasonGroupID,
+                    CommentText, ManHours, ActionPlan, Responsible, CompletedDate
                 )
                 OUTPUT INSERTED.EntryID
-                VALUES (?, ?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """
             cursor.execute(sql, (
                 entry['OnlyDate'],
-                entry['WorkShopID'],
-                entry['WorkCenterID'],
+                str(entry['WorkShopID']),
+                str(entry['WorkCenterID']),
                 int(entry['DirectnessID']),
                 int(entry['ReasonGroupID']),
-                Decimal(str(entry['ManHours'])).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                entry.get('CommentText'),
+                Decimal(str(entry['ManHours'])).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+                entry.get('ActionPlan'),
+                entry.get('Responsible'),
+                entry.get('CompletedDate')
             ))
             entry_id = cursor.fetchval()
             if not entry_id:

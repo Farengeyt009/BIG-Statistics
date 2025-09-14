@@ -34,6 +34,17 @@ const resources = {
     homeInterface: homeInterfaceTranslation.zh,
     production: productionTranslation.zh,
     tv: tvTranslation.zh
+  },
+  ru: {
+    sidebar: (sidebarTranslation as any).ru || {},
+    ordersTranslation: (ordersTranslation as any).ru || {},
+    dataTable: (dataTableTranslation as any).ru || {},
+    ordersCustomTrainingTranslation: (ordersCustomTrainingTranslation as any).ru || {},
+    planTranslation: (planTranslation as any).ru || {},
+    loginPage: (loginPageTranslation as any).ru || {},
+    homeInterface: (homeInterfaceTranslation as any).ru || {},
+    production: productionTranslation.ru,
+    tv: (tvTranslation as any).ru || {}
   }
 };
 

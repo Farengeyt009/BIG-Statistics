@@ -23,13 +23,19 @@ input[type="checkbox"] {
     accent-color: #2b2fff;
   }
 
-/* AG Grid: вертикальное выравнивание содержимого ячеек по центру */
-.ag-theme-quartz .ag-cell,
+/* AG Grid: вертикальное выравнивание заголовков; НЕ трогаем .ag-cell */
 .ag-theme-quartz .ag-header-cell,
 .ag-theme-quartz .ag-header-group-cell {
   display: flex;
   align-items: center;
 }
+/* Центр текста в шапках для всех колонок */
+.ag-theme-quartz .ag-header-cell .ag-header-cell-label { justify-content: center !important; }
+.ag-theme-quartz .ag-header-cell-text { text-align: center !important; width: 100%; }
+/* В том числе для pinned-top зоны (шапка одна, но на всякий случай) */
+.ag-theme-quartz .ag-floating-top .ag-header-cell .ag-header-cell-label { justify-content: center !important; }
+/* Не трогаем display ячеек — оставляем дефолтный flex от темы */
+/* (если ранее переопределяли, снимаем это правило) */
 
 /* Для autoHeight ячеек сохраняем центрирование многострочного текста */
 .ag-theme-quartz .ag-cell .ag-cell-wrapper {
@@ -44,9 +50,127 @@ input[type="checkbox"] {
   outline-offset: -1px;
 }
 
+/* Запрет браузерного выделения текста для DailyPlanFact таблицы */
+.ag-theme-quartz .ag-cell {
+  user-select: none;
+}
+.ag-theme-quartz .ag-cell.ag-cell-inline-editing,
+.ag-theme-quartz .ag-cell .ag-input-field-input {
+  user-select: text; /* при редактировании текст можно выделять */
+}
+
+/* (removed) global Set Filter ellipsis styling; handled via column filter formatting */
+
 /* Focus mode: hide sidebar and top spacing; stretch main content */
 .app-focus .sidebar-root { display: none !important; }
 .app-focus main { padding: 0 !important; }
 .app-focus header { display: none !important; }
 .app-focus header + div { height: 0 !important; }
-.app-focus .ag-theme-quartz { height: calc(100vh) !important; }
+/* Не задаём жёсткую высоту гриду в фокусе, её вычисляет компонент */
+
+/* TimeLoss: плавный сдвиг (GPU transform) и мягкий фейд чекбоксов */
+.ag-theme-quartz { --tl-checkbox-w: 22px; --tl-gap: 4px; }
+
+/* Контейнеры первой колонки */
+.ag-theme-quartz .ag-cell[col-id="OnlyDate"] .ag-cell-wrapper,
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-header-cell-comp-wrapper {
+  position: relative;
+}
+
+/* Сдвигаем только текст: в шапке — .ag-header-cell-text, в ячейках — .ag-cell-value */
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-header-cell-text,
+.ag-theme-quartz .ag-cell[col-id="OnlyDate"] .ag-cell-value {
+  transform: translateX(var(--tl-shift, 0));
+  transition: transform 300ms ease;
+  will-change: transform;
+}
+
+/* Чекбоксы поверх, не ломают разметку, центрированы по высоте */
+.ag-theme-quartz .ag-cell[col-id="OnlyDate"] .ag-selection-checkbox,
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-selection-checkbox,
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-header-select-all {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: var(--tl-checkbox-w);
+  opacity: 0; pointer-events: none;
+  transition: opacity 200ms ease;
+  z-index: 1;
+}
+
+/* Точная подстройка положения чекбокса в шапке относительно строк */
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-selection-checkbox,
+.ag-theme-quartz .ag-header-cell[col-id="OnlyDate"] .ag-header-select-all {
+  left: var(--tl-header-checkbox-offset);
+}
+
+/* Активный режим удаления */
+.ag-theme-quartz.tl-delete-on { --tl-shift: calc(var(--tl-checkbox-w) + var(--tl-gap)); }
+/* Показываем чекбоксы только в первой колонке при активном режиме */
+.ag-theme-quartz.tl-delete-on .ag-cell[col-id="OnlyDate"] .ag-selection-checkbox,
+.ag-theme-quartz.tl-delete-on .ag-header-cell[col-id="OnlyDate"] .ag-selection-checkbox,
+.ag-theme-quartz.tl-delete-on .ag-header-cell[col-id="OnlyDate"] .ag-header-select-all { opacity: 1; pointer-events: auto; }
+
+/* LoadingSpinner анимации */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* AG Grid: подсветка ошибочных полей ввода */
+.ag-theme-quartz .tl-cell-error {
+  outline: 1px solid #ef4444;
+  outline-offset: -1px;
+  background-color: rgba(239, 68, 68, 0.06);
+}
+
+/* Визуальная сетка таблиц Ag Grid (тонкие границы) */
+.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-center-cols-container .ag-row .ag-cell,
+.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-header-row .ag-header-cell {
+  border-right: 1px solid #e5e7eb; /* slate-200 */
+}
+.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-row {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* pinned-top: без особого фона/жирности, оставляем только разделительную линию */
+.ag-theme-quartz .ag-floating-top .ag-cell {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Вертикальная сетка для pinned-top (верхняя сводка) */
+.ag-grid-bordered .ag-floating-top .ag-row .ag-cell {
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Центрирование содержимого при использовании встроенного класса AG Grid */
+.ag-theme-quartz .ag-cell.ag-center-aligned-cell .ag-cell-wrapper { justify-content: center !important; width: 100% !important; }
+.ag-theme-quartz .ag-cell.ag-center-aligned-cell .ag-cell-value { text-align: center !important; width: 100% !important; }
+/* Подстраховка: если тема не растягивает wrapper, центрируем саму ячейку */
+.ag-theme-quartz .ag-center-cols-container .ag-cell.ag-center-aligned-cell,
+.ag-theme-quartz .ag-pinned-right-cols-container .ag-cell.ag-center-aligned-cell,
+.ag-theme-quartz .ag-pinned-left-cols-container .ag-cell.ag-center-aligned-cell {
+  display: flex !important;
+  justify-content: center !important;
+}
+/* Включаем такое же центрирование для pinned-top (верхних сводных строк) */
+.ag-theme-quartz .ag-floating-top .ag-cell.ag-center-aligned-cell {
+  display: flex !important;
+  justify-content: center !important;
+}
+/* Попапы редакторов всегда поверх шапки/фиксов */
+.ag-theme-quartz .ag-popup,
+.ag-theme-quartz .ag-popup-editor,
+.ag-theme-quartz .ag-popup-child {
+  z-index: 9999 !important;
+}
+
+/* Pinned bottom строка (Total) - мягкая подсветка */
+.ag-theme-quartz .ag-row-pinned {
+  background: #f8fafc; /* slate-50 */
+  font-weight: 600;
+}

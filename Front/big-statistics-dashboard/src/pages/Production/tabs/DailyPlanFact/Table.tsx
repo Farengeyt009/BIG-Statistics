@@ -19,7 +19,6 @@ const Table: React.FC<TableProps> = ({ data, loading, error, onTableReady }) => 
   // Передаем ссылку на таблицу в родительский компонент
   useEffect(() => {
     if (table && onTableReady) {
-      console.log('Table ready, calling onTableReady');
       onTableReady(table);
     }
   }, [table, onTableReady]);

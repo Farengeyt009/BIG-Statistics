@@ -200,7 +200,6 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
           });
         }
       } catch (e) {
-        console.warn('Soft-delete shift failed:', e);
       }
 
       const updatedRow = {
@@ -579,7 +578,6 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                       queryClient.invalidateQueries({ queryKey: ['assign'] });
                       queryClient.invalidateQueries({ queryKey: ['calendar'] });
                     } catch (e) {
-                      console.error('Error deleting assignment:', e);
                       alert(t('errorDeletingAssignment'));
                     }
                   });

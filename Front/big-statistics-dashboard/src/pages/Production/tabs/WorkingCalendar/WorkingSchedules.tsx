@@ -58,13 +58,11 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
     setScheduleError('');
     
     try {
-      console.log('🔍 Loading schedules for workshopId:', workshopId);
       
       // ✅ ВРЕМЕННО: Загружаем все графики
       const response = await fetch(`${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES}?includeDeleted=false`);
       const data = await response.json();
       
-      console.log('🔍 API response:', data);
       
       if (data.success) {
         // ✅ Фильтруем на фронтенде
@@ -75,12 +73,10 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
         );
         
         setSchedules(filteredSchedules);
-        console.log('🔍 Filtered schedules:', filteredSchedules);
       } else {
         setScheduleError(data.message || 'Failed to load schedules');
       }
     } catch (error) {
-      console.error('Error loading schedules:', error);
       setScheduleError('Network error while loading schedules');
     } finally {
       setLoadingSchedules(false);
@@ -141,11 +137,9 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
           // TODO: Показать уведомление об успехе
         } else {
           const errorData = await response.json();
-          console.error('Delete failed:', errorData);
           // TODO: Показать уведомление об ошибке
         }
       } catch (error) {
-        console.error('Error deleting schedule:', error);
         // TODO: Показать уведомление об ошибке
       }
     }
@@ -174,10 +168,8 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
         }
       } else {
         const errorData = await response.json();
-        console.error('Update failed:', errorData);
       }
     } catch (error) {
-      console.error('Error updating schedule:', error);
     }
   };
 
