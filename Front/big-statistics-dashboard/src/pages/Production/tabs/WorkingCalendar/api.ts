@@ -16,6 +16,7 @@ export interface AssignWorkSchedulesData {
     FACT_TIME: number;
     Shift_Time: number;
     Time_Loss: number;
+    Different: number;
     People: number;
   }>;
   table2: Array<{

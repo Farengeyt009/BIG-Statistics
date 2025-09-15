@@ -5,13 +5,11 @@ import { DayStatistics } from './types';
 interface DayStatisticsPanelProps {
   statistics: DayStatistics | null;
   assignmentsCount: number;
-  totalPeople: number;
 }
 
 const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
   statistics,
-  assignmentsCount,
-  totalPeople
+  assignmentsCount
 }) => {
   const { t } = useTranslation('production');
 
@@ -108,12 +106,12 @@ const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
 
         {/* Общие метрики */}
         <div className="bg-white p-3 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-600 mb-2">{t('assignmentsCount')}</div>
+          <div className="text-sm text-gray-600 mb-2">{t('timeDifferent')}</div>
           <div className="text-2xl font-bold text-blue-600">
-            {assignmentsCount}
+            {formatNumber(statistics.totalDifferent || 0)}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            {t('totalPeople')}: {totalPeople}
+            &nbsp;
           </div>
         </div>
       </div>

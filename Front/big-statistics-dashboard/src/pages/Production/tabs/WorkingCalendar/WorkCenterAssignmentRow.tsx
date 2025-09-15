@@ -4,6 +4,15 @@ import { WorkCenterAssignmentRowProps, DayAssignment, WorkCenterRow, WorkCenterS
 import { API_ENDPOINTS } from '../../../../config/api';
 import { useQueryClient } from '@tanstack/react-query';
 
+// ID цехов с ограничением на один график для РЦ
+const SINGLE_SCHEDULE_WORKSHOP_IDS = ['装配车间', '热水器总装组'];
+
+// Функция проверки ограничения на количество графиков
+const isWorkCenterLimitedToSingleSchedule = (workCenterId: string): boolean => {
+  const [workshopId] = workCenterId.split('_');
+  return SINGLE_SCHEDULE_WORKSHOP_IDS.includes(workshopId);
+};
+
 const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   assignment,
   workCenters,
@@ -162,8 +171,22 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
     }
   }, [assignment]);
 
-  // ✅ НОВАЯ ФУНКЦИЯ: Добавление новой смены
+  // ✅ НОВАЯ ФУНКЦИЯ: Добавление новой смены с валидацией
   const addShift = useCallback(() => {
+    // Проверяем ограничение на количество графиков
+    if (isWorkCenterLimitedToSingleSchedule(workCenterRow.workCenterId) && workCenterRow.shifts.length > 0) {
+      setErrors({
+        shifts: t('assignmentValidation.singleScheduleOnly', {
+          defaultValue: {
+            en: 'This work center can only have one work schedule',
+            zh: '此工作中心只能有一个工作班次',
+            ru: 'Этот рабочий центр может иметь только один рабочий график'
+          }[i18n.language] || 'This work center can only have one work schedule'
+        })
+      });
+      return;
+    }
+
     const newShift: WorkCenterShift = {
       id: `${workCenterRow.id}_shift_${Date.now()}`,
       scheduleId: '',

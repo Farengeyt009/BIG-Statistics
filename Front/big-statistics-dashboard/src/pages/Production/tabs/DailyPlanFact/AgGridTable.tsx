@@ -10,6 +10,12 @@ import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 
+// Форматтер для отображения чисел как целых (0 знаков после запятой)
+const fmtInt = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+});
+
 interface AgGridTableProps {
   data: any[];
   loading: boolean;
@@ -171,15 +177,17 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
     return translation ? translation : trimmedName;
   };
 
-  // Обработка данных для перевода и ограничения длины ProductName_CN
+  // Обработка данных: храним исходные числа, считаем разницы по "сырым" значениям
   const processedData = useMemo(() => {
-    return data.map((row, i) => {
-      // Расчет разности количества и времени
-      const planQty = Math.round(parseFloat(row.Plan_QTY) || 0);
-      const factQty = Math.round(parseFloat(row.FACT_QTY) || 0);
-      const planTime = Math.round(parseFloat(row.Plan_TIME) || 0);
-      const factTime = Math.round(parseFloat(row.FACT_TIME) || 0);
+    const toNum = (v: any) =>
+      v === '' || v === null || v === undefined ? null : Number(v);
 
+    return data.map((row, i) => {
+      const planQty  = toNum(row.Plan_QTY)  ?? 0;
+      const factQty  = toNum(row.FACT_QTY)  ?? 0;
+      const planTime = toNum(row.Plan_TIME) ?? 0;
+      const factTime = toNum(row.FACT_TIME) ?? 0;
+      
       const differentQty = factQty - planQty;
       const differentTime = factTime - planTime;
 
@@ -355,7 +363,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       maxWidth: 120,
       cellClass: 'text-center',
       cellDataType: 'number',
-      valueFormatter: (params) => params.value?.toString() || ''
+      valueFormatter: (params) => params.value != null ? fmtInt.format(params.value) : ''
     },
     {
       field: 'FACT_QTY',
@@ -364,7 +372,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       maxWidth: 120,
       cellClass: 'text-center',
       cellDataType: 'number',
-      valueFormatter: (params) => params.value?.toString() || ''
+      valueFormatter: (params) => params.value != null ? fmtInt.format(params.value) : ''
     },
     {
       field: 'Different_QTY',
@@ -380,8 +388,8 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       cellDataType: 'number',
       valueFormatter: (params) => {
         const value = params.value;
-        if (value > 0) return '+' + value;
-        return value?.toString() || '';
+        if (value > 0) return '+' + fmtInt.format(value);
+        return value != null ? fmtInt.format(value) : '';
       }
     },
     {
@@ -393,7 +401,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       cellDataType: 'number',
       valueFormatter: (params) => {
         const value = params.value;
-        return value ? value.toLocaleString('ru-RU') : '';
+        return value != null ? fmtInt.format(value) : '';
       }
     },
     {
@@ -405,7 +413,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       cellDataType: 'number',
       valueFormatter: (params) => {
         const value = params.value;
-        return value ? value.toLocaleString('ru-RU') : '';
+        return value != null ? fmtInt.format(value) : '';
       }
     },
     {
@@ -422,8 +430,8 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       cellDataType: 'number',
       valueFormatter: (params) => {
         const value = params.value;
-        if (value > 0) return '+' + value.toLocaleString('ru-RU');
-        return value ? value.toLocaleString('ru-RU') : '';
+        if (value > 0) return '+' + fmtInt.format(value);
+        return value != null ? fmtInt.format(value) : '';
       }
     }
   ], [t, monthLabel]);

@@ -61,10 +61,11 @@ const DayCell: React.FC<DayCellProps> = ({
 
   const efficiencyPercent = (() => {
     if (!dayData) return 0;
-    const denom = Number(dayData.Shift_Time) || 0;
-    if (denom <= 0) return 0;
-    const num = Number(dayData.Prod_Time) || 0;
-    const val = (num / denom) * 100;
+    const prodTime = Number(dayData.Prod_Time) || 0;
+    const timeLoss = Number(dayData.Time_Loss) || 0;
+    const totalTime = prodTime + timeLoss;
+    if (totalTime <= 0) return 0;
+    const val = (prodTime / totalTime) * 100;
     if (!isFinite(val) || isNaN(val)) return 0;
     return Math.round(val);
   })();
@@ -108,7 +109,7 @@ const DayCell: React.FC<DayCellProps> = ({
           </div>
           {/* Дополнительные данные */}
           <div className="text-[12px] space-y-0.5">
-            <div className="text-gray-600">Prod. Time: {formatNumber(dayData.Prod_Time)}</div>
+            <div className="text-gray-600">Plan/Fact Time: {formatNumber(dayData.Plan_Time)} / {formatNumber(dayData.Prod_Time)}</div>
             <div className="text-gray-600">Shift Time: {formatNumber(dayData.Shift_Time)}</div>
             <div className="text-gray-600">Time Loss: {formatNumber(dayData.Time_Loss)}</div>
           </div>

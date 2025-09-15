@@ -135,7 +135,8 @@
       "peopleCountRequired": "Please enter people count",
       "peopleCountPositive": "People count must be greater than 0",
       "duplicateAssignment": "This work center already has an assignment for this day",
-      "atLeastOneShiftRequired": "At least one shift must be assigned"
+      "atLeastOneShiftRequired": "At least one shift must be assigned",
+      "singleScheduleOnly": "This work center can only have one work schedule"
     },
     "statistics": {
       "planCompletion": "Plan Completion",
@@ -180,6 +181,7 @@
     "shiftTime": "Shift Time",
     "timeLoss": "Time Loss",
     "different": "Different",
+    "timeDifferent": "Time Different",
     "delete": "Delete",
     "cannotDeleteProductionData": "Cannot delete rows with production data",
     "duration": "Duration",
@@ -373,7 +375,8 @@
       "peopleCountRequired": "请输入人数",
       "peopleCountPositive": "人数必须大于0",
       "duplicateAssignment": "该工作中心当天已有分配",
-      "atLeastOneShiftRequired": "至少需要分配一个班次"
+      "atLeastOneShiftRequired": "至少需要分配一个班次",
+      "singleScheduleOnly": "此工作中心只能有一个工作班次"
     },
     "statistics": {
       "planCompletion": "计划完成率",
@@ -418,6 +421,7 @@
     "shiftTime": "班次时间",
     "timeLoss": "时间损失",
     "different": "差异",
+    "timeDifferent": "时间差异",
     "delete": "删除",
     "cannotDeleteProductionData": "无法删除包含生产数据的行",
     "duration": "持续时间",
@@ -597,7 +601,8 @@
       "peopleCountRequired": "Пожалуйста, введите количество людей",
       "peopleCountPositive": "Количество людей должно быть больше 0",
       "duplicateAssignment": "Этот рабочий центр уже имеет назначение на этот день",
-      "atLeastOneShiftRequired": "Необходимо назначить хотя бы одну смену"
+      "atLeastOneShiftRequired": "Необходимо назначить хотя бы одну смену",
+      "singleScheduleOnly": "Этот рабочий центр может иметь только один рабочий график"
     },
     "statistics": {
       "planCompletion": "Выполнение плана",
@@ -642,6 +647,7 @@
     "shiftTime": "Время смены",
     "timeLoss": "Потери времени",
     "different": "Разница",
+    "timeDifferent": "Разница времени",
     "delete": "Удалить",
     "cannotDeleteProductionData": "Нельзя удалить строки с данными о выпуске",
     "duration": "Продолжительность",

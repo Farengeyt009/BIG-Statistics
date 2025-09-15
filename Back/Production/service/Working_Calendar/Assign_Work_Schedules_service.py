@@ -98,6 +98,17 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
         WHERE DeleteMark = 0                  -- активные строки
           AND OnlyDate   = ?
         GROUP BY WorkShopID, WorkCenterID
+    ),
+    TL_Agg AS (  -- Потери времени по дням из грид-данных потерь
+        SELECT
+            e.WorkShopID,
+            e.WorkCenterID,
+            SUM(e.ManHours) AS Time_Loss
+        FROM TimeLoss.vw_EntryGrid AS e
+        WHERE e.OnlyDate = ?
+        -- Если есть флаг мягкого удаления — раскомментируй:
+        --  AND e.DeleteMark = 0
+        GROUP BY e.WorkShopID, e.WorkCenterID
     )
     SELECT
         WS.WorkShop_CustomWS,
@@ -111,7 +122,9 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
         COALESCE(DP.Plan_TIME, 0) AS Plan_TIME,
         COALESCE(DP.FACT_TIME, 0) AS FACT_TIME,
         COALESCE(WA.Shift_Time, 0) AS Shift_Time,
-        CAST(0 AS int) AS Time_Loss
+        COALESCE(TL.Time_Loss, 0)  AS Time_Loss,
+        -- Расчет поля Different: Time Loss - (Shift Time - Fact Time)
+        COALESCE(TL.Time_Loss, 0) - (COALESCE(WA.Shift_Time, 0) - COALESCE(DP.FACT_TIME, 0)) AS Different
     FROM Ref.WorkShop_CustomWS AS WS
     LEFT JOIN DP_Agg  AS DP
            ON WS.WorkShop_CustomWS   = DP.WorkShopName_CH
@@ -119,6 +132,9 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
     LEFT JOIN WSBD_Agg AS WA
            ON WS.WorkShop_CustomWS   = WA.WorkShopID
           AND WS.WorkCenter_CustomWS = WA.WorkCenterID
+    LEFT JOIN TL_Agg AS TL
+           ON WS.WorkShop_CustomWS   = TL.WorkShopID
+          AND WS.WorkCenter_CustomWS = TL.WorkCenterID
     ORDER BY WS.WorkShop_CustomWS, WS.WorkCenter_CustomWS
     """
 
@@ -175,8 +191,8 @@ def get_assign_work_schedules_data(selected_date: date) -> Dict[str, Any]:
 
     try:
         with get_connection() as conn:
-            # Получаем данные для Table1 с передачей даты (два параметра для двух CTE)
-            table1_data = _fetch_query(conn, sql_table1, (selected_date, selected_date))
+            # Получаем данные для Table1 с передачей даты (три параметра для трех CTE)
+            table1_data = _fetch_query(conn, sql_table1, (selected_date, selected_date, selected_date))
             
             # Получаем данные для Table2 (графики работ с агрегированными данными)
             table2_data = _fetch_query(conn, sql_table2)

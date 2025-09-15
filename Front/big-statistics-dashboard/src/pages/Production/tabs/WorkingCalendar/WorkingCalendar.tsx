@@ -28,6 +28,7 @@ const mergeCalendarData = (lists: CalendarDayData[][]): CalendarDayData[] => {
         map.set(key, {
           ...row,
           Prod_Time: Number((row as any).Prod_Time) || 0,
+          Plan_Time: Number((row as any).Plan_Time) || 0,
           Shift_Time: Number((row as any).Shift_Time) || 0,
           Time_Loss: Number((row as any).Time_Loss) || 0,
           People: Number((row as any).People) || 0,
@@ -36,6 +37,7 @@ const mergeCalendarData = (lists: CalendarDayData[][]): CalendarDayData[] => {
         map.set(key, {
           OnlyDate: key,
           Prod_Time: Number(prev.Prod_Time ?? 0) + Number((row as any).Prod_Time ?? 0),
+          Plan_Time: Number(prev.Plan_Time ?? 0) + Number((row as any).Plan_Time ?? 0),
           Shift_Time: Number(prev.Shift_Time ?? 0) + Number((row as any).Shift_Time ?? 0),
           Time_Loss: Number(prev.Time_Loss ?? 0) + Number((row as any).Time_Loss ?? 0),
           People: Number(prev.People ?? 0) + Number((row as any).People ?? 0),

@@ -158,6 +158,7 @@ export interface WorkshopGroupProps {
 export interface CalendarDayData {
   OnlyDate: string; // формат DD.MM.YYYY
   Prod_Time: number;
+  Plan_Time: number;
   Shift_Time: number;
   Time_Loss: number;
   People: number;
@@ -174,9 +175,11 @@ export interface CalendarApiResponse {
 export interface DayStatistics {
   planCompletionpcs: number; // процент выполнения плана по штукам
   planCompletionh: number; // процент выполнения плана по часам
-  efficiency: number; // эффективность = (сумма FACT_TIME / Shift_Time) * 100
+  efficiency: number; // эффективность = (сумма FACT_TIME / (FACT_TIME + Time_Loss)) * 100
   totalTasks: number; // количество строк с Plan_QTY > 0
   completedTasks: number; // количество строк с FACT_QTY > 0
   totalPlanQty: number; // суммарный план по штукам
   totalFactQty: number; // суммарный факт по штукам
+  totalShiftTime: number; // суммарное время смен
+  totalDifferent: number; // суммарная разница Time Loss - (Shift Time - Fact Time)
 }

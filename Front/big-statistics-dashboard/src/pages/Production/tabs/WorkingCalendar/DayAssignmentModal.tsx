@@ -173,6 +173,7 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       const factTime = Number(prod?.FACT_TIME || 0);
       const shiftTime = Number(prod?.Shift_Time || 0);
       const timeLoss = Number(prod?.Time_Loss || 0);
+      const different = Number(prod?.Different || 0);
 
       const existing = resultMap.get(key);
       const newShift: WorkCenterShift = {
@@ -201,7 +202,7 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
             : undefined,
           shiftTime,
           timeLoss,
-          different: 0,
+          different,
           shifts: [newShift],
         };
         resultMap.set(key, base);
@@ -224,6 +225,7 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       const factTime = Number(item.FACT_TIME) || 0;
       const shiftTime = Number(item.Shift_Time) || 0;
       const timeLoss = Number(item.Time_Loss) || 0;
+      const different = Number(item.Different) || 0;
       
        const hasProductionData = planQty > 0 || factQty > 0 || planTime > 0 || factTime > 0;
       if (!hasProductionData) return;
@@ -245,7 +247,7 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
         },
         shiftTime,
         timeLoss,
-        different: 0,
+        different,
         shifts: [],
       };
       resultMap.set(key, base);
@@ -256,16 +258,33 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
 
 
 
-  // Функция для форматирования чисел с российским разделителем
+  // Функция для форматирования чисел с учетом языка
   const formatNumber = (value: number): string => {
-    return Math.round(value).toLocaleString('ru-RU');
+    // Используем те же локали, что и для даты
+    const localeMap: Record<string, string> = {
+      'en': 'en-US',
+      'zh': 'zh-CN',
+      'ru': 'ru-RU'
+    };
+    const locale = localeMap[currentLanguage] || 'en-US';
+    return Math.round(value).toLocaleString(locale);
   };
 
 
 
-  // Форматирование даты для отображения
+  // Форматирование даты для отображения с учетом языка
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ru-RU', {
+    // Маппинг языков i18n на локали для форматирования даты
+    const localeMap: Record<string, string> = {
+      'en': 'en-US',
+      'zh': 'zh-CN',
+      'ru': 'ru-RU'
+    };
+    
+    // Получаем локаль для текущего языка или используем en-US по умолчанию
+    const locale = localeMap[currentLanguage] || 'en-US';
+    
+    return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -584,7 +603,9 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
 
     const planCompletionpcs = totalPlanQty > 0 ? (totalFactQty / totalPlanQty) * 100 : 0;
     const planCompletionh = totalPlanTime > 0 ? (totalFactTime / totalPlanTime) * 100 : 0;
-    const efficiency = totalShiftTime > 0 ? (totalFactTime / totalShiftTime) * 100 : 0;
+    // Новая формула эффективности: Prod_Time / (Prod_Time + Time_Loss) * 100%
+    const totalTimeWithLosses = totalFactTime + (assignData.table1?.reduce((sum, item) => sum + (parseFloat(item.Time_Loss) || 0), 0) || 0);
+    const efficiency = totalTimeWithLosses > 0 ? (totalFactTime / totalTimeWithLosses) * 100 : 0;
 
     return {
       planCompletionpcs: Math.round(planCompletionpcs * 100) / 100,
@@ -593,7 +614,15 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
       totalTasks: tasksWithPlan,
       completedTasks: tasksWithFact,
       totalPlanQty: Math.round(totalPlanQty),
-      totalFactQty: Math.round(totalFactQty)
+      totalFactQty: Math.round(totalFactQty),
+      totalShiftTime: Math.round(totalShiftTime),
+      // Расчет общей разницы: сумма(Time Loss - (Shift Time - Fact Time))
+      totalDifferent: assignData.table1?.reduce((sum, item) => {
+        const timeLoss = Number(item.Time_Loss) || 0;
+        const shiftTime = Number(item.Shift_Time) || 0;
+        const factTime = Number(item.FACT_TIME) || 0;
+        return sum + (timeLoss - (shiftTime - factTime));
+      }, 0) || 0
     };
   }, [assignData]);
 
@@ -755,7 +784,6 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
         <DayStatisticsPanel
           statistics={dayStatistics}
           assignmentsCount={localAssignments.length}
-          totalPeople={totalPeople}
         />
         </div>
 

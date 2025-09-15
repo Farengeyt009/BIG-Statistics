@@ -23,6 +23,12 @@ import { CSS } from '@dnd-kit/utilities';
 
 import FilterPopover from './FilterPopover';
 
+// Форматтер для отображения чисел как целых (0 знаков после запятой)
+const fmtInt = new Intl.NumberFormat('ru-RU', {
+  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+});
+
 /* ------------------------------------------------------------------ */
 /*                                TYPES                               */
 /* ------------------------------------------------------------------ */
@@ -496,11 +502,10 @@ export function DataTable<T extends Record<string, any>>({
                       const isNum = numericCols.includes(
                         cell.column.id as string,
                       );
+                      const raw = cell.getValue();
                       const display = isNum
-                        ? cell.getValue() !== '' &&
-                          cell.getValue() !== null &&
-                          cell.getValue() !== undefined
-                          ? Number(cell.getValue()).toLocaleString('ru-RU')
+                        ? raw !== '' && raw !== null && raw !== undefined
+                          ? fmtInt.format(Number(raw))                // ← визуально целые
                           : ''
                         : flexRender(
                             cell.column.columnDef.cell,
@@ -527,6 +532,7 @@ export function DataTable<T extends Record<string, any>>({
                               ? 'bg-blue-50/70 outline outline-2 outline-blue-200'
                               : ''
                           }`}
+                          title={isNum && raw !== null && raw !== undefined ? String(raw) : undefined}
                       >
                         {display}
                       </td>
@@ -553,7 +559,7 @@ export function DataTable<T extends Record<string, any>>({
                         key={c.id}
                         className="border-t text-right font-semibold"
                       >
-                        {numericSums[c.id as string].toLocaleString('ru-RU')}
+Испраув                        {fmtInt.format(numericSums[c.id as string])}     // ← визуально целые
                     </td>
                   ) : (
                       <td key={c.id} />
