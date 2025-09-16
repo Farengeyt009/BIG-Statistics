@@ -784,6 +784,8 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
         <DayStatisticsPanel
           statistics={dayStatistics}
           assignmentsCount={localAssignments.length}
+          workshops={uniqueWorkshops}
+          workshopGroups={workshopGroups}
         />
         </div>
 

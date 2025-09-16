@@ -1,15 +1,22 @@
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DayStatistics } from './types';
+import TimeLossChart from './TimeLossChart';
 
 interface DayStatisticsPanelProps {
   statistics: DayStatistics | null;
   assignmentsCount: number;
+  workshops?: string[];
+  workshopGroups?: Record<string, Array<{
+    timeLoss?: number;
+  }>>;
 }
 
 const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
   statistics,
-  assignmentsCount
+  assignmentsCount,
+  workshops = [],
+  workshopGroups = {}
 }) => {
   const { t } = useTranslation('production');
 
@@ -68,7 +75,7 @@ const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
             statistics.planCompletionpcs >= 95 ? 'bg-emerald-500' : statistics.planCompletionpcs >= 75 ? 'bg-amber-500' : 'bg-red-500'
           )}
           <div className="text-xs text-gray-500 mt-1">
-            {t('statistics.plan')}: {formatNumber(statistics.totalPlanQty)} шт. | {t('statistics.fact')}: {formatNumber(statistics.totalFactQty)} шт.
+            {t('statistics.plan')}: {formatNumber(statistics.totalPlanQty)} {t('units.pieces')} | {t('statistics.fact')}: {formatNumber(statistics.totalFactQty)} {t('units.pieces')}
           </div>
         </div>
 
@@ -104,14 +111,34 @@ const DayStatisticsPanel: React.FC<DayStatisticsPanelProps> = ({
           </div>
         </div>
 
-        {/* Общие метрики */}
-        <div className="bg-white p-3 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-600 mb-2">{t('timeDifferent')}</div>
-          <div className="text-2xl font-bold text-blue-600">
-            {formatNumber(statistics.totalDifferent || 0)}
+        {/* Общие метрики с гистограммой */}
+        <div className="bg-white p-2 rounded-lg border border-gray-200 flex flex-col">
+          {/* Заголовок карточки */}
+          <div className="text-sm text-gray-600 mb-1">
+            {t('timeLoss')}
           </div>
+          {/* Область для гистограммы */}
+          <div className="flex-1 min-h-[50px] mb-1">
+            <TimeLossChart 
+              data={workshops.map(workshop => {
+                // Получаем данные о потерях времени для этого цеха из workshopGroups
+                const workshopAssignments = workshopGroups[workshop] || [];
+                
+                // Суммируем потери времени по всем назначениям этого цеха
+                const totalTimeLoss = workshopAssignments.reduce((sum, assignment) => 
+                  sum + (assignment.timeLoss || 0), 0
+                );
+                
+                return {
+                  workshop,
+                  timeLoss: totalTimeLoss
+                };
+              })} 
+            />
+          </div>
+          {/* Подпись внизу */}
           <div className="text-xs text-gray-500 mt-1">
-            &nbsp;
+            {t('timeDifferent')}: {formatNumber(statistics.totalDifferent || 0)}
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarDayData } from './types';
 
 interface DayCellProps {
@@ -20,6 +21,7 @@ const DayCell: React.FC<DayCellProps> = ({
   calendarData,
   loading
 }) => {
+  const { t } = useTranslation('production');
   const dayNumber = date.getDate();
   
   const getDayData = (date: Date): CalendarDayData | null => {
@@ -104,14 +106,14 @@ const DayCell: React.FC<DayCellProps> = ({
         <div className="space-y-1">
           {/* Реальные данные из API */}
           <div className={`text-xs px-1 py-0.5 rounded ${getEfficiencyColor(efficiencyPercent)} flex justify-between items-center`}>
-            <span>Effic.: {efficiencyPercent}%</span>
-            <span>People: {formatNumber(dayData.People)}</span>
+            <span>{t('calendarCell.efficiency')}: {efficiencyPercent}%</span>
+            <span>{t('calendarCell.people')}: {formatNumber(dayData.People)}</span>
           </div>
           {/* Дополнительные данные */}
           <div className="text-[12px] space-y-0.5">
-            <div className="text-gray-600">Plan/Fact Time: {formatNumber(dayData.Plan_Time)} / {formatNumber(dayData.Prod_Time)}</div>
-            <div className="text-gray-600">Shift Time: {formatNumber(dayData.Shift_Time)}</div>
-            <div className="text-gray-600">Time Loss: {formatNumber(dayData.Time_Loss)}</div>
+            <div className="text-gray-600">{t('calendarCell.planFactTime')}: {formatNumber(dayData.Plan_Time)} / {formatNumber(dayData.Prod_Time)}</div>
+            <div className="text-gray-600">{t('calendarCell.shiftTime')}: {formatNumber(dayData.Shift_Time)}</div>
+            <div className="text-gray-600">{t('calendarCell.timeLoss')}: {formatNumber(dayData.Time_Loss)}</div>
           </div>
         </div>
       )}

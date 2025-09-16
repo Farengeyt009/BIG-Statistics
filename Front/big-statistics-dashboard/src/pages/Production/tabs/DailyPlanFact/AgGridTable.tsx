@@ -4,6 +4,7 @@ import { AgGridReact } from '@ag-grid-community/react';
 import type { ColDef, GridApi, GridReadyEvent } from '@ag-grid-community/core';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
+import './ag-grid-overrides.css';
 import { useTranslation } from 'react-i18next';
 import productionTranslations from '../../ProductionTranslation.json';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
@@ -131,6 +132,10 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
     api.refreshCells?.({ force: true, suppressFlash: true });
   }, []);
 
+  /** -------------------- хелпер для преобразования текста в одну строку -------------------- */
+  const toSingleLine = (s: string) =>
+    s.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+
   /** -------------------- функция перевода названий цехов -------------------- */
   const translateWorkShop = (workShopName: string) => {
     if (!workShopName) return workShopName;
@@ -151,7 +156,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       }
     }
 
-    return translation ? translation : trimmedName;
+    return toSingleLine(translation ? translation : trimmedName);
   };
 
   /** -------------------- функция перевода названий рабочих центров -------------------- */
@@ -174,7 +179,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       }
     }
 
-    return translation ? translation : trimmedName;
+    return toSingleLine(translation ? translation : trimmedName);
   };
 
   // Обработка данных: храним исходные числа, считаем разницы по "сырым" значениям
@@ -278,13 +283,16 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
         treeList: true as any,
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        // ключ фильтра берём из ISO
-        keyCreator: (p: any) => String(p.value ?? ''),
-        // значения — из processedData (ISO)
+        // ключ фильтра = ISO-значение строки
+        keyCreator: (p: any) => String(p?.data?.OnlyDateISO ?? ''),
+        // значения — из отфильтрованных строк (каскадные фильтры)
         values: (params: any) => {
           const set = new Set<string>();
-          processedData.forEach(r => { if (r.OnlyDateISO) set.add(r.OnlyDateISO); });
-          params.success(Array.from(set).sort()); // сортировка по ISO = правильный календарный порядок
+          params.api.forEachNodeAfterFilter((node: any) => {
+            const v = node?.data?.OnlyDateISO;
+            if (v) set.add(v);
+          });
+          params.success(Array.from(set).sort()); // ISO сортируется хронологически
         },
         // путь Год → "Месяц" → День
         treeListPathGetter: (value: any) => {
@@ -311,10 +319,13 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        values: (params:any) => {
+        values: (params: any) => {
           const set = new Set<string>();
-          processedData.forEach(r => { const v = (r?.WorkShopName_CH || '').trim(); if (v) set.add(v); });
-          params.success(Array.from(set).sort((a,b)=>a.localeCompare(b)));
+          params.api.forEachNodeAfterFilter((node: any) => {
+            const v = (node?.data?.WorkShopName_CH || '').trim();
+            if (v) set.add(v);
+          });
+          params.success(Array.from(set).sort((a, b) => a.localeCompare(b)));
         },
       },
     },
@@ -327,10 +338,13 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        values: (params:any) => {
+        values: (params: any) => {
           const set = new Set<string>();
-          processedData.forEach(r => { const v = (r?.WorkCenterGroup_CN || '').trim(); if (v) set.add(v); });
-          params.success(Array.from(set).sort((a,b)=>a.localeCompare(b)));
+          params.api.forEachNodeAfterFilter((node: any) => {
+            const v = (node?.data?.WorkCenterGroup_CN || '').trim();
+            if (v) set.add(v);
+          });
+          params.success(Array.from(set).sort((a, b) => a.localeCompare(b)));
         },
       },
     },

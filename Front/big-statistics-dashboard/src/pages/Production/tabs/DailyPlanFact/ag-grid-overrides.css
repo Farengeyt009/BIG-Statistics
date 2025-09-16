@@ -1,0 +1,20 @@
+/* ----- Set Filter: значение всегда в одну строку + многоточие ----- */
+.ag-theme-quartz .ag-set-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ag-theme-quartz .ag-set-filter-item .ag-set-filter-item-value {
+  flex: 1 1 auto;
+  min-width: 0;            /* критично для ellipsis во flex-контейнере */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* чуть ограничим ширину попапа фильтра */
+.ag-theme-quartz .ag-filter .ag-filter-body-wrapper {
+  max-width: 340px;
+  width: 320px;
+}

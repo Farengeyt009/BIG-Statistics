@@ -221,7 +221,20 @@
       "productionFact": "Production Fact (h)",
       "timeLoss": "Time Loss",
       "efficiency": "Efficiency%"
-    }
+    },
+    "calendarCell": {
+      "efficiency": "Effic.",
+      "people": "People",
+      "planFactTime": "Plan/Fact Time",
+      "shiftTime": "Shift Time",
+      "timeLoss": "Time Loss"
+    },
+    "units": {
+      "pieces": "pcs",
+      "hours": "h"
+    },
+    "timeLossByWorkshop": "Time Loss by Workshop",
+    "noData": "No data available"
   },
   "zh": {
     "selectAll": "全选",
@@ -461,7 +474,20 @@
       "productionFact": "生产实际 (小时)",
       "timeLoss": "时间损失",
       "efficiency": "效率%"
-    }
+    },
+    "calendarCell": {
+      "efficiency": "效率",
+      "people": "人数",
+      "planFactTime": "计划/实际时间",
+      "shiftTime": "班次时间",
+      "timeLoss": "时间损失"
+    },
+    "units": {
+      "pieces": "件",
+      "hours": "小时"
+    },
+    "timeLossByWorkshop": "各车间时间损失",
+    "noData": "暂无数据"
   },
   "ru": {
     "selectAll": "Выбрать все",
@@ -677,6 +703,27 @@
       "confirmRefresh": "Вы действительно хотите обновить таблицу? Несохраненные данные будут удалены.",
       "confirmSave": "Подтвердите сохранение документа.",
       "confirmSaveWillDelete": "Часть строк будет удалена."
-    }
+    },
+    "timeLossOverview": {
+      "metric": "Показатель",
+      "total": "Итого",
+      "dailyPlan": "Дневной план (ч)",
+      "productionFact": "Производство факт (ч)",
+      "timeLoss": "Потери времени",
+      "efficiency": "Эффективность%"
+    },
+    "calendarCell": {
+      "efficiency": "Эффект.",
+      "people": "Люди",
+      "planFactTime": "План/Факт время",
+      "shiftTime": "Время смены",
+      "timeLoss": "Потери времени"
+    },
+    "units": {
+      "pieces": "шт.",
+      "hours": "ч"
+    },
+    "timeLossByWorkshop": "Потери времени по цехам",
+    "noData": "Нет данных"
   }
 }
