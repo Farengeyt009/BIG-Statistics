@@ -5,9 +5,10 @@ type SimpleTableProps = {
 	cols: string[];
 	rows: (string | number)[][];
 	isExpanded?: boolean;
+	alignOverrides?: Record<number, 'left' | 'center' | 'right'>;
 };
 
-export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded }) => {
+export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded, alignOverrides }) => {
 	// Единая схема минимальных ширин по колонкам (можете подстроить числа)
 	const minWidthClasses = [
 		'min-w-[150px]', // 0 Time Slot
@@ -26,7 +27,7 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded
 	];
 
 	// Выравнивание по колонкам: Total Plan — влево, Plan — вправо, '/' — по центру, Fact — влево
-	const alignTh = [
+	const defaultAlign = [
 		'text-left', 'text-left', 'text-left', 'text-left', // 0..3
 		'text-left', // 4 Total Plan (align left)
 		'text-right', // 5 Plan
@@ -38,7 +39,14 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded
 		'text-left', // 11 Lqc Qty
 		'text-left', // 12 Lqc %
 	];
-	const alignTd = alignTh;
+
+	const getAlignClass = (idx: number) => {
+		const ov = alignOverrides?.[idx];
+		if (ov === 'left') return 'text-left';
+		if (ov === 'center') return 'text-center';
+		if (ov === 'right') return 'text-right';
+		return defaultAlign[idx] ?? 'text-left';
+	};
 
 	const parsePercent = (value: unknown): number => {
 		const m = String(value).match(/([0-9]+(?:\.[0-9]+)?)/);
@@ -50,7 +58,7 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded
 	return (
 		<div className="w-full overflow-x-auto">
 			{/* Контейнер с максимальной высотой и вертикальной прокруткой */}
-			<div className={`${isExpanded ? '' : 'max-h-[150px]'} overflow-y-auto`}>
+			<div className={`${isExpanded ? '' : 'max-h-[268px] overflow-y-auto'}`}>
 				{/* Растягиваем таблицу на всю ширину контейнера */}
 				<table className="table-auto w-full text-sm">
 				<thead>
@@ -58,7 +66,7 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded
 						{cols.map((col, i) => (
 							<th
 								key={i}
-								className={`whitespace-nowrap py-2 font-semibold text-base text-gray-900 pl-4 pr-2 ${alignTh[i]} ${minWidthClasses[i] ?? ''} px-2`}
+								className={`whitespace-nowrap py-2 font-semibold text-base text-gray-900 pl-4 pr-2 ${getAlignClass(i)} ${minWidthClasses[i] ?? ''} px-2`}
 							>
 								{col}
 							</th>
@@ -69,7 +77,8 @@ export const SimpleTable: React.FC<SimpleTableProps> = ({ cols, rows, isExpanded
 					{rows.map((row, rIdx) => (
 						<tr key={rIdx} className="hover:bg-gray-50 border-b border-gray-200">
 							{row.map((cell, cIdx) => {
-								const baseTd = `whitespace-nowrap pl-4 pr-2 py-2 ${alignTd[cIdx]} ${minWidthClasses[cIdx] ?? ''} px-2 text-[15px]`;
+								const alignClass = getAlignClass(cIdx);
+								const baseTd = `whitespace-nowrap pl-4 pr-2 py-2 ${alignClass} ${minWidthClasses[cIdx] ?? ''} px-2 text-[15px]`;
 								// Узкая разделительная колонка '/'
 								if (cIdx === 6) {
 									const hasPlan = row[5] !== '' && row[5] !== undefined && row[5] !== null && String(row[5]).length > 0;

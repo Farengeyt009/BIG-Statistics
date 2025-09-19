@@ -507,7 +507,15 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     const map = wcByWs || {} as Record<string, DictItem[]>;
     Object.values(map).forEach(arr => (arr || []).forEach(i => {
       const k = String(i.value);
-      if (!m.has(k)) m.set(k, getDictLabel(i, lang));
+      if (!m.has(k)) {
+        const lbl =
+          getDictLabel(i, lang) ||
+          i.labelEn ||
+          i.labelZh ||
+          i.label ||
+          k;
+        m.set(k, String(lbl));
+      }
     }));
     return m;
   }, [wcByWs, lang]);
@@ -580,6 +588,67 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     return Array.from(s);
   }, [rows]);
 
+  // ---------- Каскадный сбор значений SetFilter (игнорируя собственный столбец) ----------
+  const getFilterKey = useCallback((r: LocalRow, colId: string): string => {
+    switch (colId) {
+      case 'OnlyDate':
+        return String(normalizeDate(r.OnlyDate) ?? '');
+      case 'CompletedDate':
+        return String(normalizeDate(r.CompletedDate) ?? '');
+      case 'WorkShopID':
+        return String(r.WorkShopID ?? '');
+      case 'WorkCenterID':
+        // Ключом для фильтра делаем ID; отображаемая метка настраивается через valueFormatter
+        return String(r.WorkCenterID ?? '');
+      case 'DirectnessID':
+        return r.DirectnessID == null ? '' : String(r.DirectnessID);
+      case 'ReasonGroupID': {
+        const all: DictItem[] = ([] as DictItem[]).concat(...Object.values(reasonByWs || {} as Record<string, DictItem[]>));
+        const lbl = getDictLabel(findByValue(all, r.ReasonGroupID), lang);
+        return String(lbl || '');
+      }
+      case 'CommentText':
+        return String(r.CommentText ?? '').trim();
+      case 'ActionPlan':
+        return String(r.ActionPlan ?? '').trim();
+      case 'Responsible':
+        return String(r.Responsible ?? '').trim();
+      case 'ManHours': {
+        const v = r.ManHours as any;
+        const n = parseNumberFromText(v);
+        if (n === null) return '';
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
+      }
+      default:
+        return String((r as any)[colId] ?? '');
+    }
+  }, [reasonByWs, lang, findByValue]);
+
+  const collectFilterValuesIgnoringSelf = useCallback((params: any, colId: string, sort?: (a: string, b: string) => number) => {
+    const model = { ...(params.api.getFilterModel?.() ?? {}) } as Record<string, any>;
+    delete model[colId];
+
+    const passes = (row: LocalRow) => {
+      for (const [k, m] of Object.entries(model)) {
+        if ((m as any)?.filterType !== 'set') continue;
+        const allowed: string[] = Array.isArray((m as any).values) ? (m as any).values : [];
+        const key = getFilterKey(row, k);
+        if (allowed.length && !allowed.includes(key)) return false;
+      }
+      return true;
+    };
+
+    const set = new Set<string>();
+    (filteredRows || rows).forEach((r) => {
+      if (!passes(r as LocalRow)) return;
+      const v = getFilterKey(r as LocalRow, colId);
+      if (v) set.add(v);
+    });
+    const out = Array.from(set);
+    if (sort) out.sort(sort); else out.sort();
+    params.success(out);
+  }, [getFilterKey, filteredRows, rows]);
+
   const columns = useMemo<ColDef<LocalRow>[]>(() => [
     { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
       // держим чекбоксы всегда включёнными; показываем/скрываем через CSS
@@ -596,19 +665,18 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
           const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
           return m ? [m[1], m[2], m[3]] : null;
         },
-        values: (params: any) => {
-          const set = new Set<string>();
-          params.api.forEachNode((n: any) => {
-            const iso = String(normalizeDate(n?.data?.OnlyDate) ?? '');
-            if (iso) set.add(iso);
-          });
-          params.success(Array.from(set).sort());
-        },
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'OnlyDate'),
+      },
+      valueFormatter: (p: any) => {
+        const iso = String(normalizeDate(p.value) ?? '');
+        const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? `${m[3]}.${m[2]}.${m[1]}` : (p.value ?? '');
       },
     },
     { field: 'WorkShopID', headerName: t('timeLossTable.workshop') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
       filterParams: {
-        values: wsFilterValues,
+        refreshValuesOnOpen: true,
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'WorkShopID', (a, b) => a.localeCompare(b)),
         valueFormatter: (p: any) => getDictLabel(findByValue(dicts?.workshops, p.value), lang),
         includeBlanksInFilter: true,
       },
@@ -623,8 +691,11 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     { field: 'WorkCenterID', headerName: t('timeLossTable.workCenter') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
       filterParams: {
         includeBlanksInFilter: true,
-        keyCreator: (p: any) => wcValueToLabel.get(String(p.value)) || '',
-        valueFormatter: (p: any) => wcValueToLabel.get(String(p.value)) || '',
+        refreshValuesOnOpen: true,
+        // ключ — это ID (String). valueFormatter показывает метку.
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'WorkCenterID', (a, b) => a.localeCompare(b, undefined, { numeric: true } as any)),
+        keyCreator: (p: any) => String(p.value ?? ''),
+        valueFormatter: (p: any) => wcValueToLabel.get(String(p.value)) || String(p.value ?? ''),
       },
       cellEditor: 'agRichSelectCellEditor',
       cellEditorParams: (p: any) => ({
@@ -636,7 +707,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     },
     { field: 'DirectnessID', headerName: t('timeLossTable.lossType') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
       filterParams: {
-        values: directnessFilterValues,
+        refreshValuesOnOpen: true,
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'DirectnessID', (a, b) => a.localeCompare(b)),
         valueFormatter: (p: any) => getDictLabel(findByValue(dicts?.directness as any, p.value), lang),
         includeBlanksInFilter: true,
       },
@@ -647,7 +719,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     },
     { field: 'ReasonGroupID', headerName: t('timeLossTable.lossReason') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
       filterParams: {
-        values: reasonValuesFromRows,
+        refreshValuesOnOpen: true,
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'ReasonGroupID', (a, b) => a.localeCompare(b)),
         // Группируем одинаковые переводы даже при разных ID
         keyCreator: (p: any) => {
           const all: DictItem[] = ([] as DictItem[]).concat(...Object.values(reasonByWs || {} as Record<string, DictItem[]>));
@@ -675,7 +748,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     },
     { field: 'CommentText', headerName: t('timeLossTable.comment') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 460, cellDataType: 'text',
       filterParams: {
-        values: commentValues,
+        refreshValuesOnOpen: true,
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'CommentText', (a, b) => a.localeCompare(b)),
         includeBlanksInFilter: true,
         // показываем в списке одной строкой, без переносов, но поиск идёт по полному тексту
         valueFormatter: (p: any) => {
@@ -691,6 +765,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     { field: 'ManHours', headerName: t('timeLossTable.manHours') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 120,
       filterParams: {
         includeBlanksInFilter: true,
+        refreshValuesOnOpen: true,
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'ManHours', (a, b) => a.localeCompare(b, undefined, { numeric: true } as any)),
         keyCreator: (p: any) => {
           const v = p.value;
           if (v === null || v === undefined) return '';
@@ -721,12 +797,12 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       },
     },
     { field: 'ActionPlan', headerName: t('timeLossTable.actionPlan') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 360, cellDataType: 'text',
-      filterParams: { values: actionPlanValues, includeBlanksInFilter: true },
+      filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'ActionPlan', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
       cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
     },
     { field: 'Responsible', headerName: t('timeLossTable.responsible') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
-      filterParams: { values: responsibleValues, includeBlanksInFilter: true },
+      filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'Responsible', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
     },
     { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
@@ -741,16 +817,9 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
           const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
           return m ? [m[1], m[2], m[3]] : null;
         },
-        values: (params: any) => {
-          const set = new Set<string>();
-          params.api.forEachNode((n: any) => {
-            const iso = String(normalizeDate(n?.data?.CompletedDate) ?? '');
-            if (iso) set.add(iso);
-          });
-          params.success(Array.from(set).sort());
-        },
+        values: (params: any) => collectFilterValuesIgnoringSelf(params, 'CompletedDate'),
       },
-      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
+      valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const iso = String(normalizeDate(v) ?? ''); const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : ''; },
     },
   ], [t, lang, dicts, wcByWs, reasonByWs, directnessValues, toggleDelete, deleteMode, editMode]);
 

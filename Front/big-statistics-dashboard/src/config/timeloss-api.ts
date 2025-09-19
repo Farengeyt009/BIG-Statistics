@@ -43,6 +43,31 @@ export async function apiGetDicts() {
   return r.json();
 }
 
+// Daily Staffing
+export type DailyStaffingRow = {
+  OnlyDate: string;
+  WorkShopID: string;
+  WorkCenterID: string;
+  People: number | null;
+  WorkHours: number | null;
+  PeopleWorkHours: number | null;
+  EntryManHours: number | null;
+  WorkShopName_ZH?: string | null;
+  WorkShopName_EN?: string | null;
+  WorkCenterName_ZH?: string | null;
+  WorkCenterName_EN?: string | null;
+};
+
+export async function apiGetDailyStaffing(dateFrom: string, dateTo: string): Promise<DailyStaffingRow[]> {
+  const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
+  const r = await fetch(`${API_BASE_URL}/timeloss/daily-staffing?${params.toString()}`);
+  if (!r.ok) {
+    const error = await r.json().catch(() => ({}));
+    throw new Error(error?.detail || error?.error || `Failed to load daily staffing`);
+  }
+  return r.json();
+}
+
 export async function apiPatchCell(id: number, field: keyof TimeLossRow, value: any, rowver?: string) {
   const r = await fetch(`${BASE_URL}/entry/${id}`, {
     method: 'PATCH',
@@ -91,4 +116,28 @@ export async function apiSoftDelete(id: number) {
     const error = await r.json();
     throw new Error(error.error || error.message || 'Failed to delete entry');
   }
+}
+
+// Order Tails
+export type OrderTailRow = {
+  WorkShopName_CH: string;
+  LargeGroup: string;
+  GroupName: string;
+  OrderNumber: string;
+  NomenclatureNumber: string;
+  Total_QTY: string;
+  FactTotal_QTY: string;
+  TailDays: number;
+  TailStartDate?: string | null;
+  TailResolvedDate?: string | null;
+  Active_Tail?: number | null;
+};
+
+export async function apiGetOrderTails(): Promise<OrderTailRow[]> {
+  const r = await fetch(`${API_BASE_URL}/order-tails`);
+  if (!r.ok) {
+    const error = await r.json().catch(() => ({}));
+    throw new Error(error?.detail || error?.error || 'Failed to load order tails');
+  }
+  return r.json();
 }

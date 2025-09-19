@@ -5,6 +5,7 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
+import { RowGroupingModule } from '@ag-grid-enterprise/row-grouping';
 
 // Явная регистрация только нужных Enterprise‑модулей
 ModuleRegistry.registerModules([
@@ -14,6 +15,7 @@ ModuleRegistry.registerModules([
   ClipboardModule,
   RichSelectModule,
   StatusBarModule,
+  RowGroupingModule,
 ]);
 
 // Опциональная установка ключа лицензии из env (если задан) или fallback

@@ -7,7 +7,32 @@
     "overview": "Overview",
     "details": "Details",
     "table": "Loss Table",
+    "dailyStaffing": "Daily Staffing",
     "analytics": "Working Calendar",
+    "orderTails": "Order Tails",
+    "orderTailsTabs": {
+      "stats": "Statistics",
+      "table": "Table"
+    },
+    "orderTailsStats": {
+      "largeGroup": "Large group",
+      "groupName": "Group name",
+      "avgTailDays": "Avg Tail Days",
+      "total": "Total",
+      "chartTitle": "Average tail clearing speed by month",
+      "groupChartTitle": "Average tail clearing speed by groups"
+    },
+    "orderTailsTable": {
+      "orderNo": "Order No",
+      "articleNumber": "Article Number",
+      "name": "Name",
+      "orderQty": "Order QTY",
+      "complQty": "Compl. QTY",
+      "tailDays": "Tail Days",
+      "tailResolvedDate": "Tail Resolved Date",
+      "tailStartDate": "Tail Start Date",
+      "activeOnly": "Active tails only"
+    },
     "Daily Plan-Fact": "Daily Plan-Fact",
     "welcomeTitle": "Production Management System",
     "welcomeDescription": "Welcome to the Production module. This section provides comprehensive tools for managing manufacturing processes, tracking production metrics, and monitoring factory operations.",
@@ -234,7 +259,17 @@
       "hours": "h"
     },
     "timeLossByWorkshop": "Time Loss by Workshop",
-    "noData": "No data available"
+    "noData": "No data available",
+    "timeLossDailyStaffing": {
+      "date": "Date",
+      "workshop": "Workshop",
+      "workCenter": "Work Center",
+      "people": "People",
+      "workHours": "Shift Time",
+      "peopleWorkHours": "People × Hours",
+      "entryManHours": "Time Loss",
+      "effectiveTime": "Effective Time"
+    }
   },
   "zh": {
     "selectAll": "全选",
@@ -244,7 +279,32 @@
     "overview": "概览",
     "details": "详情",
     "table": "损失表",
+    "dailyStaffing": "每日人员",
     "analytics": "工作日历",
+    "orderTails": "订单尾数",
+    "orderTailsTabs": {
+      "stats": "统计",
+      "table": "表格"
+    },
+    "orderTailsStats": {
+      "largeGroup": "成品类",
+      "groupName": "组名",
+      "avgTailDays": "平均清尾天数",
+      "total": "总计",
+      "chartTitle": "按月平均清尾速度",
+      "groupChartTitle": "按成品类平均清尾速度"
+    },
+    "orderTailsTable": {
+      "orderNo": "订单号",
+      "articleNumber": "产品编码",
+      "name": "名称",
+      "orderQty": "订单数量",
+      "complQty": "完成数量",
+      "tailDays": "尾天数",
+      "tailResolvedDate": "清尾日期",
+      "tailStartDate": "开始清尾日期",
+      "activeOnly": "仅活动尾数"
+    },
     "Daily Plan-Fact": "日计划分析",
     "overviewTab": "概览",
     "tableTab": "表格",
@@ -487,7 +547,17 @@
       "hours": "小时"
     },
     "timeLossByWorkshop": "各车间时间损失",
-    "noData": "暂无数据"
+    "noData": "暂无数据",
+    "timeLossDailyStaffing": {
+      "date": "日期",
+      "workshop": "车间",
+      "workCenter": "工作中心",
+      "people": "人数",
+      "workHours": "班次时间",
+      "peopleWorkHours": "人数×班次时间",
+      "entryManHours": "损失工时",
+      "effectiveTime": "有效工时"
+    }
   },
   "ru": {
     "selectAll": "Выбрать все",
@@ -497,9 +567,33 @@
     "overview": "Обзор",
     "details": "Детали",
     "analytics": "Рабочий календарь",
+    "orderTails": "Хвосты заказов",
+    "orderTailsTabs": {
+      "stats": "Статистика",
+      "table": "Таблица"
+    },
+    "orderTailsStats": {
+      "largeGroup": "Большая группа",
+      "groupName": "Группа",
+      "avgTailDays": "Средний TailDays",
+      "chartTitle": "Средняя скорость подчистки хвостов по месяцам",
+      "groupChartTitle": "Средняя скорость подчистки хвостов по группам"
+    },
+    "orderTailsTable": {
+      "orderNo": "Номер заказа",
+      "articleNumber": "Номенклатурный номер",
+      "name": "Наименование",
+      "orderQty": "Кол-во заказа",
+      "complQty": "Вып. кол-во",
+      "tailDays": "Хвост, дней",
+      "tailResolvedDate": "Дата закрытия хвоста",
+      "tailStartDate": "Дата начала хвоста",
+      "activeOnly": "Только активные хвосты"
+    },
     "Daily Plan-Fact": "Дневной план-факт",
     "overviewTab": "Обзор",
     "tableTab": "Таблица",
+    "dailyStaffing": "Ежедневный персонал",
     "welcomeTitle": "Система управления производством",
     "welcomeDescription": "Добро пожаловать в модуль производства. Этот раздел предоставляет комплексные инструменты для управления производственными процессами, отслеживания производственных показателей и мониторинга заводских операций.",
     "productionPlanning": "Планирование производства",
@@ -724,6 +818,16 @@
       "hours": "ч"
     },
     "timeLossByWorkshop": "Потери времени по цехам",
-    "noData": "Нет данных"
+    "noData": "Нет данных",
+    "timeLossDailyStaffing": {
+      "date": "Дата",
+      "workshop": "Цех",
+      "workCenter": "Рабочий центр",
+      "people": "Люди",
+      "workHours": "Часы",
+      "peopleWorkHours": "Люди×Часы",
+      "entryManHours": "Потери времени",
+      "effectiveTime": "Эффективное время"
+    }
   }
 }

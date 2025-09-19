@@ -284,7 +284,7 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
               </div>
               
               {selectedWorkCenter ? (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                   {/* ✅ ИНДИКАТОР ЗАГРУЗКИ */}
                   {loadingSchedules && (
                     <div className="flex items-center justify-center py-8">

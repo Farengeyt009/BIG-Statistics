@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import Overview from './Overview';
 import Table from './Table';
+import DailyStaffing from './Daily_Staffing/DailyStaffing';
 import { Factory } from 'lucide-react';
 import { apiGetDicts } from '../../../../config/timeloss-api';
 
 const TimeLoss: React.FC = () => {
   const { i18n, t } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
-  const [activeTab, setActiveTab] = useState<'overview' | 'table'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'table' | 'staffing'>('overview');
 
   // Состояния загрузки компонентов (по умолчанию false, устанавливаются в true при начале загрузки)
   const [isOverviewLoading, setIsOverviewLoading] = useState(false);
@@ -136,6 +137,16 @@ const TimeLoss: React.FC = () => {
           >
             {t('table')}
           </button>
+          <button
+            className={`px-4 py-1 rounded-md text-sm font-medium border transition-colors ${
+              activeTab === 'staffing' 
+                ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' 
+                : 'bg-gray-100 text-gray-700 border-gray-300'
+            }`}
+            onClick={() => setActiveTab('staffing')}
+          >
+            {t('dailyStaffing')}
+          </button>
         </div>
         
         {/* Дата пикер */}
@@ -231,6 +242,15 @@ const TimeLoss: React.FC = () => {
           startDate={startIso}
           endDate={endIso}
           selectedWorkShopIds={selectedWorkShopIds}
+          suppressLocalLoaders={showGlobalLoader}
+          onLoadingChange={setIsTableLoading}
+          isActive={true}
+        />
+      )}
+      {activeTab === 'staffing' && (
+        <DailyStaffing
+          startDate={startIso}
+          endDate={endIso}
           suppressLocalLoaders={showGlobalLoader}
           onLoadingChange={setIsTableLoading}
           isActive={true}

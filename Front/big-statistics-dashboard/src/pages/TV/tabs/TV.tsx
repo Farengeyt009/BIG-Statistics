@@ -266,13 +266,18 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
       const workshopId = selectedWorkshopData?.WorkShop_CustomWS || '';
       const workcenterId = selectedWorkshopData?.WorkCenter_CustomWS || '';
 
+      const cacheBust = `&_ts=${Date.now()}`;
       const url =
         `${API_ENDPOINTS.TV.HOURLY_PLANFACT}?date=${encodeURIComponent(day)}` +
         `&workshop_id=${encodeURIComponent(workshopId)}` +
-        `&workcenter_id=${encodeURIComponent(workcenterId)}`;
-      const finalUrl = `${API_ENDPOINTS.TV.FINAL}?date=${encodeURIComponent(day)}`;
+        `&workcenter_id=${encodeURIComponent(workcenterId)}` +
+        cacheBust;
+      const finalUrl = `${API_ENDPOINTS.TV.FINAL}?date=${encodeURIComponent(day)}${cacheBust}`;
 
-      const [res1, res2] = await Promise.all([fetch(url), fetch(finalUrl)]);
+      const [res1, res2] = await Promise.all([
+        fetch(url, { cache: 'no-store' }),
+        fetch(finalUrl, { cache: 'no-store' })
+      ]);
       const [json1, json2] = await Promise.all([res1.json(), res2.json()]);
 
       if (reqRef.current !== myReq) return; // устаревший ответ — игнорируем
@@ -341,7 +346,7 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
     }
     try {
       const day = formatYMD(selectedDate);
-      const res = await fetch(`${API_ENDPOINTS.TV.WORKCENTER_DOWNTIME_DAY}?date=${encodeURIComponent(day)}`);
+      const res = await fetch(`${API_ENDPOINTS.TV.WORKCENTER_DOWNTIME_DAY}?date=${encodeURIComponent(day)}&_ts=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       const arr: any[] = Array.isArray(json?.data) ? json.data : [];
       const row = arr.find((it) => String(it.WorkCenter_CN) === String(selectedWorkCenter));

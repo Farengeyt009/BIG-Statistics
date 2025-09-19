@@ -228,6 +228,54 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
     });
   }, [data, currentLanguage, toIsoYmd]);
 
+  // ---------------------------------------------
+  // Значения для SetFilter (как в Loss Table)
+  // ---------------------------------------------
+  const workShopValues = useMemo(() => {
+    const s = new Set<string>();
+    processedData.forEach(r => {
+      const v = String((r as any).WorkShopName_CH ?? '').trim();
+      if (v) s.add(v);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [processedData]);
+
+  const workCenterValues = useMemo(() => {
+    const s = new Set<string>();
+    processedData.forEach(r => {
+      const v = String((r as any).WorkCenterGroup_CN ?? '').trim();
+      if (v) s.add(v);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [processedData]);
+
+  const orderNumberValues = useMemo(() => {
+    const s = new Set<string>();
+    processedData.forEach(r => {
+      const v = String((r as any).OrderNumber ?? '').trim();
+      if (v) s.add(v);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, undefined, { numeric: true } as any));
+  }, [processedData]);
+
+  const nomenclatureValues = useMemo(() => {
+    const s = new Set<string>();
+    processedData.forEach(r => {
+      const v = String((r as any).NomenclatureNumber ?? '').trim();
+      if (v) s.add(v);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, undefined, { numeric: true } as any));
+  }, [processedData]);
+
+  const productNameValues = useMemo(() => {
+    const s = new Set<string>();
+    processedData.forEach(r => {
+      const v = String((r as any).ProductName_CN ?? '').trim();
+      if (v) s.add(v);
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [processedData]);
+
   // После загрузки данных «подтолкнуть» фильтр (только при изменении длины данных)
   useEffect(() => {
     if (!gridApi || !processedData.length) return;
@@ -271,6 +319,104 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   }, [gridApi, onTableReady]);
 
   // Определение колонок для AG Grid
+  // Хелпер: собрать значения для SetFilter, учитывая все прочие фильтры, кроме фильтра самого столбца
+  const collectSetFilterValuesIgnoringSelf = useCallback(
+    (
+      params: any,
+      colId: 'OnlyDate' | 'WorkShopName_CH' | 'WorkCenterGroup_CN',
+      valueGetter: (row: any) => string,
+      sort?: (a: string, b: string) => number,
+    ) => {
+      const api = params.api;
+
+      // Текущая модель фильтров без собственного столбца
+      const model = { ...(api.getFilterModel?.() ?? {}) } as Record<string, any>;
+      delete model[colId];
+
+      // Готовим наборы выбранных значений других set-фильтров
+      const setFilters: Array<{ colId: string; allowed: Set<string> }> = [];
+      for (const [k, m] of Object.entries(model)) {
+        if ((m as any)?.filterType === 'set' && Array.isArray((m as any).values)) {
+          setFilters.push({ colId: k, allowed: new Set((m as any).values as string[]) });
+        }
+      }
+
+      const passOtherSetFilters = (row: any) => {
+        for (const f of setFilters) {
+          const v =
+            f.colId === 'OnlyDate'
+              ? String(row?.OnlyDateISO ?? '')
+              : String(row?.[f.colId] ?? '').trim();
+          if (!f.allowed.has(v)) return false;
+        }
+        return true;
+      };
+
+      const uniq = new Set<string>();
+      // Берём все узлы (без учёта фильтров), проверяем только «другие» set-фильтры
+      api.forEachNode((node: any) => {
+        const r = node?.data;
+        if (!r) return;
+        if (!passOtherSetFilters(r)) return;
+        const val = valueGetter(r);
+        if (val !== undefined && val !== null && String(val).length) {
+          uniq.add(String(val));
+        }
+      });
+
+      const out = Array.from(uniq);
+      if (sort) out.sort(sort);
+      params.success(out);
+    },
+    [],
+  );
+
+  // Вариант-хелпер: собрать значения из массива строк (используем для дат)
+  const collectValuesFromRowsIgnoringSelf = useCallback(
+    (
+      params: any,
+      colId: string,
+      rows: any[],
+      valueGetter: (row: any) => string,
+      sort?: (a: string, b: string) => number,
+    ) => {
+      const api = params.api;
+      const model = { ...(api.getFilterModel?.() ?? {}) } as Record<string, any>;
+      delete model[colId];
+
+      const setFilters: Array<{ colId: string; allowed: Set<string> }> = [];
+      for (const [k, m] of Object.entries(model)) {
+        if ((m as any)?.filterType === 'set' && Array.isArray((m as any).values)) {
+          setFilters.push({ colId: k, allowed: new Set((m as any).values as string[]) });
+        }
+      }
+
+      const passOtherSetFilters = (row: any) => {
+        for (const f of setFilters) {
+          const v =
+            f.colId === 'OnlyDate'
+              ? String(row?.OnlyDateISO ?? '')
+              : String(row?.[f.colId] ?? '').trim();
+          if (!f.allowed.has(v)) return false;
+        }
+        return true;
+      };
+
+      const uniq = new Set<string>();
+      for (const r of rows) {
+        if (!r) continue;
+        if (!passOtherSetFilters(r)) continue;
+        const val = valueGetter(r);
+        if (val !== undefined && val !== null && String(val).length) uniq.add(String(val));
+      }
+
+      const out = Array.from(uniq);
+      if (sort) out.sort(sort);
+      params.success(out);
+    },
+    [],
+  );
+
   const columnDefs: ColDef[] = useMemo(() => [
     {
       field: 'OnlyDate',                    // показываем DD.MM.YYYY как есть
@@ -279,21 +425,21 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       maxWidth: 150,
       cellClass: 'text-center',
       filter: 'agSetColumnFilter',
+      // как в Loss Table: значение фильтра берём в ISO-формате
+      filterValueGetter: (p: any) => String(p?.data?.OnlyDateISO ?? ''),
       filterParams: {
         treeList: true as any,
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        // ключ фильтра = ISO-значение строки
-        keyCreator: (p: any) => String(p?.data?.OnlyDateISO ?? ''),
-        // значения — из отфильтрованных строк (каскадные фильтры)
-        values: (params: any) => {
-          const set = new Set<string>();
-          params.api.forEachNodeAfterFilter((node: any) => {
-            const v = node?.data?.OnlyDateISO;
-            if (v) set.add(v);
-          });
-          params.success(Array.from(set).sort()); // ISO сортируется хронологически
-        },
+        // значения — учитывают все остальные фильтры, но игнорируют собственный
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'OnlyDate',
+            processedData,
+            (r) => String(r?.OnlyDateISO ?? ''),
+            (a, b) => a.localeCompare(b),
+          ),
         // путь Год → "Месяц" → День
         treeListPathGetter: (value: any) => {
           const s = String(value ?? '').trim();                 // value = 'YYYY-MM-DD'
@@ -319,14 +465,14 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        values: (params: any) => {
-          const set = new Set<string>();
-          params.api.forEachNodeAfterFilter((node: any) => {
-            const v = (node?.data?.WorkShopName_CH || '').trim();
-            if (v) set.add(v);
-          });
-          params.success(Array.from(set).sort((a, b) => a.localeCompare(b)));
-        },
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'WorkShopName_CH',
+            processedData,
+            (r) => String(r?.WorkShopName_CH ?? '').trim(),
+            (a, b) => a.localeCompare(b),
+          ),
       },
     },
     {
@@ -338,33 +484,80 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
-        values: (params: any) => {
-          const set = new Set<string>();
-          params.api.forEachNodeAfterFilter((node: any) => {
-            const v = (node?.data?.WorkCenterGroup_CN || '').trim();
-            if (v) set.add(v);
-          });
-          params.success(Array.from(set).sort((a, b) => a.localeCompare(b)));
-        },
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'WorkCenterGroup_CN',
+            processedData,
+            (r) => String(r?.WorkCenterGroup_CN ?? '').trim(),
+            (a, b) => a.localeCompare(b),
+          ),
       },
     },
     {
       field: 'OrderNumber',
       headerName: t('tableHeaders.orderNumber'),
       minWidth: 90,
-      maxWidth: 150
+      maxWidth: 150,
+      filter: 'agSetColumnFilter',
+      filterValueGetter: (p: any) => String((p?.data?.OrderNumber ?? '')).trim(),
+      filterParams: {
+        includeBlanksInFilter: true,
+        refreshValuesOnOpen: true,
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'OrderNumber',
+            processedData,
+            (r) => String(r?.OrderNumber ?? '').trim(),
+            (a, b) => a.localeCompare(b, undefined, { numeric: true } as any),
+          ),
+      },
     },
     {
       field: 'NomenclatureNumber',
       headerName: t('tableHeaders.nomenclature'),
       minWidth: 90,
-      maxWidth: 150
+      maxWidth: 150,
+      filter: 'agSetColumnFilter',
+      filterValueGetter: (p: any) => String((p?.data?.NomenclatureNumber ?? '')).trim(),
+      filterParams: {
+        includeBlanksInFilter: true,
+        refreshValuesOnOpen: true,
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'NomenclatureNumber',
+            processedData,
+            (r) => String(r?.NomenclatureNumber ?? '').trim(),
+            (a, b) => a.localeCompare(b, undefined, { numeric: true } as any),
+          ),
+      },
     },
     {
       field: 'ProductName_CN',
       headerName: t('tableHeaders.productName'),
       minWidth: 120,
       maxWidth: 300,
+      filter: 'agSetColumnFilter',
+      filterValueGetter: (p: any) => String((p?.data?.ProductName_CN ?? '')).trim(),
+      filterParams: {
+        includeBlanksInFilter: true,
+        refreshValuesOnOpen: true,
+        values: (params: any) =>
+          collectValuesFromRowsIgnoringSelf(
+            params,
+            'ProductName_CN',
+            processedData,
+            (r) => String(r?.ProductName_CN ?? '').trim(),
+            (a, b) => a.localeCompare(b),
+          ),
+        valueFormatter: (p: any) => {
+          const raw = String(p.value ?? '').trim();
+          return raw.length > 30 ? raw.slice(0, 29) + '…' : raw;
+        },
+        textFormatter: (val: any) => String(val ?? '').toLowerCase(),
+      },
       tooltipValueGetter: (params) => {
         const originalValue = data.find(row => row.ProductName_CN === params.value)?.ProductName_CN || params.value;
         return originalValue;
@@ -448,7 +641,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
         return value != null ? fmtInt.format(value) : '';
       }
     }
-  ], [t, monthLabel]);
+  ], [t, monthLabel, collectSetFilterValuesIgnoringSelf, collectValuesFromRowsIgnoringSelf, processedData, workShopValues, workCenterValues, orderNumberValues, nomenclatureValues, productNameValues]);
 
   // Настройки AG Grid
   const defaultColDef: ColDef = {

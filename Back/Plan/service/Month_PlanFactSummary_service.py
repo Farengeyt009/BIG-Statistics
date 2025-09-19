@@ -65,7 +65,7 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
             SUM(FactQty)                        AS FactQty,
             SUM(FactQty) - SUM(PlanQty)         AS DifferentQty,
             ROUND(
-                CASE 
+                CASE
                     WHEN SUM(PlanQty)=0 AND SUM(FactQty)=0 THEN 0
                     WHEN SUM(PlanQty)=0 AND SUM(FactQty)>0 THEN 100
                     WHEN SUM(PlanQty)=0 THEN 0
@@ -75,7 +75,7 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
             SUM(FactTime)                       AS FactTime,
             SUM(FactTime) - SUM(PlanTime)       AS DifferentTime,
             ROUND(
-                CASE 
+                CASE
                     WHEN SUM(PlanTime)=0 AND SUM(FactTime)=0 THEN 0
                     WHEN SUM(PlanTime)=0 AND SUM(FactTime)>0 THEN 100
                     WHEN SUM(PlanTime)=0 THEN 0
@@ -84,6 +84,10 @@ def fetch_planfact_summary(year: int, month: int) -> Dict[str, Any]:
         FROM Views_For_Plan.Month_PlanFact_Summary
         WHERE [Date] BETWEEN ? AND ?
         GROUP BY Market, LargeGroup, GroupName
+        HAVING NOT (
+            COALESCE(SUM(PlanQty), 0) = 0
+            AND COALESCE(SUM(FactQty), 0) = 0
+        )
         ORDER BY Market, LargeGroup, GroupName;
     """
 
