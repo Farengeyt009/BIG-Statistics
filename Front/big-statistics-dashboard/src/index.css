@@ -129,11 +129,38 @@ input[type="checkbox"] {
 }
 
 /* Визуальная сетка таблиц Ag Grid (тонкие границы) */
-.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-center-cols-container .ag-row .ag-cell,
-.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-header-row .ag-header-cell {
-  border-right: 1px solid #e5e7eb; /* slate-200 */
+/* Base thin grid for stats-grid only (not global) */
+.stats-grid .ag-header-cell,
+.stats-grid .ag-cell { border-right: 1px solid #e5e7eb; }
+.stats-grid .ag-row { border-bottom: 1px solid #e5e7eb; }
+/* remove outer perimeter; edges will be drawn by edge cells */
+/* .stats-grid.ag-theme-quartz { box-shadow: 0 0 0 1px #e5e7eb inset; } */
+
+/* cell-based borders including edges */
+.stats-grid.ag-theme-quartz .ag-header-row .ag-header-cell,
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-right-cols-container .ag-row .ag-cell {
+  border-right: 1px solid #e5e7eb;
 }
-.ag-grid-bordered .ag-root-wrapper-body.ag-layout-normal .ag-row {
+.stats-grid.ag-theme-quartz .ag-header { border-bottom: 1px solid #e5e7eb; }
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row,
+.stats-grid.ag-theme-quartz .ag-pinned-right-cols-container .ag-row {
+  border-bottom: 1px solid #e5e7eb;
+}
+/* left edge */
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row .ag-cell:first-child,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row .ag-cell:first-child {
+  border-left: 1px solid #e5e7eb;
+}
+.stats-grid.ag-theme-quartz .ag-header-viewport .ag-header-row .ag-header-cell:first-child {
+  border-left: 1px solid #e5e7eb;
+}
+/* bottom edge: last displayed row */
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row:last-child .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row:last-child .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-right-cols-container .ag-row:last-child .ag-cell {
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -145,6 +172,108 @@ input[type="checkbox"] {
 /* Вертикальная сетка для pinned-top (верхняя сводка) */
 .ag-grid-bordered .ag-floating-top .ag-row .ag-cell {
   border-right: 1px solid #e5e7eb;
+}
+
+/* Временное отключение сетки для статистики */
+.stats-no-borders .ag-center-cols-container .ag-row .ag-cell,
+.stats-no-borders .ag-header-row .ag-header-cell,
+.stats-no-borders .ag-row,
+.stats-no-borders .ag-floating-top .ag-cell,
+.stats-no-borders .ag-row .ag-cell {
+  border: none !important;
+}
+.stats-no-borders .ag-pinned-left-cols-container .ag-cell,
+.stats-no-borders .ag-pinned-right-cols-container .ag-cell {
+  border: none !important;
+}
+.stats-no-borders .ag-header,
+.stats-no-borders .ag-header-viewport,
+.stats-no-borders .ag-header-container {
+  border: none !important;
+}
+/* Внешние рамки/линии контейнера */
+.stats-no-borders .ag-root-wrapper,
+.stats-no-borders .ag-root,
+.stats-no-borders .ag-root-wrapper-body,
+.stats-no-borders .ag-root-wrapper-body-viewport,
+.stats-no-borders .ag-viewport,
+.stats-no-borders .ag-center-cols-viewport {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Stabilize header/body right edge when horizontal scrollbar appears */
+.stats-grid .ag-body-horizontal-scroll-viewport { scrollbar-gutter: stable both-edges; }
+
+/* (убрали верхнюю линию у Prod. Monthly Plan — проверка зазора) */
+
+/* Separator row for new stats grid */
+.stats-grid .ag-row.stats-separator .ag-cell {
+  border: none !important;
+  background: transparent;
+  box-shadow: inset 0 -1px 0 #e5e7eb;
+  pointer-events: none;
+}
+
+/* Comment row: visually truncate long text but keep full value for copy */
+.stats-grid .ag-row .ag-cell.comment-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Separator edges: keep vertical borders on outermost cells so the break reaches edges */
+.stats-grid .ag-pinned-left-cols-container .ag-row.stats-separator .ag-cell:first-child,
+.stats-grid .ag-center-cols-container      .ag-row.stats-separator .ag-cell:first-child {
+  border-left: 1px solid #e5e7eb !important;
+}
+.stats-grid .ag-center-cols-container      .ag-row.stats-separator .ag-cell:last-child,
+.stats-grid .ag-pinned-right-cols-container .ag-row.stats-separator .ag-cell:last-child {
+  border-right: 1px solid #e5e7eb !important;
+}
+.stats-grid .ag-row.stats-separator { border-bottom: 0 !important; }
+
+/* Stronger specificity: remove bottom border on separator rows in all three containers */
+.stats-grid .ag-center-cols-container .ag-row.stats-separator,
+.stats-grid .ag-pinned-left-cols-container .ag-row.stats-separator,
+.stats-grid .ag-pinned-right-cols-container .ag-row.stats-separator {
+  border-bottom: 0 !important;
+}
+
+/* Ensure right edge always has a vertical line */
+.stats-grid .ag-header-viewport .ag-header-row .ag-header-cell:last-child,
+.stats-grid .ag-center-cols-container .ag-row .ag-cell:last-child {
+  border-right: 1px solid #e5e7eb;
+}
+
+/* A) remove outer perimeter from quartz grid wrappers (only for this table) */
+.stats-grid.ag-theme-quartz .ag-root-wrapper,
+.stats-grid.ag-theme-quartz .ag-root,
+.stats-grid.ag-theme-quartz .ag-root-wrapper-body,
+.stats-grid.ag-theme-quartz .ag-root-wrapper-body-viewport,
+.stats-grid.ag-theme-quartz .ag-center-cols-viewport,
+.stats-grid.ag-theme-quartz .ag-viewport {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* B) draw perimeter using edge cells (not container borders) */
+.stats-grid.ag-theme-quartz .ag-header-viewport .ag-header-row .ag-header-cell:first-child,
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row .ag-cell:first-child,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row .ag-cell:first-child {
+  border-left: 1px solid #e5e7eb !important;
+}
+.stats-grid.ag-theme-quartz .ag-header-viewport .ag-header-row .ag-header-cell:last-child,
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row .ag-cell:last-child,
+.stats-grid.ag-theme-quartz .ag-pinned-right-cols-container .ag-row .ag-cell:last-child {
+  border-right: 1px solid #e5e7eb !important;
+}
+.stats-grid.ag-theme-quartz .ag-center-cols-container .ag-row:last-child .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-left-cols-container .ag-row:last-child .ag-cell,
+.stats-grid.ag-theme-quartz .ag-pinned-right-cols-container .ag-row:last-child .ag-cell {
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
 /* Центрирование содержимого при использовании встроенного класса AG Grid */
@@ -167,6 +296,11 @@ input[type="checkbox"] {
 .ag-theme-quartz .ag-popup-editor,
 .ag-theme-quartz .ag-popup-child {
   z-index: 9999 !important;
+}
+
+/* Stabilize header/body right edge when horizontal scrollbar appears */
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport {
+  scrollbar-gutter: stable both-edges;
 }
 
 /* Pinned bottom строка (Total) - мягкая подсветка */

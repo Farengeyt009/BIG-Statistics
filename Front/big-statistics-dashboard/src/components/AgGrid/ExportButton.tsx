@@ -48,9 +48,36 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
           return Number.isFinite(n) ? n : '';
         }
 
-        if (typeof raw === 'number') {
-          return raw;
+        // Если колонка числовая — всегда возвращаем Number
+        const isNumberCol = String((def as any)?.cellDataType || '').toLowerCase() === 'number';
+        if (isNumberCol) {
+          const txt = String(raw ?? '').replace(/\s+/g, '').replace(',', '.');
+          const num = Number(txt);
+          return Number.isFinite(num) ? num : '';
         }
+
+        // Если колонка дата — возвращаем excel-дату (Date)
+        const isDateCol = String((def as any)?.cellDataType || '').toLowerCase() === 'date';
+        if (isDateCol) {
+          const s = String(raw ?? '');
+          // Пробуем DD.MM.YYYY, затем YYYY-MM-DD, затем Date.parse
+          const m1 = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+          let d: Date | null = null;
+          if (m1) {
+            d = new Date(Number(m1[3]), Number(m1[2]) - 1, Number(m1[1]));
+          } else {
+            const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m2) d = new Date(Number(m2[1]), Number(m2[2]) - 1, Number(m2[3]));
+          }
+        
+          if (!d) {
+            const parsed = new Date(s);
+            if (!isNaN(parsed.getTime())) d = parsed; else d = null;
+          }
+          return d ?? '';
+        }
+
+        if (typeof raw === 'number') return raw;
 
         // Для остальных колонок применяем valueFormatter, если он есть
         let value = raw;
@@ -71,9 +98,17 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
     }
 
     // 4) Ширины колонок по максимальной длине содержимого
-    const allRowsForWidth = [headerRow.map((c) => (c.v as string) ?? ''), ...body.map(r => r.map(v => (v ?? '').toString()))];
+    const measureLen = (v: any): number => {
+      if (v instanceof Date) return 10; // dd.mm.yyyy
+      const s = (v ?? '').toString();
+      return s.length;
+    };
+    const allRowsForWidth: any[][] = [
+      headerRow.map((c) => (c.v as string) ?? ''),
+      ...body,
+    ];
     const maxLens: number[] = columns.map((_: any, colIdx: number) =>
-      allRowsForWidth.reduce((m, row) => Math.max(m, row[colIdx]?.length || 0), 0)
+      allRowsForWidth.reduce((m, row) => Math.max(m, measureLen(row[colIdx])), 0)
     );
     const cols = maxLens.map((len) => ({ wch: Math.max(11, Math.min(len + 2, 50)) }));
 

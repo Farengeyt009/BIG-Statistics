@@ -9,7 +9,9 @@ const mockLogin = async (username: string, password: string) => {
     setTimeout(() => {
       if (
         (username === "GM" && password === "123") ||
-        (username === "Umar" && password === "123")
+        (username === "Umar" && password === "123") ||
+        (username === "Aikerim" && password === "123") ||
+        (username === "Maria" && password === "123")
       ) {
         resolve({ success: true });
       } else {

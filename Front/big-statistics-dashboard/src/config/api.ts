@@ -30,6 +30,12 @@ export const API_ENDPOINTS = {
   ORDERS: {
     CUSTOMER_ORDERS_TABLE: `${API_BASE_URL}/CustomerOrdersInformation/table`,
     CUSTOMER_ORDERS_VIEWS: `${API_BASE_URL}/CustomerOrdersInformation/views`,
+    SHIPMENT: `${API_BASE_URL}/Orders/Shipment`,
+    SHIPMENT_FILTERS: `${API_BASE_URL}/Orders/Shipment/filters`,
+    SHIPMENT_PREVIEW: `${API_BASE_URL}/Orders/Shipment/preview`,
+    SHIPMENT_FILTERS_PUBLISH: `${API_BASE_URL}/Orders/Shipment/filters/publish`,
+    SHIPMENT_PLAN_FACT: `${API_BASE_URL}/Orders/ShipmentPlanFact`,
+    SHIPMENT_PLAN_UPSERT: `${API_BASE_URL}/Orders/ShipmentPlan`,
   },
   PLAN: {
     MONTH_PLAN_FACT_GANTT: `${API_BASE_URL}/MonthPlanFactGantt`,

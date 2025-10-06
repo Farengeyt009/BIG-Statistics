@@ -52,7 +52,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <>
       <header
         ref={headerRef}
-        className="fixed top-0 [left:var(--sidebar-width,4rem)] right-0 z-30 bg-white/90 backdrop-blur shadow-sm pl-4"
+        className="fixed top-0 [left:var(--sidebar-width,4rem)] right-0 z-30 bg-white/90 backdrop-blur shadow-sm pl-4 pt-3"
       >
         <div className="flex flex-col gap-3 pr-6">
           <div className="flex items-center justify-between">

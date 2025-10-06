@@ -1,6 +1,15 @@
 {
   "en": {
     "title": "Orders",
+    "ui": {
+      "refresh": "Refresh",
+      "settings": "Settings"
+    },
+    "tabs": {
+      "statistics": "Statistics",
+      "shipmentPlanFact": "Shipment Plan-Fact",
+      "shipmentLog": "Shipment Log"
+    },
     "filter": "Filter",
     "region": "Region",
     "customer": "Customer",
@@ -37,10 +46,89 @@
     },
     "customTab": "Custom Table",
     "chartTab": "Chart",
-    "mainTab": "Customer Order"
+    "mainTab": "Customer Order",
+    "shipmentTab": "Shipment",
+    "filtersModal": {
+      "title": "Customer Orders filter settings",
+      "saveMode": "Save mode",
+      "rules": "Rules",
+      "close": "Close",
+      "save": "Save",
+      "showEmpty": "Show Empty",
+      "active": "Active",
+      "modes": {
+        "previewHint": "One-time apply of changes",
+        "publishHint": "Save changes permanently"
+      },
+      "addRule": "+ Add rule",
+      "reset": "Reset",
+      "matchTypes": {
+        "StartsWith": "Starts With",
+        "Contains": "Contains",
+        "Equals": "Equals",
+        "EndsWith": "Ends With",
+        "NullOrEmpty": "Null Or Empty",
+        "IsNull": "Is Null"
+      }
+    },
+    "shipmentPlanFact": {
+      "YearNum": "Year",
+      "MonthNum": "Month",
+      "WeekNo": "Week",
+      "WeekStartDay": "Week Start Date",
+      "WeekFinishDay": "Week End Date",
+        "DatePeriod": "Date period",
+      "ShipQty": "Shipped Qty",
+      "FactQty": "Prod. Qty",
+      "DiffQty": "Prod.Diff. Qty",
+      "MonthPlanPcs_System": "Prod. Monthly Plan",
+      "ShipMonth_PlanPcs": "Monthly Shipping Plan",
+      "ShipWeek_PlanPcs": "Weekly Shipping Plan",
+      "FGStockStartWeekPcs": "Stock, pcs",
+      "ContainerQty": "Containers Qty",
+      "Comment": "Comment",
+        "ProdPlanComplPct": "% Production Plan Compl.",
+        "ShipDifferentQty": "Ship. Different Qty",
+        "ShipmentPlanComplPct": "% Shipment Plan Compl.",
+      "confirmRefresh": "Are you sure you want to refresh the table? Unsaved data will be lost.",
+      "confirmSave": "Confirm saving the document.",
+      "confirmSaveWillDelete": "Some rows will be deleted."
+    }
+  ,
+    "shipmentLogHeaders": {
+      "ShipmentDate_Fact_Svod": "Ship Date",
+      "LargeGroup": "Prod. Group",
+      "Market": "Market",
+      "Order_No": "Order No.",
+      "Article_number": "Article",
+      "GroupName": "Model Group",
+      "SpendingOrder_QTY": "Qty (pcs)",
+      "CBM_Total": "CBM Total (m³)",
+      "Comment": "Comment",
+      "Name_CN": "Name (CN)",
+      "CBM": "CBM (m³)",
+      "CI_No": "CI No.",
+      "ContainerNO_Realization": "Container No.",
+      "Partner_Name": "Partner",
+      "RealizationDate": "Realization Date",
+      "RealizationDoc": "Realization Doc",
+      "Recipient_Name": "Recipient",
+      "ShipmentDate_Fact": "Spending Order Ship Date",
+      "SpendingOrder_Date": "Spending Order Date",
+      "SpendingOrder_No": "Spending Order No."
+    }
   },
   "zh": {
     "title": "客户订单",
+    "ui": {
+      "refresh": "刷新",
+      "settings": "设置"
+    },
+    "tabs": {
+      "statistics": "统计",
+      "shipmentPlanFact": "出货计划",
+      "shipmentLog": "出货记录表"
+    },
     "filter": "筛选",
     "region": "地区",
     "customer": "客户",
@@ -77,7 +165,76 @@
     },
     "customTab": "自定义表格",
     "chartTab": "图表",
-    "mainTab": "客户订单"
+    "mainTab": "客户订单",
+    "shipmentTab": "发货",
+    "shipmentPlanFact": {
+      "YearNum": "年",
+      "MonthNum": "月",
+      "WeekNo": "周次",
+      "WeekStartDay": "周开始日期",
+      "WeekFinishDay": "周结束日期",
+        "DatePeriod": "日期区间",
+      "ShipQty": "出货数量",
+      "FactQty": "生产实际数量",
+      "DiffQty": "差异数量",
+      "MonthPlanPcs_System": "月度生产计划",
+      "ShipMonth_PlanPcs": "月度出货计划",
+      "ShipWeek_PlanPcs": "周出货计划",
+      "FGStockStartWeekPcs": "成品库存",
+      "ContainerQty": "集装箱数量",
+      "Comment": "备注",
+        "ProdPlanComplPct": "生产计划完成率 %",
+        "ShipDifferentQty": "出货差异数量",
+        "ShipmentPlanComplPct": "出货计划完成率 %",
+      "confirmRefresh": "确定要刷新表格吗？未保存的数据将被清除。",
+      "confirmSave": "请确认保存文档。",
+      "confirmSaveWillDelete": "部分行将被删除。"
+    },
+    "filtersModal": {
+      "title": "客户订单筛选设置",
+      "saveMode": "保存方式",
+      "rules": "规则",
+      "close": "关闭",
+      "save": "保存",
+      "showEmpty": "显示空值",
+      "active": "启用",
+      "modes": {
+        "previewHint": "一次性应用更改",
+        "publishHint": "永久保存更改"
+      },
+      "addRule": "+ 添加规则",
+      "reset": "重置",
+      "matchTypes": {
+        "StartsWith": "以…开头",
+        "Contains": "包含",
+        "Equals": "等于",
+        "EndsWith": "以…结尾",
+        "NullOrEmpty": "空/NULL",
+        "IsNull": "为NULL"
+      }
+    },
+    "shipmentLogHeaders": {
+      "ShipmentDate_Fact_Svod": "发货日期",
+      "LargeGroup": "成品类",
+      "Market": "市场",
+      "Order_No": "订单号",
+      "Article_number": "物料编号",
+      "GroupName": "型号类",
+      "SpendingOrder_QTY": "数量（件）",
+      "CBM_Total": "体积合计（m³）",
+      "Comment": "备注",
+      "Name_CN": "中文名称",
+      "CBM": "体积（m³）",
+      "CI_No": "商业发票号（CI）",
+      "ContainerNO_Realization": "集装箱号",
+      "Partner_Name": "合作方",
+      "RealizationDate": "发票日期",
+      "RealizationDoc": "发票单号",
+      "Recipient_Name": "收货方",
+      "ShipmentDate_Fact": "出库发货日期",
+      "SpendingOrder_Date": "出库单日期",
+      "SpendingOrder_No": "出库单号"
+    }
   },
   "ru": {
     "fieldGroups": {
@@ -85,6 +242,7 @@
       "productInfo": "Информация о продукте",
       "quantity": "Кол-во",
       "uncategorized": "Не определено"
-    }
+    },
+    "shipmentTab": "Отгрузки"
   }
 } 

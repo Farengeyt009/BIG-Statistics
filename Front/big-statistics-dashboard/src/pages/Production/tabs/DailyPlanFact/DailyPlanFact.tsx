@@ -57,13 +57,10 @@ const DailyPlanFact: React.FC = () => {
 
 
   return (
-    <div className="p-4 relative">
+    <div className="p-4 relative min-h-[70vh]">
       {/* Глобальный оверлей */}
       {showGlobalLoader && (
-        <div className="fixed inset-0 z-[1000] bg-white/60 backdrop-blur-sm
-                        flex items-center justify-center">
-          <LoadingSpinner size="xl" />
-        </div>
+        <LoadingSpinner overlay size="xl" />
       )}
 
       <div className="flex items-center gap-6 mb-4">

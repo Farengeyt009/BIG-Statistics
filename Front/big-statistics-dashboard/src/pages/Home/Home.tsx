@@ -15,27 +15,48 @@ const Home: React.FC = () => {
           Work Plan
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Work Processes</h3>
-            <p className="text-gray-600">15 August - 15 November</p>
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative">
+            <span
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center shadow"
+              aria-label="completed"
+              title="Completed"
+            >
+              ✓
+            </span>
+            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Production 1lv.</h3>
+            <p className="text-gray-600">September-November</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative">
+            <span
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shadow"
+              aria-label="in-progress"
+              title="In progress"
+            >
+              ↻
+            </span>
             <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Orders</h3>
-            <p className="text-gray-600">30 August</p>
+            <p className="text-gray-600">15 October</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative">
+            <span
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shadow"
+              aria-label="in-progress"
+              title="In progress"
+            >
+              ↻
+            </span>
             <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Planning</h3>
-            <p className="text-gray-600">30 August</p>
+            <p className="text-gray-600">15 October</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mt-6">
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Production</h3>
-            <p className="text-gray-600">September-November</p>
+            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">HR & Work Processes</h3>
+            <p className="text-gray-600">15 November</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Production</h3>
-            <p className="text-gray-600">October-November</p>
+            <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">QC</h3>
+            <p className="text-gray-600">30 November</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
             <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">KPI</h3>
@@ -49,7 +70,7 @@ const Home: React.FC = () => {
               <p className="text-gray-600">15 August - 30 December</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-              <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">QC</h3>
+              <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Production 2lv.</h3>
               <p className="text-gray-600">December</p>
             </div>
           </div>

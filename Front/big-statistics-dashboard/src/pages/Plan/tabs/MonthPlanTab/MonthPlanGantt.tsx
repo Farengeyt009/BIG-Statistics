@@ -10,6 +10,7 @@ import { addDays, format, startOfMonth } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import testData from "../../../../Test/MonthPlanTab.json";
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import FilterPopover from "../../../../components/DataTable/FilterPopover";
 
 /* ───────── types ───────── */
@@ -200,8 +201,8 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
   // Показываем индикатор загрузки
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-gray-600">Загрузка данных...</div>
+      <div className="relative min-h-[70vh]">
+        <LoadingSpinner overlay size="xl" />
       </div>
     );
   }

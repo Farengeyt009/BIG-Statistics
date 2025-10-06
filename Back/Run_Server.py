@@ -4,8 +4,6 @@ import os
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 
-from Back.orders.api.CustomerOrdersInformation_views import CustomerOrdersInformation_views_bp
-from Back.orders.api.CustomerOrdersInformation_table import CustomerOrdersInformation_table_bp
 from Back.Plan.api.Month_PlanFact_Gantt_api import init_app as planfact_init_app
 from Back.Plan.api.Month_PlanFactSummary_api import init_app as planfact_summary_init_app
 from Back.Home.api.Home_Production_api import init_app as home_production_init_app
@@ -19,6 +17,9 @@ from Back.Production.api.Time_Loss.TimeLoss_api import timeloss_router
 from Back.Production.api.Time_Loss.TimeLossDashboard_api import init_app as timeloss_dashboard_init_app
 from Back.Production.api.Time_Loss.Daily_Staffing.DailyStaffing_api import init_app as daily_staffing_init_app
 from Back.Production.api.Order_Tails.OrderTails_api import init_app as order_tails_init_app
+from Back.orders.api.Shipment_api import init_app as orders_shipment_init_app
+from Back.orders.api.ShipmentPlan_Fact_api import init_app as shipment_plan_fact_init_app
+from Back.orders.api.ShipmentPlan_api import init_app as shipment_plan_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -29,8 +30,6 @@ app = Flask(__name__, static_folder=FRONT_DIST_DIR, static_url_path='')
 CORS(app)  # Разрешаем кросс-доменные запросы (CORS) от фронтенда
 
 # Регистрация маршрутов
-app.register_blueprint(CustomerOrdersInformation_views_bp)
-app.register_blueprint(CustomerOrdersInformation_table_bp)
 planfact_init_app(app)
 planfact_summary_init_app(app)
 home_production_init_app(app)
@@ -44,6 +43,9 @@ app.register_blueprint(timeloss_router, url_prefix='/api')
 timeloss_dashboard_init_app(app)
 daily_staffing_init_app(app)
 order_tails_init_app(app)
+orders_shipment_init_app(app)
+shipment_plan_fact_init_app(app)
+shipment_plan_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 

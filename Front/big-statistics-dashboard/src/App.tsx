@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useState, useEffect, ReactNode } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
-import CustomerOrdersInformation from './pages/Orders/CustomerOrdersInformation';
+import Orders from './pages/Orders/Orders';
 import Plan from './pages/Plan/Plan';
 import LoginPage from './pages/LoginPage/LoginPage';
 import Home from './pages/Home/Home';
@@ -58,7 +58,7 @@ function AppContent() {
             <main className="flex-1 p-4 overflow-auto bg-gray-15">
                 <Routes>
                     <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
-                    <Route path="/uncompleted-orders" element={<RequireAuth><CustomerOrdersInformation /></RequireAuth>} />
+                    <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
                     <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
                     <Route path="/production" element={<RequireAuth><Production /></RequireAuth>} />
                     <Route path="/kpi" element={<RequireAuth><KPI /></RequireAuth>} />

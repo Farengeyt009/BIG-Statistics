@@ -8,6 +8,7 @@ import { getTree } from './utils/tree';
 import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressCell';
 import PlanCumulativeChart from './components/PlanCumulativeChart';
 import { MetricCard, DonutChart } from '../../../../components/KPICards';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 
 // Компонент-обертка для объединения карточки и диаграммы (только для этой страницы)
 interface KPICardWithChartProps {
@@ -487,10 +488,8 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
   // Показываем индикатор загрузки
   if (loading) {
     return (
-      <div className="container">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600">Загрузка данных...</div>
-        </div>
+      <div className="container relative min-h-[70vh]">
+        <LoadingSpinner overlay size="xl" />
       </div>
     );
   }

@@ -845,7 +845,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       const rowIsNew = !!p?.node?.data?._isNew;
       if (!editMode && !rowIsNew) return p.value;
     } catch {}
-    const normalize = (v: any): string => String(v ?? '').trim();
+    // Нормализуем ввод: убираем переводы строк и табы, чтобы вставка шла в одну ячейку
+    const normalize = (v: any): string => String(v ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
     const isEmpty = (s: string) => s === '' || s.toLowerCase() === 'nan';
 
     const text = normalize(raw);
@@ -895,8 +896,8 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     if (colId === 'ManHours') {
       return parseNumberFromText(text);
     }
-    // остальные поля — как есть
-    return raw;
+    // остальные поля — возвращаем нормализованный текст
+    return text;
   }, [dicts, wcByWs, reasonByWs, lang]);
 
   const markCurrentSelectionFromApi = useCallback((api: any) => {
@@ -920,6 +921,32 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     if (set.size) {
       copiedCellsRef.current = set;
       api?.refreshCells?.({ force: true, suppressFlash: true });
+    }
+  }, []);
+
+  const buildClipboardFromApi = useCallback((api: any): string => {
+    try {
+      const ranges: any[] = api?.getCellRanges?.() || [];
+      const tsvRows: string[] = [];
+      const sanitize = (v: any) => String(v ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      for (const r of ranges) {
+        const cols: any[] = r?.columns || [];
+        const start = r?.startRow?.rowIndex ?? r?.startRowIndex ?? 0;
+        const end = r?.endRow?.rowIndex ?? r?.endRowIndex ?? start;
+        for (let ri = Math.min(start, end); ri <= Math.max(start, end); ri++) {
+          const node = api?.getDisplayedRowAtIndex?.(ri);
+          const row: string[] = [];
+          for (const c of cols) {
+            const field = c?.getColDef?.()?.field as string | undefined;
+            const val = field ? node?.data?.[field] : undefined;
+            row.push(sanitize(val));
+          }
+          if (row.length) tsvRows.push(row.join('\t'));
+        }
+      }
+      return tsvRows.join('\n');
+    } catch {
+      return '';
     }
   }, []);
 
@@ -1014,9 +1041,33 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
           getRowId={(p: { data: LocalRow }) => p.data._lid}
           cellSelection={true}
           suppressClipboardPaste={false}
+          processDataFromClipboard={(p: any) => {
+            // Excel-like поведение:
+            // - если выделена одна целевая ячейка и буфер представляет собой ОДНУ КОЛОНКУ (Nx1),
+            //   считаем это многострочным содержимым одной ячейки → склеиваем в одну строку;
+            // - иначе (есть >=2 колонок) — вставляем прямоугольник как есть, начиная с якорной ячейки.
+            try {
+              const ranges = p?.api?.getCellRanges?.() || [];
+              const onlyOneCellSelected = Array.isArray(ranges) && ranges.length === 1 &&
+                ranges[0]?.columns?.length === 1 &&
+                (ranges[0]?.startRow?.rowIndex ?? ranges[0]?.startRowIndex) === (ranges[0]?.endRow?.rowIndex ?? ranges[0]?.endRowIndex);
+              const data: any[] | undefined = Array.isArray(p?.data) ? p.data : undefined;
+              if (onlyOneCellSelected && data && data.length) {
+                const maxCols = Math.max(...data.map((r: any[]) => (Array.isArray(r) ? r.length : 0)));
+                if (maxCols <= 1) {
+                  const flat: string[] = [];
+                  for (const row of data) flat.push(String((row as any[])[0] ?? ''));
+                  const single = flat.join(' ').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+                  return [[single]];
+                }
+              }
+            } catch {}
+            return p?.data;
+          }}
           sendToClipboard={(p: any) => {
-            try { (navigator as any)?.clipboard?.writeText?.(p.data); } catch {}
             const api: any = gridApiRef.current;
+            const tsv = buildClipboardFromApi(api) || String(p?.data ?? '');
+            try { (navigator as any)?.clipboard?.writeText?.(tsv); } catch {}
             markCurrentSelectionFromApi(api);
           }}
           processCellFromClipboard={processCellFromClipboard}

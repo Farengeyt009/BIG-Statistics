@@ -1,4 +1,6 @@
 import './ag-grid-modules';
+import { installClipboardPolyfill } from './clipboard-polyfill';
+installClipboardPolyfill();
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
