@@ -10,6 +10,7 @@ import loginPageTranslation from './pages/LoginPage/LoginPageTranslation.json';
 import homeInterfaceTranslation from './pages/Home/homeInterfaceTranslation.json';
 import productionTranslation from './pages/Production/ProductionTranslation.json';
 import tvTranslation from './pages/TV/TVTranslation.json';
+import requirePermissionTranslation from './components/requirePermissionTranslation.json';
 
 const resources = {
   en: {
@@ -21,7 +22,8 @@ const resources = {
     loginPage: loginPageTranslation.en,
     homeInterface: homeInterfaceTranslation.en,
     production: productionTranslation.en,
-    tv: tvTranslation.en
+    tv: tvTranslation.en,
+    requirePermission: requirePermissionTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
@@ -32,7 +34,8 @@ const resources = {
     loginPage: loginPageTranslation.zh,
     homeInterface: homeInterfaceTranslation.zh,
     production: productionTranslation.zh,
-    tv: tvTranslation.zh
+    tv: tvTranslation.zh,
+    requirePermission: requirePermissionTranslation.zh
   },
   ru: {
     sidebar: (sidebarTranslation as any).ru || {},
@@ -43,7 +46,8 @@ const resources = {
     loginPage: (loginPageTranslation as any).ru || {},
     homeInterface: (homeInterfaceTranslation as any).ru || {},
     production: productionTranslation.ru,
-    tv: (tvTranslation as any).ru || {}
+    tv: (tvTranslation as any).ru || {},
+    requirePermission: requirePermissionTranslation.ru
   }
 };
 

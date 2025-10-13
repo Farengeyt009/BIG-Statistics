@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 import Production from './Production/Production';
+import { usePageView } from '../../hooks/usePageView';
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Логируем посещение страницы Home
+  usePageView('home');
 
   const renderOverviewContent = () => (
     <div className="flex flex-col items-center justify-center py-12">

@@ -25,7 +25,8 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
   productionData = [],
   selectedWorkShopIds = [],
   allWorkshops = [],
-  onChangeSelectedWorkShopIds
+  onChangeSelectedWorkShopIds,
+  canEdit = false
 }) => {
   const { t } = useTranslation('production');
   const [localAssignments, setLocalAssignments] = useState<DayAssignment[]>(assignments);
@@ -815,6 +816,7 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
                   getExistingWorkCenterIds={getExistingWorkCenterIds}
                   invalidAssignmentIds={invalidAssignmentIds}
                   emptyWorkCenterIds={emptyWorkCenterIds}
+                  canEdit={canEdit}
                 />
               ))
             )}
@@ -829,17 +831,19 @@ const DayAssignmentModal: React.FC<DayAssignmentModalProps> = ({
           >
             {t('cancel')}
           </button>
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges}
-            className={`px-4 py-2 text-white rounded-md transition-colors ${
-              hasChanges 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : 'bg-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {t('save')}
-          </button>
+          {canEdit && (
+            <button
+              onClick={handleSave}
+              disabled={!hasChanges}
+              className={`px-4 py-2 text-white rounded-md transition-colors ${
+                hasChanges 
+                  ? 'bg-blue-600 hover:bg-blue-700' 
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {t('save')}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -47,7 +47,12 @@
     "customTab": "Custom Table",
     "chartTab": "Chart",
     "mainTab": "Customer Order",
+    "orderDataTab": "Customer Orders",
     "shipmentTab": "Shipment",
+    "orderData": {
+      "statistics": "Statistics",
+      "orderLog": "Order Log"
+    },
     "filtersModal": {
       "title": "Customer Orders filter settings",
       "saveMode": "Save mode",
@@ -166,7 +171,12 @@
     "customTab": "自定义表格",
     "chartTab": "图表",
     "mainTab": "客户订单",
+    "orderDataTab": "客户订单",
     "shipmentTab": "发货",
+    "orderData": {
+      "statistics": "统计",
+      "orderLog": "订单记录"
+    },
     "shipmentPlanFact": {
       "YearNum": "年",
       "MonthNum": "月",
@@ -243,6 +253,11 @@
       "quantity": "Кол-во",
       "uncategorized": "Не определено"
     },
-    "shipmentTab": "Отгрузки"
+    "orderDataTab": "Заказы клиентов",
+    "shipmentTab": "Отгрузки",
+    "orderData": {
+      "statistics": "Статистика",
+      "orderLog": "Журнал заказов"
+    }
   }
 } 

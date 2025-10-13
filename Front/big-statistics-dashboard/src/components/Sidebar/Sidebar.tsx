@@ -8,6 +8,7 @@ import {
     CircleCheckBig,
     ChevronLeft,
     ChevronRight,
+    Settings,
 } from "lucide-react";
 import { SidebarIcon } from "./SidebarIcon";
 import {
@@ -29,6 +30,7 @@ import LanguageSwitcher from "../LanguageSwitcher";
 import FocusModeToggle from "../focus/FocusModeToggle";
 import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 import chart from "../../assets/chart.png";
 import logo from "../../assets/logo_big_statistics.png";
@@ -51,8 +53,35 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
     const [avatarHovered, setAvatarHovered] = useState(false);
     const [avatarPopoverOpen, setAvatarPopoverOpen] = useState(false);
     const popoverTimeout = useRef<NodeJS.Timeout | null>(null);
-    const user = typeof window !== 'undefined' ? (localStorage.getItem('user') || '') : '';
-    const avatarSrc = user ? `/avatar_${user.toLowerCase()}.png` : '/avatar.png';
+    const { user, permissions, logout, token } = useAuth();
+    const [avatarSrc, setAvatarSrc] = useState('/avatar.png');
+    
+    // Загружаем аватарку пользователя
+    useEffect(() => {
+        const loadAvatar = async () => {
+            if (!user?.user_id || !token) {
+                setAvatarSrc('/avatar.png');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users/avatar', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                const data = await response.json();
+                
+                if (data.success && data.filename) {
+                    setAvatarSrc(`/${data.filename}?t=${Date.now()}`);
+                } else {
+                    setAvatarSrc(`/avatar_${user.user_id}.png?t=${Date.now()}`);
+                }
+            } catch (error) {
+                setAvatarSrc('/avatar.png');
+            }
+        };
+        
+        loadAvatar();
+    }, [user?.user_id, token]);
 
     const widthMV = useMotionValue(expanded ? EXPANDED : COLLAPSED);
     const widthSpring = useSpring(widthMV, { stiffness: 260, damping: 30 });
@@ -166,33 +195,36 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
 
                 {/* 🔹 Иконки */}
                 <div className="flex flex-col mt-4 space-y-2 w-full">
-                    {(() => {
-                        return (
-                            <>
-                                <Link to="/" className="block">
-                                    <SidebarIcon icon={<Home className={iconClass} />} label={t('home')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/orders" className="block">
-                                    <SidebarIcon icon={<ShoppingCart className={iconClass} />} label={t('orders')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/plan" className="block">
-                                    <SidebarIcon icon={<Calendar className={iconClass} />} label={t('plan')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/kpi" className="block">
-                                    <SidebarIcon icon={<LineChart className={iconClass} />} label={t('kpi')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/production" className="block">
-                                    <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/tv" className="block">
-                                    <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                                <Link to="/tasks" className="block">
-                                    <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                                </Link>
-                            </>
-                        );
-                    })()}
+                    <Link to="/" className="block">
+                        <SidebarIcon icon={<Home className={iconClass} />} label={t('home')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    <Link to="/orders" className="block">
+                        <SidebarIcon icon={<ShoppingCart className={iconClass} />} label={t('orders')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    <Link to="/plan" className="block">
+                        <SidebarIcon icon={<Calendar className={iconClass} />} label={t('plan')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    {/* Показываем KPI только если у пользователя есть право на просмотр */}
+                    {user?.is_admin || permissions.some(p => p.page_key === 'kpi' && p.can_view) ? (
+                        <Link to="/kpi" className="block">
+                            <SidebarIcon icon={<LineChart className={iconClass} />} label={t('kpi')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        </Link>
+                    ) : null}
+                    <Link to="/production" className="block">
+                        <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    <Link to="/tv" className="block">
+                        <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    <Link to="/tasks" className="block">
+                        <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    {/* Показываем Admin только для администраторов */}
+                    {user?.is_admin && (
+                        <Link to="/admin" className="block">
+                            <SidebarIcon icon={<Settings className={iconClass} />} label={t('admin')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        </Link>
+                    )}
                 </div>
 
                 {/* 🔽 Нижняя часть — уведомления и аватар */}
@@ -246,17 +278,25 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                           popoverTimeout.current = setTimeout(() => setAvatarPopoverOpen(false), 200);
                         }}
                       >
-                        <div className="font-semibold mb-2">{user || "User"}</div>
-                        <button
-                          onClick={() => {
-                            localStorage.removeItem("isAuth");
-                            localStorage.removeItem("user");
-                            window.location.href = "/login";
-                          }}
-                          className="text-red-600 hover:underline text-sm"
-                        >
-                          Выйти
-                        </button>
+                        <div className="font-semibold mb-3 text-center">{user?.full_name || user?.username || "User"}</div>
+                        <div className="flex flex-col gap-2 w-full items-center">
+                          <Link
+                            to="/profile"
+                            onClick={() => setAvatarPopoverOpen(false)}
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            {t('profile')}
+                          </Link>
+                          <button
+                            onClick={() => {
+                              logout();
+                              window.location.href = "/login";
+                            }}
+                            className="text-red-600 hover:underline text-sm"
+                          >
+                            {t('logout')}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

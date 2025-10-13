@@ -20,6 +20,10 @@ from Back.Production.api.Order_Tails.OrderTails_api import init_app as order_tai
 from Back.orders.api.Shipment_api import init_app as orders_shipment_init_app
 from Back.orders.api.ShipmentPlan_Fact_api import init_app as shipment_plan_fact_init_app
 from Back.orders.api.ShipmentPlan_api import init_app as shipment_plan_init_app
+from Back.orders.api.OrderData.OrderData_api import init_app as order_data_init_app
+from Back.Users.api.auth_api import init_app as auth_init_app
+from Back.Users.api.users_api import init_app as users_init_app
+from Back.Users.api.admin_api import init_app as admin_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -30,6 +34,10 @@ app = Flask(__name__, static_folder=FRONT_DIST_DIR, static_url_path='')
 CORS(app)  # Разрешаем кросс-доменные запросы (CORS) от фронтенда
 
 # Регистрация маршрутов
+# Auth API (должен быть первым)
+auth_init_app(app)
+users_init_app(app)
+admin_init_app(app)
 planfact_init_app(app)
 planfact_summary_init_app(app)
 home_production_init_app(app)
@@ -46,6 +54,7 @@ order_tails_init_app(app)
 orders_shipment_init_app(app)
 shipment_plan_fact_init_app(app)
 shipment_plan_init_app(app)
+order_data_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 

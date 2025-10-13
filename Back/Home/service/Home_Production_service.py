@@ -137,55 +137,34 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
     """
     
     # SQL для третьей таблицы (данные о времени)
+    # ВРЕМЕННАЯ ЗАГЛУШКА: поля Date и Time удалены из Views_For_TimeLoss.TimeLoss_AllTable
     sql_table3 = """
         /* --------------------------------------------------------------
            3‑я «карточка»: текущий месяц + предыдущий месяц в одной строке
            --------------------------------------------------------------
-           @selDate – дата из Date‑Picker'а
+           ВРЕМЕННАЯ ЗАГЛУШКА: Views_For_TimeLoss.TimeLoss_AllTable
+           не используется (поля Date и Time удалены)
         ---------------------------------------------------------------- */
         
-        DECLARE @selDate          date = ?;                              -- ← параметр из Python
+        DECLARE @selDate          date = ?;
+        DECLARE @monthStart       date = DATEFROMPARTS(YEAR(@selDate), MONTH(@selDate), 1);
         
-        /* ►  Текущий месяц */
-        DECLARE @monthStart       date = DATEFROMPARTS(YEAR(@selDate),
-                                                       MONTH(@selDate), 1);
-        DECLARE @nextMonth        date = DATEADD(MONTH, 1, @monthStart); -- начало след. месяца
-        
-        /* ►  Предыдущий месяц */
-        DECLARE @prevMonthStart   date = DATEADD(MONTH, -1, @monthStart);-- начало прошлого месяца
-        DECLARE @prevNextMonth    date = @monthStart;                    -- граница прошлого месяца
-        
-        /* ------------------------------------------------
-           Итоговая строка:
-             • TimeLoss_Month       – потери времени за ТЕКУЩИЙ месяц
-             • FactTime_MTD         – факт‑время с 1‑го числа до выбранного дня
-             • TimeLoss_PrevMonth   – потери времени за ПРОШЛЫЙ месяц
-             • FactTime_PrevMonth   – факт‑время за ПРОШЛЫЙ месяц
-        ------------------------------------------------- */
         SELECT
-               /* 1. Потери времени за текущий месяц */
-               ( SELECT COALESCE(SUM(Time), 0)
-                 FROM Views_For_TimeLoss.TimeLoss_AllTable
-                 WHERE [Date] >= @monthStart
-                   AND [Date] <  @nextMonth )          AS TimeLoss_Month,
-        
-               /* 2. Факт‑время month‑to‑date (1‑е число → @selDate) */
+               0 AS TimeLoss_Month,        -- ЗАГЛУШКА: было SUM(Time)
+               
+               /* Факт‑время month‑to‑date (работает) */
                ( SELECT COALESCE(SUM(FACT_TIME), 0)
                  FROM Views_For_Plan.DailyPlan_CustomWS
                  WHERE OnlyDate >= @monthStart
                    AND OnlyDate <= @selDate )          AS FactTime_MTD,
         
-               /* 3. Потери времени за предыдущий месяц */
-               ( SELECT COALESCE(SUM(Time), 0)
-                 FROM Views_For_TimeLoss.TimeLoss_AllTable
-                 WHERE [Date] >= @prevMonthStart
-                   AND [Date] <  @prevNextMonth )      AS TimeLoss_PrevMonth,
+               0 AS TimeLoss_PrevMonth,    -- ЗАГЛУШКА: было SUM(Time)
         
-               /* 4. Факт‑время за предыдущий месяц (полная сумма) */
+               /* Факт‑время за предыдущий месяц (работает) */
                ( SELECT COALESCE(SUM(FACT_TIME), 0)
                  FROM Views_For_Plan.DailyPlan_CustomWS
-                 WHERE OnlyDate >= @prevMonthStart
-                   AND OnlyDate <  @prevNextMonth )    AS FactTime_PrevMonth;
+                 WHERE OnlyDate >= DATEADD(MONTH, -1, @monthStart)
+                   AND OnlyDate < @monthStart )        AS FactTime_PrevMonth;
     """
     
     # SQL для четвертой таблицы (детальные данные + агрегаты)

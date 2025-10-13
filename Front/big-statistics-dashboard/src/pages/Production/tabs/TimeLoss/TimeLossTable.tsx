@@ -62,6 +62,8 @@ type Props = {
   suppressLocalLoaders?: boolean;
   onLoadingChange?: (loading: boolean) => void;
   isActive?: boolean;
+  canEditFull?: boolean;    // Полные права на редактирование
+  canEditLimited?: boolean; // Ограниченные права (только ActionPlan, Responsible, CompletedDate)
 };
 
 const mkId = () => Math.random().toString(36).slice(2);
@@ -152,7 +154,7 @@ function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Rec
   return { workshops: Array.from(wsMap.values()), workcentersByWS: wcByWs };
 }
 
-const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkShop, selectedWorkShopIds, suppressLocalLoaders, onLoadingChange, isActive }) => {
+const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkShop, selectedWorkShopIds, suppressLocalLoaders, onLoadingChange, isActive, canEditFull = false, canEditLimited = false }) => {
   const { t, i18n } = useTranslation('production');
   const lang = i18n.language || 'zh';
 
@@ -447,21 +449,37 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
 
   const actions = (
     <div className="flex items-center gap-2">
-      <button onClick={addRow} title={String(t('timeLossTable.addRow'))} aria-label={String(t('timeLossTable.addRow'))} className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z"/></svg>
-      </button>
-      <button onClick={() => { const msg = String(t('timeLossTable.confirmRefresh') || 'Refresh?'); setConfirmState({ open: true, message: msg, onOk: () => reload(), danger: false }); }} title={String(t('timeLossTable.refresh'))} aria-label={String(t('timeLossTable.refresh'))} className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7a5 5 0 1 1-4.9 6.09 1 1 0 0 0-1.96.24A7 7 0 1 0 17.65 6.35Z"/></svg>
-      </button>
+      {/* Add Row - только Full Edit */}
+      {canEditFull && (
+        <button onClick={addRow} title={String(t('timeLossTable.addRow'))} aria-label={String(t('timeLossTable.addRow'))} className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z"/></svg>
+        </button>
+      )}
+      {/* Refresh - Full Edit или Limited Edit */}
+      {(canEditFull || canEditLimited) && (
+        <button onClick={() => { const msg = String(t('timeLossTable.confirmRefresh') || 'Refresh?'); setConfirmState({ open: true, message: msg, onOk: () => reload(), danger: false }); }} title={String(t('timeLossTable.refresh'))} aria-label={String(t('timeLossTable.refresh'))} className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7a5 5 0 1 1-4.9 6.09 1 1 0 0 0-1.96.24A7 7 0 1 0 17.65 6.35Z"/></svg>
+        </button>
+      )}
+      {/* Export и Focus Mode - всем */}
       <AgGridExportButton api={gridApi} fileName="time_loss" variant="icon" />
       <FocusModeToggle variant="dark" />
-      <EditModeToggle on={editMode} onToggle={() => setEditMode(v => !v)} title={editMode ? String(t('timeLossTable.editOn')) : String(t('timeLossTable.edit'))} />
-      <button onClick={() => { const willDelete = rows.some(r => !r._isNew && r._isDeleted); let msg = String(t('timeLossTable.confirmSave') || 'Confirm save'); if (willDelete) msg += "\n" + String(t('timeLossTable.confirmSaveWillDelete') || 'Some rows will be deleted.'); setConfirmState({ open: true, message: msg, onOk: () => saveAll(), danger: willDelete }); }} title={String(t('timeLossTable.save'))} aria-label={String(t('timeLossTable.save'))} className="h-8 w-8 p-2 rounded-md border bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm3-10H5V5h10v4Z"/></svg>
-      </button>
-      <button onClick={() => setDeleteMode(v => !v)} title={deleteMode ? (t('timeLossTable.delete') as string) + ' ON' : (t('timeLossTable.delete') as string)} aria-label="Toggle delete mode" className={`h-8 w-8 p-2 rounded-md border flex items-center justify-center ${deleteMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-white text-red-600 hover:bg-red-50'}`}>
-        <Trash2 className="w-4 h-4" />
-      </button>
+      {/* Edit Mode - Full Edit или Limited Edit */}
+      {(canEditFull || canEditLimited) && (
+        <EditModeToggle on={editMode} onToggle={() => setEditMode(v => !v)} title={editMode ? String(t('timeLossTable.editOn')) : String(t('timeLossTable.edit'))} />
+      )}
+      {/* Save - Full Edit или Limited Edit */}
+      {(canEditFull || canEditLimited) && (
+        <button onClick={() => { const willDelete = rows.some(r => !r._isNew && r._isDeleted); let msg = String(t('timeLossTable.confirmSave') || 'Confirm save'); if (willDelete) msg += "\n" + String(t('timeLossTable.confirmSaveWillDelete') || 'Some rows will be deleted.'); setConfirmState({ open: true, message: msg, onOk: () => saveAll(), danger: willDelete }); }} title={String(t('timeLossTable.save'))} aria-label={String(t('timeLossTable.save'))} className="h-8 w-8 p-2 rounded-md border bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm3-10H5V5h10v4Z"/></svg>
+        </button>
+      )}
+      {/* Delete Mode - только Full Edit */}
+      {canEditFull && (
+        <button onClick={() => setDeleteMode(v => !v)} title={deleteMode ? (t('timeLossTable.delete') as string) + ' ON' : (t('timeLossTable.delete') as string)} aria-label="Toggle delete mode" className={`h-8 w-8 p-2 rounded-md border flex items-center justify-center ${deleteMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-white text-red-600 hover:bg-red-50'}`}>
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 
@@ -650,7 +668,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
   }, [getFilterKey, filteredRows, rows]);
 
   const columns = useMemo<ColDef<LocalRow>[]>(() => [
-    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
+    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
       // держим чекбоксы всегда включёнными; показываем/скрываем через CSS
       checkboxSelection: true as any,
       headerCheckboxSelection: true as any,
@@ -673,7 +691,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         return m ? `${m[3]}.${m[2]}.${m[1]}` : (p.value ?? '');
       },
     },
-    { field: 'WorkShopID', headerName: t('timeLossTable.workshop') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
+    { field: 'WorkShopID', headerName: t('timeLossTable.workshop') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
       filterParams: {
         refreshValuesOnOpen: true,
         values: (params: any) => collectFilterValuesIgnoringSelf(params, 'WorkShopID', (a, b) => a.localeCompare(b)),
@@ -688,7 +706,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       }),
       valueFormatter: params => getDictLabel((dicts?.workshops ?? []).find(w => String(w.value) === String(params.value)), lang),
     },
-    { field: 'WorkCenterID', headerName: t('timeLossTable.workCenter') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
+    { field: 'WorkCenterID', headerName: t('timeLossTable.workCenter') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
@@ -705,7 +723,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       }),
       valueFormatter: params => { const ws = (params.data as LocalRow)?.WorkShopID; const opts = wcByWs[ws] ?? []; return getDictLabel(opts.find(o => String(o.value) === String(params.value)), lang); },
     },
-    { field: 'DirectnessID', headerName: t('timeLossTable.lossType') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
+    { field: 'DirectnessID', headerName: t('timeLossTable.lossType') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
       filterParams: {
         refreshValuesOnOpen: true,
         values: (params: any) => collectFilterValuesIgnoringSelf(params, 'DirectnessID', (a, b) => a.localeCompare(b)),
@@ -717,7 +735,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       valueParser: p => (p.newValue == null || p.newValue === '') ? null : String(p.newValue),
       valueFormatter: params => getDictLabel((dicts?.directness ?? []).find(o => Number(o.value) === Number(params.value)), lang),
     },
-    { field: 'ReasonGroupID', headerName: t('timeLossTable.lossReason') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
+    { field: 'ReasonGroupID', headerName: t('timeLossTable.lossReason') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 200, cellDataType: 'text',
       filterParams: {
         refreshValuesOnOpen: true,
         values: (params: any) => collectFilterValuesIgnoringSelf(params, 'ReasonGroupID', (a, b) => a.localeCompare(b)),
@@ -746,7 +764,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       valueParser: p => (p.newValue == null || p.newValue === '') ? null : String(p.newValue),
       valueFormatter: params => { const ws = (params.data as LocalRow)?.WorkShopID; const opts = reasonByWs[ws] ?? []; return getDictLabel(opts.find(o => Number(o.value) === Number(params.value)), lang); },
     },
-    { field: 'CommentText', headerName: t('timeLossTable.comment') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 460, cellDataType: 'text',
+    { field: 'CommentText', headerName: t('timeLossTable.comment') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 460, cellDataType: 'text',
       filterParams: {
         refreshValuesOnOpen: true,
         values: (params: any) => collectFilterValuesIgnoringSelf(params, 'CommentText', (a, b) => a.localeCompare(b)),
@@ -762,7 +780,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
       cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
     },
-    { field: 'ManHours', headerName: t('timeLossTable.manHours') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 120,
+    { field: 'ManHours', headerName: t('timeLossTable.manHours') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 120,
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
@@ -796,16 +814,16 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(n);
       },
     },
-    { field: 'ActionPlan', headerName: t('timeLossTable.actionPlan') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 360, cellDataType: 'text',
+    { field: 'ActionPlan', headerName: t('timeLossTable.actionPlan') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', wrapText: true, autoHeight: true, width: 360, cellDataType: 'text',
       filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'ActionPlan', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
       cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
     },
-    { field: 'Responsible', headerName: t('timeLossTable.responsible') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
+    { field: 'Responsible', headerName: t('timeLossTable.responsible') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 160, cellDataType: 'text',
       filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'Responsible', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
     },
-    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
+    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
       filter: 'agSetColumnFilter',
       filterValueGetter: (p: any) => String(normalizeDate(p?.data?.CompletedDate) ?? ''),
       filterParams: {
@@ -821,7 +839,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const iso = String(normalizeDate(v) ?? ''); const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : ''; },
     },
-  ], [t, lang, dicts, wcByWs, reasonByWs, directnessValues, toggleDelete, deleteMode, editMode]);
+  ], [t, lang, dicts, wcByWs, reasonByWs, directnessValues, toggleDelete, deleteMode, editMode, canEditFull, canEditLimited]);
 
   const defaultColDef = useMemo<ColDef>(() => ({
     resizable: true,

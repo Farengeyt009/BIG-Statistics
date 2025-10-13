@@ -1,25 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordBanner from "./ForgotPasswordBanner";
-
-const mockLogin = async (username: string, password: string) => {
-  // Проверка двух тестовых аккаунтов
-  return new Promise<{ success: boolean; error?: string }>((resolve) => {
-    setTimeout(() => {
-      if (
-        (username === "GM" && password === "123") ||
-        (username === "Umar" && password === "123") ||
-        (username === "Aikerim" && password === "123") ||
-        (username === "Maria" && password === "123")
-      ) {
-        resolve({ success: true });
-      } else {
-        resolve({ success: false, error: "loginError" });
-      }
-    }, 1000);
-  });
-};
 
 const LoginForm: React.FC = () => {
   const { t } = useTranslation('loginPage');
@@ -30,6 +13,7 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [showBanner, setShowBanner] = useState(false);
+  const { login } = useAuth();
 
   const handleForgotPassword = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -40,14 +24,14 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const result = await mockLogin(username, password);
+    
+    const result = await login(username, password);
+    
     setLoading(false);
     if (result.success) {
-      localStorage.setItem("isAuth", "true");
-      localStorage.setItem("user", username); // сохраняем имя пользователя
       navigate("/"); // редирект на главную
     } else {
-      setError(t(result.error || 'loginError'));
+      setError(result.error || t('loginError'));
     }
   };
 

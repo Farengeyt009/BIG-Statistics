@@ -4,10 +4,15 @@ import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { Settings } from 'lucide-react';
 import Shipment from './Shipment/Shipment';
 import ShipmentFilterModal from './Shipment/ShipmentFilterModal';
+import OrderData from './OrderData/OrderData';
+import { usePageView } from '../../hooks/usePageView';
 
 export default function Orders() {
-    const [activeTab, setActiveTab] = useState("main");
+    const [activeTab, setActiveTab] = useState("orderdata");
     const { t } = useTranslation('ordersTranslation');
+    
+    // Логируем посещение страницы Orders
+    usePageView('orders');
     const [isShipmentFilterOpen, setShipmentFilterOpen] = useState(false);
     const [startDate, setStartDate] = useState<Date | null>(() => {
         const to = new Date();
@@ -25,7 +30,10 @@ export default function Orders() {
                 title={t('title')}
                 view={activeTab}
                 onViewChange={setActiveTab}
-                tabs={[{ key: 'main', label: t('mainTab') }, { key: 'shipment', label: t('shipmentTab') }]}
+                tabs={[
+                    { key: 'orderdata', label: t('orderDataTab') },
+                    { key: 'shipment', label: t('shipmentTab') }
+                ]}
                 rightSlot={activeTab === 'shipment' ? (
                     <div className="flex items-center gap-2">
                         <button
@@ -39,14 +47,8 @@ export default function Orders() {
                     </div>
                 ) : null}
             />
-            {/* Простой экран-заглушка основного раздела */}
-            {activeTab === 'main' && (
-                <div className="flex items-center justify-center h-[420px] text-gray-500">
-                    <div className="text-center">
-                        <div className="text-2xl font-semibold mb-2">{t('title')}</div>
-                        <div className="text-lg">Coming soon…</div>
-                    </div>
-                </div>
+            {activeTab === 'orderdata' && (
+                <OrderData />
             )}
             {activeTab === 'shipment' && (
                 <>

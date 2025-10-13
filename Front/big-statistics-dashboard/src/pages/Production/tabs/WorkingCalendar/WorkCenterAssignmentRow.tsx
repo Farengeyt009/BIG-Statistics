@@ -23,7 +23,8 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
   showHeader = true,
   isFirstRow = false,
   isDuplicate = false,
-  isEmptyWorkCenter = false
+  isEmptyWorkCenter = false,
+  canEdit = false
 }) => {
   // Константы для ширины колонок основной строки
   const MAIN_ROW_COLUMN_WIDTHS = {
@@ -326,19 +327,19 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
     return schedule ? schedule.name : '';
   };
 
-  // Проверка, можно ли удалять строку (нельзя удалять строки с данными о выпуске)
-  const canDelete = !workCenterRow.production || 
+  // Проверка, можно ли удалять строку (нельзя удалять строки с данными о выпуске И если нет прав)
+  const canDelete = canEdit && (!workCenterRow.production || 
     (workCenterRow.production.planQty === 0 && 
      workCenterRow.production.factQty === 0 && 
      workCenterRow.production.planHours === 0 && 
-     workCenterRow.production.factHours === 0);
+     workCenterRow.production.factHours === 0));
 
-  // Проверка, можно ли изменять Work Center (нельзя изменять в строках с данными о выпуске)
-  const canEditWorkCenter = !workCenterRow.production || 
+  // Проверка, можно ли изменять Work Center (нельзя изменять в строках с данными о выпуске И если нет прав)
+  const canEditWorkCenter = canEdit && (!workCenterRow.production || 
     (workCenterRow.production.planQty === 0 && 
      workCenterRow.production.factQty === 0 && 
      workCenterRow.production.planHours === 0 && 
-     workCenterRow.production.factHours === 0);
+     workCenterRow.production.factHours === 0));
 
   return (
     <div className={`relative border-l border-r border-b ${isFirstRow ? 'border-t' : ''} border-gray-300 text-xs overflow-hidden ${isDuplicate || isEmptyWorkCenter ? 'ring-1 ring-red-400' : ''}`}>
@@ -405,16 +406,21 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (workCenterRow.shifts.length > 0 && !isExpanded) {
-                  // Если есть смены, но подстроки скрыты, раскрываем их
-                  setIsExpanded(true);
-                } else {
-                  // Иначе переключаем состояние
-                  setIsExpanded(!isExpanded);
+                if (canEdit) {
+                  if (workCenterRow.shifts.length > 0 && !isExpanded) {
+                    // Если есть смены, но подстроки скрыты, раскрываем их
+                    setIsExpanded(true);
+                  } else {
+                    // Иначе переключаем состояние
+                    setIsExpanded(!isExpanded);
+                  }
                 }
               }}
-              className="w-full px-1 py-1 text-left text-blue-600 hover:text-blue-800 focus:outline-none"
-              title={t('clickToManageShifts')}
+              disabled={!canEdit}
+              className={`w-full px-1 py-1 text-left focus:outline-none ${
+                canEdit ? 'text-blue-600 hover:text-blue-800 cursor-pointer' : 'text-gray-400 cursor-not-allowed'
+              }`}
+              title={canEdit ? t('clickToManageShifts') : t('noPermission')}
             >
               {(() => {
                 // Подсчитываем только смены с назначенными графиками
@@ -668,7 +674,10 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                       <select
                         value={shift.scheduleId}
                         onChange={(e) => updateShift(shift.id, 'scheduleId', e.target.value)}
-                        className="w-full px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        disabled={!canEdit}
+                        className={`w-full px-1 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                          !canEdit ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
                       >
                         <option value="">{t('selectSchedule')}</option>
                         {workSchedules.map((schedule) => (
@@ -684,7 +693,10 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                         type="number"
                         value={shift.peopleCount}
                         onChange={(e) => updateShift(shift.id, 'peopleCount', parseInt(e.target.value) || 0)}
-                        className="w-full px-1 py-1 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        disabled={!canEdit}
+                        className={`w-full px-1 py-1 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                          !canEdit ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
                         min="0"
                       />
                     </td>
@@ -706,35 +718,38 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                     </td>
                     
                     <td className={`${SHIFT_ROW_COLUMN_WIDTHS.delete} px-2 py-1 text-center`}>
-                      <button
-                        type="button"
-                        onClick={() => removeShift(shift.id)}
-                        className="p-1 rounded transition-colors text-red-600 hover:bg-red-50"
-                        title={t('removeShift')}
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => removeShift(shift.id)}
+                          className="p-1 rounded transition-colors text-red-600 hover:bg-red-50"
+                          title={t('removeShift')}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
               })}
 
               {/* Строка для добавления новой смены */}
-              <tr className="border-b border-gray-200">
-                <td className={`${SHIFT_ROW_COLUMN_WIDTHS.workCenter} px-2 py-1 border-r border-gray-200`}>
-                  <button
-                    type="button"
-                    onClick={addShift}
-                    className="w-full px-1 py-1 text-blue-600 hover:text-blue-800 text-xs border border-gray-300 rounded hover:bg-blue-50 transition-colors flex items-center justify-center space-x-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>{t('addShift')}</span>
-                  </button>
-                </td>
+              {canEdit && (
+                <tr className="border-b border-gray-200">
+                  <td className={`${SHIFT_ROW_COLUMN_WIDTHS.workCenter} px-2 py-1 border-r border-gray-200`}>
+                    <button
+                      type="button"
+                      onClick={addShift}
+                      className="w-full px-1 py-1 text-blue-600 hover:text-blue-800 text-xs border border-gray-300 rounded hover:bg-blue-50 transition-colors flex items-center justify-center space-x-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>{t('addShift')}</span>
+                    </button>
+                  </td>
                 
                 <td className={`${SHIFT_ROW_COLUMN_WIDTHS.schedule} px-2 py-1 border-r border-gray-200`}>
                   {/* Пустая ячейка */}
@@ -764,6 +779,7 @@ const WorkCenterAssignmentRow: React.FC<WorkCenterAssignmentRowProps> = ({
                   {/* Пустая ячейка */}
                 </td>
               </tr>
+              )}
             </tbody>
           </table>
         </div>

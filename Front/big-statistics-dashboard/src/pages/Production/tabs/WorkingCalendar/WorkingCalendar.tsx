@@ -8,6 +8,7 @@ import { DayAssignment, WorkCenterProduction, CalendarApiResponse, CalendarDayDa
 import { API_ENDPOINTS } from '../../../../config/api';
 import { YearMonthPicker } from '../../../../components/DatePicker';
 import { useCalendarQuery } from './apiHooks';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface WorkCenter {
   id: string;
@@ -56,6 +57,10 @@ const mergeCalendarData = (lists: CalendarDayData[][]): CalendarDayData[] => {
 const WorkingCalendar: React.FC = () => {
   const { t, i18n } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
+  const { hasPermission } = useAuth();
+  
+  // Проверка прав на редактирование Working Calendar
+  const canEdit = hasPermission('production_working_calendar_edit', 'edit');
 
   // State for work centers from API
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([]);
@@ -350,9 +355,11 @@ const WorkingCalendar: React.FC = () => {
               <button onClick={goToToday} className="px-3 py-1.5 bg-[#0d1c3d] text-white text-sm rounded-lg hover:bg-[#0a1529] transition-colors">
                 {t('today')}
               </button>
-              <button onClick={handleWorkingSchedulesClick} className="px-3 py-1.5 bg-[#0d1c3d] text-white text-sm rounded-lg hover:bg-[#0a1529] transition-colors" disabled={loading}>
-                {loading ? 'Loading...' : t('workingSchedules')}
-              </button>
+              {canEdit && (
+                <button onClick={handleWorkingSchedulesClick} className="px-3 py-1.5 bg-[#0d1c3d] text-white text-sm rounded-lg hover:bg-[#0a1529] transition-colors" disabled={loading}>
+                  {loading ? 'Loading...' : t('workingSchedules')}
+                </button>
+              )}
             </div>
           </div>
 
@@ -371,6 +378,7 @@ const WorkingCalendar: React.FC = () => {
         isOpen={isWorkingSchedulesOpen}
         onClose={() => setIsWorkingSchedulesOpen(false)}
         workCenters={workCenters}
+        canEdit={canEdit}
       />
 
       {/* Day Assignment Modal */}
@@ -384,6 +392,7 @@ const WorkingCalendar: React.FC = () => {
         selectedWorkShopIds={selectedWorkShopIds}
         allWorkshops={workshops}
         onChangeSelectedWorkShopIds={(ids) => setSelectedWorkShopIds(ids)}
+        canEdit={canEdit}
       />
     </div>
   );

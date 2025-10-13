@@ -116,6 +116,8 @@ export interface DayAssignmentModalProps {
   allWorkshops?: Array<{ id: string; name: string }>;
   // Коллбэк для двусторонней синхронизации выбора с основным компонентом
   onChangeSelectedWorkShopIds?: (ids: string[]) => void;
+  // Права на редактирование
+  canEdit?: boolean;
 }
 
 // Интерфейс для группировки назначений по цеху
@@ -137,6 +139,8 @@ export interface WorkCenterAssignmentRowProps {
   // 🔴 Валидация
   isDuplicate?: boolean;
   isEmptyWorkCenter?: boolean;
+  // Права на редактирование
+  canEdit?: boolean;
 }
 
 // Интерфейс для пропсов группы цеха
@@ -152,6 +156,8 @@ export interface WorkshopGroupProps {
   // 🔴 Валидация на уровне группы
   invalidAssignmentIds?: Set<string>;
   emptyWorkCenterIds?: Set<string>;
+  // Права на редактирование
+  canEdit?: boolean;
 }
 
 // Новый интерфейс для данных календаря из API

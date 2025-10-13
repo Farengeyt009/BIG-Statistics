@@ -35,12 +35,12 @@ const OrderTails: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4 relative min-h-[70vh]">
+    <div className="p-2 relative min-h-[70vh]">
       {isLoading && (
         <LoadingSpinner overlay size="xl" />
       )}
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3">
         <button
           className={`px-4 py-1 rounded-md text-sm font-medium border transition-colors ${tab === 'stats' ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]' : 'bg-gray-100 text-gray-700 border-gray-300'}`}
           onClick={() => setTab('stats')}

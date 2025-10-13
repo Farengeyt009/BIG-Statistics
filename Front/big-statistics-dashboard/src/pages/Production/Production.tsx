@@ -5,10 +5,14 @@ import DailyPlanFact from './tabs/DailyPlanFact/DailyPlanFact';
 import TimeLoss from './tabs/TimeLoss/TimeLoss';
 import WorkingCalendar from './tabs/WorkingCalendar/WorkingCalendar';
 import OrderTails from './tabs/OrderTails/OrderTails';
+import { usePageView } from '../../hooks/usePageView';
 
 const Production: React.FC = () => {
   const [activeTab, setActiveTab] = useState('analytics');
   const { t } = useTranslation('production');
+  
+  // Логируем посещение страницы Production
+  usePageView('production');
 
   return (
     <div className="p-4">

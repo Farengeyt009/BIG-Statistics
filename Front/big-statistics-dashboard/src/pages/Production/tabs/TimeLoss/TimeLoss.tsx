@@ -7,10 +7,17 @@ import Table from './Table';
 import DailyStaffing from './Daily_Staffing/DailyStaffing';
 import { Factory } from 'lucide-react';
 import { apiGetDicts } from '../../../../config/timeloss-api';
+import { useAuth } from '../../../../context/AuthContext';
 
 const TimeLoss: React.FC = () => {
   const { i18n, t } = useTranslation('production');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
+  const { hasPermission } = useAuth();
+  
+  // Проверка прав на редактирование Time Loss
+  const canEditFull = hasPermission('production_timeloss_edit', 'edit');
+  const canEditLimited = hasPermission('production_timeloss_limited_edit', 'edit');
+  
   const [activeTab, setActiveTab] = useState<'overview' | 'table' | 'staffing'>('overview');
 
   // Состояния загрузки компонентов (по умолчанию false, устанавливаются в true при начале загрузки)
@@ -107,12 +114,12 @@ const TimeLoss: React.FC = () => {
   }, [selectedWorkShopIds, workshops, t]);
 
   return (
-    <div className="p-4 relative min-h-[70vh]">
+    <div className="p-2 relative min-h-[70vh]">
       {/* Глобальный оверлей пока компоненты грузятся */}
       {showGlobalLoader && (
         <LoadingSpinner overlay size="xl" />
       )}
-      <div className="flex items-center gap-6 mb-4">
+      <div className="flex items-center gap-6 mb-3">
         {/* Внутренние вкладки */}
         <div className="flex gap-2">
           <button
@@ -243,6 +250,8 @@ const TimeLoss: React.FC = () => {
           suppressLocalLoaders={showGlobalLoader}
           onLoadingChange={setIsTableLoading}
           isActive={true}
+          canEditFull={canEditFull}
+          canEditLimited={canEditLimited}
         />
       )}
       {activeTab === 'staffing' && (

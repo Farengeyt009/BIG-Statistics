@@ -57,13 +57,13 @@ const DailyPlanFact: React.FC = () => {
 
 
   return (
-    <div className="p-4 relative min-h-[70vh]">
+    <div className="p-2 relative min-h-[70vh]">
       {/* Глобальный оверлей */}
       {showGlobalLoader && (
         <LoadingSpinner overlay size="xl" />
       )}
 
-      <div className="flex items-center gap-6 mb-4">
+      <div className="flex items-center gap-6 mb-3">
         {/* Внутренние вкладки */}
         <div className="flex gap-2">
           <button

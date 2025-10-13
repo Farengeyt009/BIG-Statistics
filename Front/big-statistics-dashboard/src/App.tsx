@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useState, useEffect, ReactNode } from 'react';
+import { AuthProvider } from './context/AuthContext';
+import { RequirePermission } from './components/RequirePermission';
 import Sidebar from './components/Sidebar/Sidebar';
 import Orders from './pages/Orders/Orders';
 import Plan from './pages/Plan/Plan';
@@ -8,6 +10,8 @@ import Home from './pages/Home/Home';
 import Production from './pages/Production/Production';
 import TVPage from './pages/TV/TV';
 import KPI from './pages/Home/KPI/KPI';
+import UserPage from './pages/UserPage/UserPage';
+import AdminPage from './pages/AdminPage/AdminPage';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -61,8 +65,19 @@ function AppContent() {
                     <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
                     <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
                     <Route path="/production" element={<RequireAuth><Production /></RequireAuth>} />
-                    <Route path="/kpi" element={<RequireAuth><KPI /></RequireAuth>} />
+                    <Route 
+                        path="/kpi" 
+                        element={
+                            <RequireAuth>
+                                <RequirePermission pageKey="kpi" permissionType="view">
+                                    <KPI />
+                                </RequirePermission>
+                            </RequireAuth>
+                        } 
+                    />
                     <Route path="/tv" element={<RequireAuth><TVPage /></RequireAuth>} />
+                    <Route path="/profile" element={<RequireAuth><UserPage /></RequireAuth>} />
+                    <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
                 </Routes>
             </main>
         </div>
@@ -71,9 +86,11 @@ function AppContent() {
 
 function App() {
     return (
-        <BrowserRouter>
-            <AppContent />
-        </BrowserRouter>
+        <AuthProvider>
+            <BrowserRouter>
+                <AppContent />
+            </BrowserRouter>
+        </AuthProvider>
     );
 }
 

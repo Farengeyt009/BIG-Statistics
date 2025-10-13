@@ -9,7 +9,10 @@
     "mes": "Production",
     "tv": "TV",
     "tasks": "Tasks",
-    "notifications": "Notif"
+    "notifications": "Notif",
+    "profile": "Profile",
+    "logout": "Logout",
+    "admin": "Admin"
   },
   "zh": {
     "logo_alt": "BIG STATISTICS",
@@ -21,6 +24,24 @@
     "mes": "生产",
     "tv": "电视",
     "tasks": "任务",
-    "notifications": "通知"
+    "notifications": "通知",
+    "profile": "个人资料",
+    "logout": "退出",
+    "admin": "管理员"
+  },
+  "ru": {
+    "logo_alt": "BIG STATISTICS",
+    "chart_alt": "График",
+    "home": "Главная",
+    "orders": "Заказы",
+    "plan": "План",
+    "kpi": "KPI",
+    "mes": "Производство",
+    "tv": "ТВ",
+    "tasks": "Задачи",
+    "notifications": "Уведомления",
+    "profile": "Профиль",
+    "logout": "Выйти",
+    "admin": "Админ"
   }
 }

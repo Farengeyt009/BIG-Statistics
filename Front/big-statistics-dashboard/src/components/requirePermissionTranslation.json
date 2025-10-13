@@ -1,0 +1,21 @@
+{
+  "en": {
+    "accessDenied": "Access Denied",
+    "noPermission": "You do not have permission to view this page.",
+    "backToHome": "Back to Home",
+    "loading": "Loading..."
+  },
+  "zh": {
+    "accessDenied": "访问被拒绝",
+    "noPermission": "您没有权限查看此页面。",
+    "backToHome": "返回主页",
+    "loading": "加载中..."
+  },
+  "ru": {
+    "accessDenied": "Доступ запрещён",
+    "noPermission": "У вас нет прав для просмотра этой страницы.",
+    "backToHome": "Вернуться на главную",
+    "loading": "Загрузка..."
+  }
+}
+
