@@ -8,9 +8,13 @@ from ..service.auth_service import (
     generate_jwt_token,
     verify_jwt_token,
     get_user_permissions,
-    check_page_permission
+    check_page_permission,
+    check_username_available,
+    register_user
 )
 from ..service.audit_service import log_action
+from ..service.skud_service import check_empcode_in_skud
+from ...database.db_connector import get_connection
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -47,7 +51,7 @@ def login():
         if not data or 'username' not in data or 'password' not in data:
             return jsonify({
                 "success": False,
-                "error": "username и password обязательны"
+                "error": "MISSING_CREDENTIALS"
             }), 400
         
         username = data['username']
@@ -59,7 +63,7 @@ def login():
         if not user_data:
             return jsonify({
                 "success": False,
-                "error": "Неверный логин или пароль"
+                "error": "INVALID_CREDENTIALS"
             }), 401
         
         # Генерируем JWT токен
@@ -364,6 +368,224 @@ def logout():
             "success": True,
             "message": "Вы вышли из системы"
         }), 200
+
+
+@bp.route("/check-empcode", methods=["POST"])
+def check_empcode():
+    """
+    POST /api/auth/check-empcode
+    
+    Body:
+        {
+            "empcode": "12345"
+        }
+    
+    Response:
+        {
+            "success": true,
+            "exists_in_users": false,
+            "exists_in_skud": true,
+            "employee_data": {
+                "empcode": "12345",
+                "empname": "Иван Петров",
+                "isactive": true
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+        empcode = data.get('empcode')
+        
+        if not empcode:
+            return jsonify({"success": False, "error": "empcode is required"}), 400
+        
+        # Проверяем существует ли empcode в Users.Users (независимо от пароля)
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT UserID, Username 
+                FROM Users.Users 
+                WHERE empcode = ?
+            """, (empcode,))
+            
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                # Empcode уже зарегистрирован
+                return jsonify({
+                    "success": True,
+                    "exists_in_users": True,
+                    "exists_in_skud": False,
+                    "message": "User already registered. Please login with your password."
+                }), 200
+        
+        # Проверяем в СКУД
+        skud_data = check_empcode_in_skud(empcode)
+        
+        if skud_data and skud_data.get('exists'):
+            if not skud_data.get('isactive'):
+                return jsonify({
+                    "success": False,
+                    "error": "Employee is not active in SKUD"
+                }), 403
+            
+            return jsonify({
+                "success": True,
+                "exists_in_users": False,
+                "exists_in_skud": True,
+                "employee_data": {
+                    "empcode": skud_data['empcode'],
+                    "empname": skud_data['empname'],
+                    "isactive": skud_data['isactive']
+                }
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Employee code not found in SKUD"
+            }), 404
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
+@bp.route("/check-username", methods=["POST"])
+def check_username():
+    """
+    POST /api/auth/check-username
+    
+    Body:
+        {
+            "username": "ivanov"
+        }
+    
+    Response:
+        {
+            "success": true,
+            "available": true
+        }
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({"success": False, "error": "username is required"}), 400
+        
+        available = check_username_available(username)
+        
+        return jsonify({
+            "success": True,
+            "available": available
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
+@bp.route("/register", methods=["POST"])
+def register():
+    """
+    POST /api/auth/register
+    
+    Body:
+        {
+            "empcode": "12345",
+            "username": "ivanov",
+            "password": "mypassword",
+            "email": "ivan@example.com"  // optional
+        }
+    
+    Response:
+        {
+            "success": true,
+            "token": "...",
+            "user": {...},
+            "permissions": [...]
+        }
+    """
+    try:
+        data = request.get_json()
+        
+        empcode = data.get('empcode')
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
+        
+        # Валидация
+        if not empcode or not username or not password:
+            return jsonify({
+                "success": False,
+                "error": "empcode, username and password are required"
+            }), 400
+        
+        # Проверяем что empcode есть в СКУД
+        skud_data = check_empcode_in_skud(empcode)
+        
+        if not skud_data or not skud_data.get('exists'):
+            return jsonify({
+                "success": False,
+                "error": "Employee code not found in SKUD"
+            }), 404
+        
+        if not skud_data.get('isactive'):
+            return jsonify({
+                "success": False,
+                "error": "Employee is not active in SKUD"
+            }), 403
+        
+        # Регистрируем пользователя
+        full_name = str(skud_data.get('empname', ''))
+        new_user = register_user(empcode, username, password, full_name, email)
+        
+        if not new_user:
+            return jsonify({
+                "success": False,
+                "error": "Failed to register user. Username may be already taken."
+            }), 400
+        
+        # Генерируем токен и автоматически логиним
+        token = generate_jwt_token(new_user)
+        permissions = get_user_permissions(new_user['UserID'])
+        
+        # Логируем регистрацию и первый вход
+        try:
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent', '')
+            log_action(
+                user_id=new_user['UserID'],
+                action_type='register',
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            log_action(
+                user_id=new_user['UserID'],
+                action_type='login',
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+        except Exception as log_error:
+            print(f"Logging error: {str(log_error)}")
+        
+        return jsonify({
+            "success": True,
+            "token": token,
+            "user": {
+                "user_id": new_user['UserID'],
+                "username": new_user['Username'],
+                "empcode": new_user['empcode'],
+                "full_name": new_user['FullName'],
+                "email": new_user['Email'],
+                "is_admin": new_user['IsAdmin']
+            },
+            "permissions": permissions
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Server error: {str(e)}"
+        }), 500
 
 
 def init_app(app):

@@ -14,9 +14,14 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24  # Токен действителен 24 часа
 
 
-def verify_login(username: str, password: str) -> Optional[Dict[str, Any]]:
+def verify_login(login: str, password: str) -> Optional[Dict[str, Any]]:
     """
     Проверяет логин и пароль пользователя.
+    Поддерживает вход по Username ИЛИ empcode.
+    
+    Args:
+        login: Username или empcode
+        password: Пароль
     
     Returns:
         Dict с данными пользователя или None если логин/пароль неверные
@@ -25,17 +30,18 @@ def verify_login(username: str, password: str) -> Optional[Dict[str, Any]]:
         SELECT 
             UserID,
             Username,
+            empcode,
             FullName,
             Email,
             IsAdmin,
             IsActive
         FROM Users.Users
-        WHERE Username = ? AND Password = ?
+        WHERE (Username = ? OR empcode = ?) AND Password = ?
     """
     
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(sql, (username, password))
+        cursor.execute(sql, (login, login, password))
         row = cursor.fetchone()
         
         if not row:
@@ -45,6 +51,7 @@ def verify_login(username: str, password: str) -> Optional[Dict[str, Any]]:
         user_data = {
             'UserID': row.UserID,
             'Username': row.Username,
+            'empcode': row.empcode,
             'FullName': row.FullName,
             'Email': row.Email,
             'IsAdmin': bool(row.IsAdmin),
@@ -220,4 +227,104 @@ def check_page_permission(user_id: int, page_key: str, permission_type: str = 'v
             return bool(perm_row and perm_row.CanEdit)
         
         return False
+
+
+def check_username_available(username: str) -> bool:
+    """
+    Проверяет доступность username (не занят ли другим пользователем)
+    
+    Args:
+        username: Желаемый username
+        
+    Returns:
+        True если доступен, False если занят
+    """
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT UserID 
+                FROM Users.Users 
+                WHERE Username = ?
+            """, (username,))
+            
+            row = cursor.fetchone()
+            
+            # Если не найдено - username свободен
+            return row is None
+            
+    except Exception as e:
+        print(f"Error checking username availability: {str(e)}")
+        return False
+
+
+def register_user(empcode: str, username: str, password: str, full_name: str, email: str = None) -> Optional[Dict[str, Any]]:
+    """
+    Регистрирует нового пользователя
+    
+    Args:
+        empcode: Код сотрудника из СКУД
+        username: Желаемый username (уникальный, минимум 2 символа)
+        password: Пароль (минимум 6 символов)
+        full_name: Полное имя из СКУД
+        email: Email (опционально)
+        
+    Returns:
+        Dict с данными созданного пользователя или None в случае ошибки
+    """
+    try:
+        # Валидация username (минимум 2 символа, поддержка Unicode/китайских иероглифов)
+        if not username or len(username) < 2:
+            raise ValueError("Username must be at least 2 characters")
+        
+        # Валидация пароля (минимум 6 символов)
+        if not password or len(password) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверяем что username свободен
+            if not check_username_available(username):
+                raise ValueError("Username already taken")
+            
+            # Проверяем что empcode еще не зарегистрирован
+            cursor.execute("""
+                SELECT UserID 
+                FROM Users.Users 
+                WHERE empcode = ?
+            """, (empcode,))
+            
+            if cursor.fetchone():
+                raise ValueError("This empcode is already registered")
+            
+            # Создаем пользователя
+            cursor.execute("""
+                INSERT INTO Users.Users 
+                (Username, empcode, Password, FullName, Email, IsAdmin, IsActive, CreatedAt)
+                VALUES (?, ?, ?, ?, ?, 0, 1, GETDATE())
+            """, (username, empcode, password, full_name, email))
+            
+            conn.commit()
+            
+            # Получаем ID созданного пользователя
+            cursor.execute("SELECT @@IDENTITY AS UserID")
+            user_id_row = cursor.fetchone()
+            user_id = int(user_id_row.UserID) if user_id_row.UserID else None
+            
+            # Возвращаем данные пользователя
+            return {
+                'UserID': user_id,
+                'Username': str(username),
+                'empcode': str(empcode),
+                'FullName': str(full_name),
+                'Email': str(email) if email else None,
+                'IsAdmin': False,
+                'IsActive': True
+            }
+            
+    except Exception as e:
+        print(f"Error registering user: {str(e)}")
+        return None
 

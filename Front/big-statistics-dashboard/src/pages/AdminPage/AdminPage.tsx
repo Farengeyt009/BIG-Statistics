@@ -56,6 +56,10 @@ const AdminPage: React.FC = () => {
   
   // State для вкладок
   const [activeTab, setActiveTab] = useState<'users' | 'statistics'>('users');
+  
+  // State для модального окна удаления
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // Загрузка пользователей, страниц и статистики
   useEffect(() => {
@@ -222,6 +226,53 @@ const AdminPage: React.FC = () => {
     });
   };
 
+  // Открытие модального окна удаления
+  const handleOpenDeleteModal = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Удаление пользователя
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/users/${userToDelete.user_id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage({ type: 'success', text: `User ${userToDelete.username} deleted successfully!` });
+        
+        // Удаляем из локального списка
+        setUsers(prevUsers => prevUsers.filter(u => u.user_id !== userToDelete.user_id));
+        
+        // Если удаленный пользователь был выбран, сбрасываем выбор
+        if (selectedUser?.user_id === userToDelete.user_id) {
+          setSelectedUser(null);
+          setUserPermissions([]);
+        }
+        
+        setIsDeleteModalOpen(false);
+        setUserToDelete(null);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Error deleting user' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Connection error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Обновление статуса администратора
   const handleToggleAdmin = async (value: boolean) => {
     if (!selectedUser) return;
@@ -283,8 +334,8 @@ const AdminPage: React.FC = () => {
       return;
     }
 
-    if (newPassword.length < 3) {
-      setPasswordError('Password must be at least 3 characters');
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
       return;
     }
 
@@ -485,17 +536,32 @@ const AdminPage: React.FC = () => {
                   </label>
                 </div>
 
-                {/* Change Password - компактная кнопка */}
-                <button
-                  onClick={handleOpenPasswordModal}
-                  disabled={loading}
-                  className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                  <span>Change Password</span>
-                </button>
+                {/* Кнопки действий */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Change Password */}
+                  <button
+                    onClick={handleOpenPasswordModal}
+                    disabled={loading}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                    <span>Password</span>
+                  </button>
+
+                  {/* Delete User */}
+                  <button
+                    onClick={() => handleOpenDeleteModal(selectedUser)}
+                    disabled={loading}
+                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
 
               {/* Компактное предупреждение для админов */}
@@ -790,9 +856,9 @@ const AdminPage: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-800">All Users Activity</h2>
               <p className="text-xs text-gray-500 mt-1">Detailed login statistics for all users</p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
@@ -847,8 +913,8 @@ const AdminPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             {isActiveToday && (
-                              <span className="flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                               </span>
                             )}
@@ -968,6 +1034,100 @@ const AdminPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       <span>Update Password</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно подтверждения удаления */}
+      {isDeleteModalOpen && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-red-600">Confirm Delete</h2>
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setUserToDelete(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-semibold text-red-900 mb-1">Danger Zone!</h3>
+                    <p className="text-sm text-red-800">
+                      Are you sure you want to delete this user? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 mb-1">User to delete:</p>
+                <p className="text-base font-bold text-gray-900">{userToDelete.username}</p>
+                <p className="text-sm text-gray-600">{userToDelete.full_name}</p>
+                {userToDelete.is_admin && (
+                  <p className="text-xs text-purple-600 mt-1">⚠ This user is an Administrator</p>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500 space-y-1">
+                <p>This will also delete:</p>
+                <ul className="list-disc list-inside pl-2">
+                  <li>All user permissions</li>
+                  <li>All activity logs</li>
+                  <li>User reports (if any)</li>
+                </ul>
+              </div>
+
+              {/* Кнопки */}
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setUserToDelete(null);
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Delete User</span>
                     </>
                   )}
                 </button>

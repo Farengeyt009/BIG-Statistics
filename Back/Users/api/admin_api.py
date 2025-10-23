@@ -293,8 +293,8 @@ def update_user_password(user_id: int):
         if not new_password:
             return jsonify({"success": False, "error": "New password is required"}), 400
         
-        if len(new_password) < 3:
-            return jsonify({"success": False, "error": "Password must be at least 3 characters"}), 400
+        if len(new_password) < 6:
+            return jsonify({"success": False, "error": "Password must be at least 6 characters"}), 400
         
         with get_connection() as conn:
             cursor = conn.cursor()
@@ -319,6 +319,74 @@ def update_user_password(user_id: int):
             conn.commit()
             
             return jsonify({"success": True, "message": "Password updated successfully"}), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
+@bp.route("/users/<int:user_id>", methods=["DELETE"])
+@require_admin
+def delete_user(user_id: int):
+    """
+    DELETE /api/admin/users/{user_id}
+    
+    Удаляет пользователя
+    
+    Защита:
+    - Нельзя удалить самого себя
+    - Нельзя удалить последнего администратора
+    """
+    try:
+        # Получаем данные текущего пользователя (администратора)
+        auth_header = request.headers.get('Authorization')
+        token = auth_header.split(' ')[1]
+        admin_data = verify_jwt_token(token)
+        
+        # Защита: нельзя удалить самого себя
+        if admin_data['user_id'] == user_id:
+            return jsonify({"success": False, "error": "You cannot delete yourself"}), 403
+        
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Проверяем существование пользователя
+            cursor.execute("""
+                SELECT Username, IsAdmin 
+                FROM Users.Users 
+                WHERE UserID = ?
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({"success": False, "error": "User not found"}), 404
+            
+            # Защита: проверяем что это не последний администратор
+            if user.IsAdmin:
+                cursor.execute("""
+                    SELECT COUNT(*) as admin_count
+                    FROM Users.Users
+                    WHERE IsAdmin = 1 AND IsActive = 1
+                """)
+                admin_count = cursor.fetchone().admin_count
+                
+                if admin_count <= 1:
+                    return jsonify({
+                        "success": False, 
+                        "error": "Cannot delete the last administrator"
+                    }), 403
+            
+            # Удаляем пользователя (CASCADE удалит связанные записи в UserPagePermissions и AuditLog)
+            cursor.execute("""
+                DELETE FROM Users.Users
+                WHERE UserID = ?
+            """, (user_id,))
+            
+            conn.commit()
+            
+            return jsonify({
+                "success": True, 
+                "message": f"User {user.Username} deleted successfully"
+            }), 200
         
     except Exception as e:
         return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500

@@ -90,6 +90,10 @@ def update_profile():
         if not full_name and not password:
             return jsonify({"success": False, "error": "Укажите хотя бы одно поле для обновления"}), 400
         
+        # Валидация пароля (минимум 6 символов)
+        if password and len(password) < 6:
+            return jsonify({"success": False, "error": "Пароль должен быть минимум 6 символов"}), 400
+        
         updated_user = update_user_profile(
             user_id=user_data['user_id'],
             full_name=full_name,

@@ -125,8 +125,8 @@ const UserPage: React.FC = () => {
           setLoading(false);
           return;
         }
-        if (password.length < 3) {
-          setMessage({ type: 'error', text: 'Пароль должен быть минимум 3 символа' });
+        if (password.length < 6) {
+          setMessage({ type: 'error', text: 'Пароль должен быть минимум 6 символов' });
           setLoading(false);
           return;
         }

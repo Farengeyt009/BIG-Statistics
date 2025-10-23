@@ -24,6 +24,14 @@ from Back.orders.api.OrderData.OrderData_api import init_app as order_data_init_
 from Back.Users.api.auth_api import init_app as auth_init_app
 from Back.Users.api.users_api import init_app as users_init_app
 from Back.Users.api.admin_api import init_app as admin_init_app
+from Back.TaskManager.api.projects_api import init_app as task_manager_projects_init_app
+from Back.TaskManager.api.tasks_api import init_app as task_manager_tasks_init_app
+from Back.TaskManager.api.workflow_api import init_app as task_manager_workflow_init_app
+from Back.TaskManager.api.tags_api import init_app as task_manager_tags_init_app
+from Back.TaskManager.api.comments_api import init_app as task_manager_comments_init_app
+from Back.TaskManager.api.attachments_api import init_app as task_manager_attachments_init_app
+from Back.TaskManager.api.custom_fields_api import init_app as task_manager_custom_fields_init_app
+from Back.TaskManager.api.approvals_api import init_app as task_manager_approvals_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -38,6 +46,17 @@ CORS(app)  # Разрешаем кросс-доменные запросы (CORS
 auth_init_app(app)
 users_init_app(app)
 admin_init_app(app)
+
+# Task Manager API
+task_manager_projects_init_app(app)
+task_manager_tasks_init_app(app)
+task_manager_workflow_init_app(app)
+task_manager_tags_init_app(app)
+task_manager_comments_init_app(app)
+task_manager_attachments_init_app(app)
+task_manager_custom_fields_init_app(app)
+task_manager_approvals_init_app(app)
+
 planfact_init_app(app)
 planfact_summary_init_app(app)
 home_production_init_app(app)

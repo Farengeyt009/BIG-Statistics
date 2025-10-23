@@ -216,7 +216,7 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                     <Link to="/tv" className="block">
                         <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                     </Link>
-                    <Link to="/tasks" className="block">
+                    <Link to="/task-manager" className="block">
                         <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                     </Link>
                     {/* Показываем Admin только для администраторов */}
