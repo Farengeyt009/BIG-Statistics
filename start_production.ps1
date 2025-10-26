@@ -2,6 +2,10 @@
 # Frontend будет собран в dist и раздаваться через Flask
 # Использование: .\start_production.ps1
 
+# Устанавливаем кодировку UTF-8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 > $null
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "   Starting Production Server          " -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -12,35 +16,41 @@ Set-Location $projectRoot
 
 # Проверяем Python
 Write-Host "Checking Python..." -ForegroundColor Yellow
-try {
+$pythonCheck = Get-Command python -ErrorAction SilentlyContinue
+if ($pythonCheck) {
     $pythonVersion = python --version 2>&1
-    Write-Host "✓ $pythonVersion" -ForegroundColor Green
-} catch {
-    Write-Host "✗ Python not found!" -ForegroundColor Red
+    Write-Host "[OK] $pythonVersion" -ForegroundColor Green
+} else {
+    Write-Host "[ERROR] Python not found!" -ForegroundColor Red
     exit 1
 }
 
 # Активируем виртуальное окружение
 $venvPath = Join-Path $projectRoot "venv"
 if (Test-Path $venvPath) {
-    Write-Host "✓ Activating virtual environment..." -ForegroundColor Green
-    & "$venvPath\Scripts\Activate.ps1"
+    Write-Host "[OK] Activating virtual environment..." -ForegroundColor Green
+    $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+    & $activateScript
 } else {
-    Write-Host "! Creating virtual environment..." -ForegroundColor Yellow
+    Write-Host "[INFO] Creating virtual environment..." -ForegroundColor Yellow
     python -m venv venv
-    & "$venvPath\Scripts\Activate.ps1"
-    pip install -r requirements.txt
+    $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+    & $activateScript
+    
+    Write-Host "Installing Python dependencies..." -ForegroundColor Yellow
+    pip install -r Back\requirements.txt
 }
 
 # Проверяем наличие собранного фронтенда
 $distPath = Join-Path $projectRoot "Front\big-statistics-dashboard\dist"
 if (!(Test-Path $distPath)) {
-    Write-Host "! Frontend not built. Building now..." -ForegroundColor Yellow
+    Write-Host "[INFO] Frontend not built. Building now..." -ForegroundColor Yellow
     Set-Location "Front\big-statistics-dashboard"
     
     # Проверяем npm
-    if (!(Get-Command npm -ErrorAction SilentlyContinue)) {
-        Write-Host "✗ npm not found! Install Node.js first." -ForegroundColor Red
+    $npmCheck = Get-Command npm -ErrorAction SilentlyContinue
+    if (!$npmCheck) {
+        Write-Host "[ERROR] npm not found! Install Node.js first." -ForegroundColor Red
         exit 1
     }
     
@@ -56,7 +66,7 @@ if (!(Test-Path $distPath)) {
     
     Set-Location $projectRoot
 } else {
-    Write-Host "✓ Frontend build found" -ForegroundColor Green
+    Write-Host "[OK] Frontend build found" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -70,7 +80,9 @@ Write-Host "Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Добавляем текущую директорию в PYTHONPATH
+$env:PYTHONPATH = $projectRoot
+
 # Запускаем production сервер
 $env:FLASK_ENV = "production"
-python Back/Run_Server.py
-
+python .\Back\Run_Server.py

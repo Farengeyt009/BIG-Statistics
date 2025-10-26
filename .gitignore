@@ -92,4 +92,8 @@ alembic/versions/*.py
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# Renamed/backup files
+package.json.old
+package-lock.json.old 
