@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface PriorityDropdownProps {
   value: string;
@@ -6,17 +8,32 @@ interface PriorityDropdownProps {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Низкий', icon: '◔', color: '#10b981' },
-  { value: 'medium', label: 'Средний', icon: '◑', color: '#f59e0b' },
-  { value: 'high', label: 'Высокий', icon: '◕', color: '#ef4444' },
-  { value: 'critical', label: 'Критический', icon: '●', color: '#7c3aed' },
+  { value: 'low', icon: '◔', color: '#10b981' },
+  { value: 'medium', icon: '◑', color: '#f59e0b' },
+  { value: 'high', icon: '◕', color: '#ef4444' },
+  { value: 'critical', icon: '●', color: '#7c3aed' },
 ];
 
 export const PriorityDropdown: React.FC<PriorityDropdownProps> = ({ value, onChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const currentPriority = priorityOptions.find((p) => p.value === value) || priorityOptions[1];
+
+  // Function to get translated priority label
+  const getPriorityLabel = (priorityValue: string) => {
+    const priorityKey = `priority${priorityValue.charAt(0).toUpperCase() + priorityValue.slice(1)}`;
+    return t ? t(priorityKey) : priorityValue;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,7 +63,7 @@ export const PriorityDropdown: React.FC<PriorityDropdownProps> = ({ value, onCha
             {currentPriority.icon}
           </span>
           <span style={{ color: currentPriority.color }} className="font-medium">
-            {currentPriority.label}
+            {getPriorityLabel(currentPriority.value)}
           </span>
         </div>
         <svg
@@ -77,7 +94,7 @@ export const PriorityDropdown: React.FC<PriorityDropdownProps> = ({ value, onCha
                 {option.icon}
               </span>
               <span style={{ color: option.color }} className="font-medium">
-                {option.label}
+                {getPriorityLabel(option.value)}
               </span>
               {option.value === value && (
                 <svg className="w-4 h-4 ml-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

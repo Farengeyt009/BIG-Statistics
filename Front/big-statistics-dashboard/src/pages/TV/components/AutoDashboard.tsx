@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface AutoDashboardProps {
   children: React.ReactNode;
   refreshInterval?: number;    // 60 сек
-  rowSwitchInterval?: number;  // 10 сек  
   mouseIdleTime?: number;     // 60 сек
+  onAutoRefresh?: () => void;  // Callback для обновления данных
 }
 
-// Создаем контекст для передачи состояния авторежима
+// Создаем контекст для передачи состояния авторежима (для TV - без переключения строк)
 const AutoDashboardContext = React.createContext<{
   isAutoMode: boolean;
-  currentRowIndex: number;
 }>({
-  isAutoMode: false,
-  currentRowIndex: 0
+  isAutoMode: false
 });
 
 export const useAutoDashboard = () => React.useContext(AutoDashboardContext);
@@ -21,12 +19,17 @@ export const useAutoDashboard = () => React.useContext(AutoDashboardContext);
 export const AutoDashboard = ({ 
   children, 
   refreshInterval = 60000, 
-  rowSwitchInterval = 10000, 
-  mouseIdleTime = 60000 
+  mouseIdleTime = 60000,
+  onAutoRefresh
 }: AutoDashboardProps) => {
   const [isAutoMode, setIsAutoMode] = useState(false);
-  const [currentRowIndex, setCurrentRowIndex] = useState(0);
   const [lastMouseMove, setLastMouseMove] = useState(Date.now());
+  const onAutoRefreshRef = useRef(onAutoRefresh);
+  
+  // Обновляем ref при изменении callback
+  useEffect(() => {
+    onAutoRefreshRef.current = onAutoRefresh;
+  }, [onAutoRefresh]);
 
   // Отслеживание движения мыши
   useEffect(() => {
@@ -47,7 +50,7 @@ export const AutoDashboard = ({
     const checkIdleTime = () => {
       const idleTime = Date.now() - lastMouseMove;
       if (idleTime >= mouseIdleTime && !isAutoMode) {
-        console.log('⏰ Mouse idle for 1 minute - starting auto mode');
+        console.log('⏰ [TV AutoDashboard] Mouse idle for 1 minute - starting auto mode');
         setIsAutoMode(true);
       }
     };
@@ -56,38 +59,44 @@ export const AutoDashboard = ({
     return () => clearInterval(interval);
   }, [lastMouseMove, isAutoMode, mouseIdleTime]);
 
-  // Автопереключение строк
+  // Автообновление данных (для TV - без переключения строк)
   useEffect(() => {
-    if (!isAutoMode) return;
+    if (!isAutoMode) {
+      console.log('❌ [TV AutoDashboard] Auto mode is OFF');
+      return;
+    }
+    
+    console.log(`✅ [TV AutoDashboard] Auto mode ACTIVE - setting up refresh interval (${refreshInterval}ms = ${refreshInterval/1000}s)`);
+    
+    // Немедленное первое обновление при активации авто-режима
+    if (onAutoRefreshRef.current) {
+      console.log('📞 [TV AutoDashboard] Initial auto-refresh on activation');
+      onAutoRefreshRef.current();
+    }
     
     const interval = setInterval(() => {
-      console.log('🔄 Auto-switching to next row');
-      setCurrentRowIndex(prev => (prev + 1) % 10); // Простое переключение для демо
-    }, rowSwitchInterval);
-    
-    return () => clearInterval(interval);
-  }, [isAutoMode, rowSwitchInterval]);
-
-  // Автообновление данных
-  useEffect(() => {
-    if (!isAutoMode) return;
-    
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing data');
-      // Здесь можно добавить обновление данных
+      console.log('🔄 [TV AutoDashboard] Auto-refreshing data (TV) - timer fired');
+      if (onAutoRefreshRef.current) {
+        console.log('📞 [TV AutoDashboard] Calling onAutoRefresh callback');
+        onAutoRefreshRef.current();
+      } else {
+        console.warn('⚠️ [TV AutoDashboard] onAutoRefresh callback not provided!');
+      }
     }, refreshInterval);
     
-    return () => clearInterval(interval);
-  }, [isAutoMode, refreshInterval]);
+    return () => {
+      console.log('🛑 [TV AutoDashboard] Clearing auto-refresh interval');
+      clearInterval(interval);
+    };
+  }, [isAutoMode, refreshInterval]); // Убрали onAutoRefresh из зависимостей - используем ref
 
   // Сохранение состояния в localStorage
   useEffect(() => {
     localStorage.setItem('autoDashboard', JSON.stringify({
       isAutoMode,
-      currentRowIndex,
       lastMouseMove
     }));
-  }, [isAutoMode, currentRowIndex, lastMouseMove]);
+  }, [isAutoMode, lastMouseMove]);
 
   // Восстановление состояния при загрузке
   useEffect(() => {
@@ -95,7 +104,6 @@ export const AutoDashboard = ({
     if (saved) {
       try {
         const settings = JSON.parse(saved);
-        setCurrentRowIndex(settings.currentRowIndex || 0);
         setLastMouseMove(settings.lastMouseMove || Date.now());
       } catch (error) {
         console.error('Error loading auto dashboard settings:', error);
@@ -104,7 +112,7 @@ export const AutoDashboard = ({
   }, []);
 
   return (
-    <AutoDashboardContext.Provider value={{ isAutoMode, currentRowIndex }}>
+    <AutoDashboardContext.Provider value={{ isAutoMode }}>
       {children}
     </AutoDashboardContext.Provider>
   );

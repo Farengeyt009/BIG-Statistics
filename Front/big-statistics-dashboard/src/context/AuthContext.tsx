@@ -6,6 +6,8 @@ interface User {
   full_name: string;
   email: string | null;
   is_admin: boolean;
+  birthday?: string;
+  department?: string;
 }
 
 interface Permission {
@@ -33,30 +35,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Функция для загрузки полных данных профиля
+  const loadFullProfile = async (token: string) => {
+    try {
+      const response = await fetch('/api/users/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          return data.user;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading full profile:', error);
+    }
+    return null;
+  };
+
   // Загрузка данных из localStorage при инициализации
   useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    const storedUser = localStorage.getItem('userData');
-    const storedPermissions = localStorage.getItem('userPermissions');
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('authToken');
+      const storedUser = localStorage.getItem('userData');
+      const storedPermissions = localStorage.getItem('userPermissions');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      setPermissions(storedPermissions ? JSON.parse(storedPermissions) : []);
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        setPermissions(storedPermissions ? JSON.parse(storedPermissions) : []);
+        
+        // Загружаем полные данные профиля
+        const fullProfile = await loadFullProfile(storedToken);
+        if (fullProfile) {
+          setUser(fullProfile);
+          localStorage.setItem('userData', JSON.stringify(fullProfile));
+        }
+        
+        // Логируем начало сессии (Backend проверит дубликаты по времени)
+        fetch('/api/auth/session-start', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+          },
+        }).catch(err => {
+          // Игнорируем ошибки логирования
+          console.log('Session start logging failed:', err);
+        });
+      }
       
-      // Логируем начало сессии (Backend проверит дубликаты по времени)
-      fetch('/api/auth/session-start', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
-        },
-      }).catch(err => {
-        // Игнорируем ошибки логирования
-        console.log('Session start logging failed:', err);
-      });
-    }
-    
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -77,9 +112,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(data.user);
         setPermissions(data.permissions || []);
 
+        // Загружаем полные данные профиля
+        const fullProfile = await loadFullProfile(data.token);
+        if (fullProfile) {
+          setUser(fullProfile);
+          localStorage.setItem('userData', JSON.stringify(fullProfile));
+        } else {
+          localStorage.setItem('userData', JSON.stringify(data.user));
+        }
+
         // Сохраняем в localStorage
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userData', JSON.stringify(data.user));
         localStorage.setItem('userPermissions', JSON.stringify(data.permissions || []));
         localStorage.setItem('isAuth', 'true'); // для совместимости с RequireAuth
 

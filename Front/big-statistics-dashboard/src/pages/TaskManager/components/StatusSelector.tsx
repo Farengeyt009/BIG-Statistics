@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useStatusTranslation } from '../hooks/useStatusTranslation';
+import { useTranslation } from 'react-i18next';
 
 interface StatusSelectorProps {
   status: {
@@ -12,6 +14,8 @@ interface StatusSelectorProps {
 }
 
 export const StatusSelector: React.FC<StatusSelectorProps> = ({ status, statuses, taskId, onUpdate }) => {
+  const { t } = useTranslation('taskManager');
+  const { translateStatus } = useStatusTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +40,11 @@ export const StatusSelector: React.FC<StatusSelectorProps> = ({ status, statuses
     setIsOpen(false);
   };
 
+  const systemStatusNames = ['Новая', 'В работе', 'Завершена', 'Отменена'];
+
+  const currentStatusObj = { ...status, is_system: systemStatusNames.includes(status.name) || status.is_system };
+  const currentDisplay = translateStatus(currentStatusObj);
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -49,7 +58,7 @@ export const StatusSelector: React.FC<StatusSelectorProps> = ({ status, statuses
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: status.color }}
         />
-        <span className="text-xs text-gray-700 font-medium">{status.name}</span>
+        <span className="text-xs text-gray-700 font-medium">{currentDisplay}</span>
       </button>
 
       {isOpen && (
@@ -69,7 +78,7 @@ export const StatusSelector: React.FC<StatusSelectorProps> = ({ status, statuses
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: s.color }}
               />
-              <span className="text-gray-900">{s.name}</span>
+              <span className="text-gray-900">{translateStatus(s)}</span>
             </button>
           ))}
         </div>

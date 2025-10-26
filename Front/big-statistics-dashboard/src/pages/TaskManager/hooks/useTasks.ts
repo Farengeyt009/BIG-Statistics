@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useErrorTranslation } from './useErrorTranslation';
 
 const API_BASE = ''; // Используем относительные URL через Vite proxy
 
@@ -25,6 +26,7 @@ interface Task {
   comment_count: number;
   attachment_count: number;
   tags?: Array<{ id: number; name: string; color: string }>;
+  custom_fields?: Array<{ id: number; name: string; value: string; type: string }>;
 }
 
 interface WorkflowStatus {
@@ -43,6 +45,7 @@ export const useTasks = (projectId: number) => {
   const [statuses, setStatuses] = useState<WorkflowStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { translateError } = useErrorTranslation();
 
   const getToken = () => {
     return localStorage.getItem('authToken');
@@ -86,7 +89,7 @@ export const useTasks = (projectId: number) => {
         throw new Error(data.error || 'Ошибка загрузки задач');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      setError(translateError(err instanceof Error ? err.message : 'Неизвестная ошибка'));
     } finally {
       setLoading(false);
     }
@@ -122,7 +125,7 @@ export const useTasks = (projectId: number) => {
         throw new Error(data.error || 'Ошибка создания задачи');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      setError(translateError(err instanceof Error ? err.message : 'Неизвестная ошибка'));
       return null;
     }
   }, [projectId, fetchTasks]);
@@ -160,12 +163,12 @@ export const useTasks = (projectId: number) => {
         // Откат при ошибке
         await fetchTasks();
         const errorMsg = data.error || 'Ошибка обновления задачи';
-        setError(errorMsg);
+        setError(translateError(errorMsg));
         throw new Error(errorMsg);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Неизвестная ошибка';
-      setError(errorMsg);
+      setError(translateError(errorMsg));
       // Откатываем изменения
       await fetchTasks();
       throw err; // Пробрасываем дальше
@@ -188,7 +191,7 @@ export const useTasks = (projectId: number) => {
         throw new Error(data.error || 'Ошибка удаления задачи');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      setError(translateError(err instanceof Error ? err.message : 'Неизвестная ошибка'));
       return false;
     }
   }, [fetchTasks]);

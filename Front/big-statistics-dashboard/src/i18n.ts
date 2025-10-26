@@ -9,6 +9,9 @@ import planTranslation from './pages/Plan/PlanTranslation.json';
 import loginPageTranslation from './pages/LoginPage/LoginPageTranslation.json';
 import homeInterfaceTranslation from './pages/Home/homeInterfaceTranslation.json';
 import productionTranslation from './pages/Production/ProductionTranslation.json';
+import userPageTranslation from './pages/UserPage/UserPageTranslation.json';
+import weChatTranslation from './components/WeChat/WeChatTranslation.json';
+import taskManagerTranslation from './pages/TaskManager/TaskManagerTranslation.json';
 import tvTranslation from './pages/TV/TVTranslation.json';
 import requirePermissionTranslation from './components/requirePermissionTranslation.json';
 
@@ -23,7 +26,10 @@ const resources = {
     homeInterface: homeInterfaceTranslation.en,
     production: productionTranslation.en,
     tv: tvTranslation.en,
-    requirePermission: requirePermissionTranslation.en
+    requirePermission: requirePermissionTranslation.en,
+    userPage: userPageTranslation.en,
+    weChat: weChatTranslation.en,
+    taskManager: taskManagerTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
@@ -35,7 +41,10 @@ const resources = {
     homeInterface: homeInterfaceTranslation.zh,
     production: productionTranslation.zh,
     tv: tvTranslation.zh,
-    requirePermission: requirePermissionTranslation.zh
+    requirePermission: requirePermissionTranslation.zh,
+    userPage: userPageTranslation.zh,
+    weChat: weChatTranslation.zh,
+    taskManager: taskManagerTranslation.zh
   },
   ru: {
     sidebar: (sidebarTranslation as any).ru || {},
@@ -47,7 +56,10 @@ const resources = {
     homeInterface: (homeInterfaceTranslation as any).ru || {},
     production: productionTranslation.ru,
     tv: (tvTranslation as any).ru || {},
-    requirePermission: requirePermissionTranslation.ru
+    requirePermission: requirePermissionTranslation.ru,
+    userPage: userPageTranslation.ru,
+    weChat: weChatTranslation.ru,
+    taskManager: taskManagerTranslation.ru
   }
 };
 

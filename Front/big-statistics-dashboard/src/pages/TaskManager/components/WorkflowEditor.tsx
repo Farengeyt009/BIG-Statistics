@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWorkflow } from '../hooks/useWorkflow';
 import { TransitionsEditor } from './TransitionsEditor';
 import { WorkflowSettings } from './WorkflowSettings';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
+import { useStatusTranslation } from '../hooks/useStatusTranslation';
 
 interface WorkflowEditorProps {
   projectId: number;
+  onStatusChange?: () => void;
 }
 
-export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => {
+export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId, onStatusChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
+  const { translateStatus } = useStatusTranslation();
   const { statuses, loading, fetchStatuses, createStatus, updateStatus, deleteStatus } = useWorkflow(projectId);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingStatus, setEditingStatus] = useState<any>(null);
@@ -16,18 +22,26 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
   const [isInitial, setIsInitial] = useState(false);
   const [isFinal, setIsFinal] = useState(false);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const colors = [
-    { value: '#3b82f6', label: 'Синий' },
-    { value: '#10b981', label: 'Зеленый' },
-    { value: '#f59e0b', label: 'Оранжевый' },
-    { value: '#ef4444', label: 'Красный' },
-    { value: '#8b5cf6', label: 'Фиолетовый' },
-    { value: '#6b7280', label: 'Серый' },
+    { value: '#3b82f6', label: t('workflowEditorBlue') },
+    { value: '#10b981', label: t('workflowEditorGreen') },
+    { value: '#f59e0b', label: t('workflowEditorOrange') },
+    { value: '#ef4444', label: t('workflowEditorRed') },
+    { value: '#8b5cf6', label: t('workflowEditorPurple') },
+    { value: '#6b7280', label: t('workflowEditorGray') },
   ];
 
   const handleCreate = async () => {
     if (!statusName.trim()) {
-      alert('Введите название статуса');
+      alert(t('validation.enterStatusName'));
       return;
     }
 
@@ -41,12 +55,13 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
     if (success) {
       resetForm();
       setShowCreateModal(false);
+      onStatusChange?.();
     }
   };
 
   const handleUpdate = async () => {
     if (!statusName.trim()) {
-      alert('Введите название статуса');
+      alert(t('validation.enterStatusName'));
       return;
     }
 
@@ -60,6 +75,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
     if (success) {
       resetForm();
       setEditingStatus(null);
+      onStatusChange?.();
     }
   };
 
@@ -79,23 +95,23 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
   };
 
   if (loading && statuses.length === 0) {
-    return <div className="text-center py-8 text-gray-500">Загрузка...</div>;
+    return <div className="text-center py-8 text-gray-500">{t('workflowEditorLoading')}</div>;
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Воркфлоу проекта</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('workflowEditorTitle')}</h3>
           <p className="text-sm text-gray-500 mt-1">
-            Настройте статусы и переходы для задач этого проекта
+            {t('workflowEditorDescription')}
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
         >
-          + Добавить статус
+          + {t('workflowEditorAddStatus')}
         </button>
       </div>
 
@@ -157,28 +173,28 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                 {/* Название */}
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{status.name}</span>
+                    <span className="font-medium text-gray-900">{translateStatus(status)}</span>
                     {status.is_system && (
                       <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium flex items-center gap-1">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        Системный
+                        {t('workflowEditorSystem')}
                       </span>
                     )}
                     {status.is_initial && (
                       <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded font-medium">
-                        Начальный
+                        {t('workflowEditorInitial')}
                       </span>
                     )}
                     {status.is_final && (
                       <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded font-medium">
-                        Финальный
+                        {t('workflowEditorFinal')}
                       </span>
                     )}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">
-                    Порядок: {status.order_index}
+                    {t('workflowEditorOrder')} {status.order_index}
                   </div>
                 </div>
               </div>
@@ -188,7 +204,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                 <button
                   onClick={() => startEdit(status)}
                   className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                  title="Редактировать"
+                  title={t('workflowEditorEdit')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -196,16 +212,16 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                 </button>
                 <button
                   onClick={async () => {
-                    if (confirm(`Удалить статус "${status.name}"?`)) {
+                    if (confirm(t('validation.deleteStatusConfirm', { statusName: translateStatus(status) }))) {
                       const success = await deleteStatus(status.id);
-                      if (!success) {
-                        // Ошибка уже показана через alert от сервера
+                      if (success) {
+                        onStatusChange?.();
                       }
                     }
                   }}
                   disabled={status.is_system}
                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30"
-                  title={status.is_system ? 'Системный статус нельзя удалить' : 'Удалить'}
+                  title={status.is_system ? t('workflowEditorSystemStatusCannotDelete') : t('workflowEditorDelete')}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -221,20 +237,20 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
             <h3 className="text-xl font-semibold mb-4">
-              {editingStatus ? 'Редактировать статус' : 'Создать статус'}
+              {editingStatus ? t('workflowEditorEditStatus') : t('workflowEditorCreateStatus')}
             </h3>
 
             {/* Название */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Название *
+                {t('workflowEditorName')} *
               </label>
               <input
                 type="text"
                 value={statusName}
                 onChange={(e) => setStatusName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="Например: На согласовании"
+                placeholder={t('workflowEditorNamePlaceholder')}
                 autoFocus
               />
             </div>
@@ -242,7 +258,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
             {/* Цвет */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Цвет
+                {t('workflowEditorColor')}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {colors.map((color) => (
@@ -275,7 +291,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">
-                  Начальный статус (новые задачи создаются в этом статусе)
+                  {t('workflowEditorInitialStatus')}
                 </span>
               </label>
 
@@ -287,7 +303,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">
-                  Финальный статус (задача считается завершенной)
+                  {t('workflowEditorFinalStatus')}
                 </span>
               </label>
             </div>
@@ -302,13 +318,13 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ projectId }) => 
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
               >
-                Отмена
+                {t('workflowEditorCancel')}
               </button>
               <button
                 onClick={editingStatus ? handleUpdate : handleCreate}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                {editingStatus ? 'Сохранить' : 'Создать'}
+                {editingStatus ? t('workflowEditorSave') : t('workflowEditorCreate')}
               </button>
             </div>
           </div>

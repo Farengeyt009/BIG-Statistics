@@ -1,0 +1,44 @@
+{
+  "en": {
+    "modalTitle": "WeChat Binding",
+    "scanQRCode": "Scan QR code in WeChat",
+    "scanInstructions": "Open WeChat and scan the QR code to link your account",
+    "generatingQR": "Generating QR code...",
+    "error": "Error:",
+    "tryAgain": "Try again",
+    "qrNotGenerated": "QR code not generated",
+    "waitingForScan": "⏳ Waiting for scan...",
+    "qrScanned": "✅ QR code scanned, confirm in WeChat",
+    "accountLinked": "🎉 WeChat account successfully linked!",
+    "qrExpired": "⏰ QR code expired, refresh the page",
+    "refreshQR": "Refresh QR code"
+  },
+  "zh": {
+    "modalTitle": "微信绑定",
+    "scanQRCode": "在微信中扫描二维码",
+    "scanInstructions": "打开微信并扫描二维码以绑定您的账户",
+    "generatingQR": "正在生成二维码...",
+    "error": "错误：",
+    "tryAgain": "重试",
+    "qrNotGenerated": "二维码未生成",
+    "waitingForScan": "⏳ 等待扫描...",
+    "qrScanned": "✅ 二维码已扫描，请在微信中确认",
+    "accountLinked": "🎉 微信账户绑定成功！",
+    "qrExpired": "⏰ 二维码已过期，请刷新页面",
+    "refreshQR": "刷新二维码"
+  },
+  "ru": {
+    "modalTitle": "Привязка WeChat",
+    "scanQRCode": "Отсканируйте QR-код в WeChat",
+    "scanInstructions": "Откройте WeChat и отсканируйте QR-код для привязки аккаунта",
+    "generatingQR": "Генерация QR-кода...",
+    "error": "Ошибка:",
+    "tryAgain": "Попробовать снова",
+    "qrNotGenerated": "QR-код не сгенерирован",
+    "waitingForScan": "⏳ Ожидание сканирования...",
+    "qrScanned": "✅ QR-код отсканирован, подтвердите в WeChat",
+    "accountLinked": "🎉 WeChat аккаунт успешно привязан!",
+    "qrExpired": "⏰ QR-код истек, обновите страницу",
+    "refreshQR": "Обновить QR-код"
+  }
+}

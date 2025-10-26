@@ -1,17 +1,17 @@
-// src/pages/TV/tabs/TV.tsx
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+// src/pages/TV/TVTile.tsx
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 
-import { MetricCard } from '../../../components/KPICards';
-import { TVTrendChart } from '../components/TVTrendChart';
-import { SimpleTable } from '../components/SimpleTable';
-import { DateRangePickerPro } from '../../../components/DatePicker';
+import { MetricCard } from '../../components/KPICards';
+import { TVTrendChart } from './components/TVTrendChart';
+import { SimpleTable } from './components/SimpleTable';
+import { DateRangePickerPro } from '../../components/DatePicker';
 import { useTranslation } from 'react-i18next';
-import { TVProvider } from '../TVContext';
-import { AutoDashboard, useAutoDashboard } from '../components/AutoDashboard';
+import { TVProvider } from './TVContext';
+import { useAutoDashboard } from './components/AutoDashboard';
 import { Factory } from 'lucide-react';
-import { API_ENDPOINTS } from '../../../config/api';
-import { WorkCenterSelector } from '../components/WorkCenterSelector';
-import mockLogoGray from '../../../assets/Mok-logo-gray.png';
+import { API_ENDPOINTS } from '../../config/api';
+import { WorkCenterSelector } from './components/WorkCenterSelector';
+import mockLogoGray from '../../assets/Mok-logo-gray.png';
 
 type TvRuntimeStatus = 'Working' | 'Downtime' | 'Break' | 'Finished' | null;
 
@@ -21,7 +21,11 @@ interface TVProps {
   onStatusChange?: (status: TvRuntimeStatus) => void;
 }
 
-export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
+export interface TVTileRef {
+  refresh: () => void;
+}
+
+const TV = forwardRef<TVTileRef, TVProps>(({ tileId, isExpanded, onStatusChange }, ref) => {
   const { t, i18n } = useTranslation('tv');
   const { isAutoMode } = useAutoDashboard();
   const onStatusChangeRef = useRef<typeof onStatusChange | null>(onStatusChange);
@@ -43,12 +47,15 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
   const [schedule, setSchedule] = useState<any>(null);
   const [orderRows, setOrderRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true); // Флаг первой загрузки
+  const hasLoadedOnce = useRef(false); // Флаг завершения первой загрузки
   const [hoveredWorkShop, setHoveredWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
   const [defaultWorkShop, setDefaultWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
   const [selectedWorkCenter, setSelectedWorkCenter] = useState<string>('');
   const [workshopsRaw, setWorkshopsRaw] = useState<any[]>([]);
-  const [noData, setNoData] = useState(true); // Изначально показываем МОК данные
+  const [noData, setNoData] = useState(false); // Изначально не показываем МОК
   const reqRef = useRef(0);
+  const isLoadingRef = useRef(false); // Флаг загрузки для предотвращения дублирования
   const [downtime, setDowntime] = useState<{ minutes: number; gaps: number; status: string } | null>(null);
 
 
@@ -60,11 +67,11 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
         const res = await fetch(API_ENDPOINTS.TV.WORKSHOPS, { method: 'GET' });
         const json = await res.json();
         const items: any[] = Array.isArray(json?.data) ? json.data : [];
-        setWorkshopsRaw(items);
-        // если выбранного нет — установим рабочий центр по умолчанию в зависимости от tileId
+        
+        // Определяем рабочий центр по умолчанию ДО установки состояния
+        let defaultWorkCenterId = '';
+        
         if (!selectedWorkCenter && items.length > 0) {
-          let defaultWorkCenterId = '';
-          
           if (tileId) {
             // Ищем рабочий центр по умолчанию в зависимости от tileId
             const defaultWorkCenter = items.find(item => {
@@ -93,11 +100,16 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
           if (!defaultWorkCenterId && items.length > 0) {
             defaultWorkCenterId = items[0]?.WorkCenter_CustomWS || '';
           }
-          
+        }
+        
+        // Устанавливаем оба состояния одновременно, чтобы избежать двойного ре-рендера
+        setWorkshopsRaw(items);
+        if (defaultWorkCenterId) {
           setSelectedWorkCenter(defaultWorkCenterId);
         }
       } catch (e) {
         console.error('Failed to load TV workshops:', e);
+        setInitialLoading(false); // Убираем загрузку даже при ошибке
       }
     };
     fetchWorkshops();
@@ -248,12 +260,26 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
   const getFilterWorkCenterId = useCallback(() => selectedWorkCenter, [selectedWorkCenter]);
 
   /** -------------------- API‑запросы -------------------- */
-  const fetchTVData = useCallback(async (date: Date | null) => {
+  const fetchTVData = useCallback(async (date: Date | null, silent: boolean = false) => {
     if (!date || !selectedWorkCenter) return;
+    
+    // Предотвращаем множественные одновременные запросы
+    if (isLoadingRef.current) {
+      console.log('⏭️ Skipping fetch - already loading');
+      return;
+    }
 
     const myReq = ++reqRef.current;
-    setLoading(true);
-    setNoData(false); // Сбрасываем флаг при начале загрузки
+    isLoadingRef.current = true;
+    
+    if (!silent) {
+      setLoading(true);
+      setNoData(false); // Сбрасываем флаг только при обычной загрузке
+    }
+    // При silent обновлении НЕ сбрасываем noData, чтобы избежать мерцания
+    
+    console.log(`📡 Fetching TV data (silent: ${silent}, tileId: ${tileId || 'unknown'})`);
+    
     try {
 
 
@@ -311,7 +337,12 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
       
       // Если нет данных для выбранного РЦ, устанавливаем флаг
       const shouldShowNoData = !hasKpiData && !hasHourlyDataForSelectedWC && !hasOrderDataForSelectedWC;
-      setNoData(shouldShowNoData);
+      
+      // При silent обновлении обновляем noData только если состояние изменилось
+      // Это предотвращает мерцание: noData=true → false → true
+      if (!silent || shouldShowNoData !== noData) {
+        setNoData(shouldShowNoData);
+      }
       
       
 
@@ -321,21 +352,43 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error('Ошибка загрузки данных:', err);
-        setNoData(true); // Показываем МОК данные при ошибке
+        // При silent обновлении не показываем МОК при ошибке (избегаем мерцания)
+        if (!silent) {
+          setNoData(true);
+        }
       }
     } finally {
-      if (reqRef.current === myReq) setLoading(false);
+      if (reqRef.current === myReq) {
+        isLoadingRef.current = false; // Сбрасываем флаг загрузки
+        
+        if (!silent) {
+          setLoading(false);
+        }
+        // Сбрасываем флаг первой загрузки только после завершения первого запроса
+        if (!hasLoadedOnce.current) {
+          hasLoadedOnce.current = true;
+          setInitialLoading(false);
+        }
+        
+        console.log(`✅ TV data fetched successfully (tileId: ${tileId || 'unknown'})`);
+      }
     }
   }, [workshopsRaw, selectedWorkCenter]);
 
   /** -------------------- подгружаем при смене даты -------------------- */
   useEffect(() => {
     if (!selectedDate || !selectedWorkCenter) {
-      setNoData(true); // Показываем МОК данные если нет выбранной даты или рабочего центра
+      // Не показываем МОК при инициализации, только после первой загрузки
+      if (!initialLoading) {
+        setNoData(true);
+      }
       return;
     }
+    
+    console.log('📅 Date or WorkCenter changed, fetching data...', { selectedDate, selectedWorkCenter });
     fetchTVData(selectedDate);
-  }, [selectedDate, selectedWorkCenter, fetchTVData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, selectedWorkCenter]); // Убрали fetchTVData и initialLoading из зависимостей
 
   /** -------------------- загрузка статуса простоя РЦ для окраски рамки плитки -------------------- */
   const loadDowntimeStatus = useCallback(async () => {
@@ -367,18 +420,19 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
     loadDowntimeStatus();
   }, [loadDowntimeStatus]);
 
-  /** -------------------- авто‑обновление при авто‑режиме -------------------- */
-  useEffect(() => {
-    if (!isAutoMode) return;
-    const tick = () => {
-      if (selectedDate) fetchTVData(selectedDate);
-      loadDowntimeStatus();
-    };
-    // моментальный запуск и затем каждые 60 сек
-    tick();
-    const id = setInterval(tick, 60000);
-    return () => clearInterval(id);
-  }, [isAutoMode, selectedDate, fetchTVData, loadDowntimeStatus]);
+  /** -------------------- Expose refresh method через ref -------------------- */
+  useImperativeHandle(ref, () => ({
+    refresh: () => {
+      console.log(`🔄 [TVTile ${tileId}] Refresh method called`);
+      if (selectedDate) {
+        console.log(`📡 [TVTile ${tileId}] Fetching data (silent mode)`);
+        fetchTVData(selectedDate, true); // silent = true для тихого обновления
+        loadDowntimeStatus();
+      } else {
+        console.warn(`⚠️ [TVTile ${tileId}] No selectedDate, skipping refresh`);
+      }
+    }
+  }), []); // Пустой массив - используем актуальные значения из замыкания
 
      /** -------------------- верстка -------------------- */
    
@@ -425,17 +479,16 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
       selectedDate,
       tvData
     }}>
-      <AutoDashboard>
-        <div className="container">
-          {/* Индикатор загрузки */}
-          {loading && (
+      <div className="container">
+          {/* Индикатор загрузки при первой загрузке или обычной загрузке */}
+          {(initialLoading || loading) && (
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           )}
 
           {/* KPI‑карточки и селекторы - показываем только если не загружается */}
-          {!loading && (
+          {!initialLoading && !loading && (
             <section className="flex flex-wrap items-end gap-6 mb-6 mt-4">
               {/* Карточки: растягиваем пространство с помощью flex-1 */}
               <div className="grid flex-1 gap-6 [grid-template-columns:repeat(auto-fit,minmax(12.5rem,max-content))]">
@@ -661,8 +714,8 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
       </section>
           )}
 
-          {/* Показываем МОК фото когда нет данных */}
-          {!loading && noData && (
+          {/* Показываем МОК фото когда нет данных (после первой загрузки) */}
+          {!initialLoading && !loading && noData && (
             <div className="flex items-center justify-center min-h-[60vh] w-full">
               <img 
                 src={mockLogoGray} 
@@ -673,7 +726,7 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
           )}
 
           {/* Показываем график и таблицу только если есть данные */}
-          {!noData && !loading && (
+          {!initialLoading && !noData && !loading && (
             <>
              {/* График план/факт */}
       <div className="mb-4">
@@ -739,8 +792,11 @@ export default function TV({ tileId, isExpanded, onStatusChange }: TVProps) {
       </section>
             </>
           )}
-        </div>
-      </AutoDashboard>
+      </div>
     </TVProvider>
   );
-}
+});
+
+TV.displayName = 'TV';
+
+export default TV;

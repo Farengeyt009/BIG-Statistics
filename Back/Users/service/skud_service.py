@@ -94,7 +94,7 @@ def get_employee_info(empcode: str):
                     deptname5,
                     LastUpdated
                 FROM Import_SKUD.empinfo
-                WHERE empcode = ? AND isactive = 1
+                WHERE empcode = ?
             """, (empcode,))
             
             row = cursor.fetchone()

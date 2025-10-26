@@ -32,6 +32,7 @@ from Back.TaskManager.api.comments_api import init_app as task_manager_comments_
 from Back.TaskManager.api.attachments_api import init_app as task_manager_attachments_init_app
 from Back.TaskManager.api.custom_fields_api import init_app as task_manager_custom_fields_init_app
 from Back.TaskManager.api.approvals_api import init_app as task_manager_approvals_init_app
+from Back.WeChat.api.wechat_api import wechat_bp
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -56,6 +57,9 @@ task_manager_comments_init_app(app)
 task_manager_attachments_init_app(app)
 task_manager_custom_fields_init_app(app)
 task_manager_approvals_init_app(app)
+
+# WeChat API
+app.register_blueprint(wechat_bp)
 
 planfact_init_app(app)
 planfact_summary_init_app(app)

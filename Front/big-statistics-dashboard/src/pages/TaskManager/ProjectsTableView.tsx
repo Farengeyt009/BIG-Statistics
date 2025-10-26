@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useProjects } from './hooks/useProjects';
-import { HealthIndicator } from './components/HealthIndicator';
 import { ProgressBar } from './components/ui/ProgressBar';
 import { AvatarGroup } from './components/ui/Avatar';
+import TaskManagerTranslation from './TaskManagerTranslation.json';
 
 interface ProjectsTableViewProps {
   onProjectSelect: (projectId: number) => void;
 }
 
 export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectSelect }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const { projects, loading, error, createProject } = useProjects();
+
+  // Загружаем переводы для Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
-      alert('Введите название проекта');
+      alert(t('projectNameRequired'));
       return;
     }
 
@@ -35,7 +45,7 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
   if (loading && projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Загрузка проектов...</div>
+        <div className="text-gray-500">{t('loadingProjects')}</div>
       </div>
     );
   }
@@ -57,16 +67,12 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
   return (
     <div className="p-6">
       {/* Заголовок */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Проекты</h1>
-          <p className="text-sm text-gray-500 mt-1">Управляйте всеми вашими проектами</p>
-        </div>
+      <div className="flex justify-end items-center mb-6">
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium"
         >
-          + Создать проект
+          {t('createProjectButton')}
         </button>
       </div>
 
@@ -82,12 +88,12 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {/* Заголовки таблицы */}
           <div className="bg-gray-50 px-6 py-3 text-sm font-medium text-gray-600 flex items-center border-b sticky top-0 z-10">
-            <div className="w-[40%]">Название</div>
-            <div className="w-[15%]">Прогресс</div>
-            <div className="w-[10%]">Статус</div>
-            <div className="w-[15%]">Команда</div>
-            <div className="w-[10%] text-center">Задачи</div>
-            <div className="w-[10%]">Роль</div>
+            <div className="w-[35%]">{t('projectName')}</div>
+            <div className="w-[15%]">{t('progress')}</div>
+            <div className="w-[5%]"></div>
+            <div className="w-[20%] text-center">{t('team')}</div>
+            <div className="w-[10%] text-center">{t('tasks')}</div>
+            <div className="w-[15%] text-center">{t('role')}</div>
           </div>
 
           {/* Строки проектов */}
@@ -99,7 +105,7 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                 className="px-6 py-4 flex items-center hover:bg-gray-50 cursor-pointer transition-colors group"
               >
                 {/* Название */}
-                <div className="w-[40%] flex flex-col">
+                <div className="w-[35%] flex flex-col">
                   <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                     {project.name}
                   </span>
@@ -121,17 +127,11 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                   </span>
                 </div>
 
-                {/* Health/Статус */}
-                <div className="w-[10%]">
-                  <HealthIndicator
-                    completed={project.completedTasks}
-                    total={project.task_count}
-                    size="sm"
-                  />
-                </div>
+                {/* Невидимое поле-костыль */}
+                <div className="w-[5%]"></div>
 
                 {/* Команда */}
-                <div className="w-[15%]">
+                <div className="w-[20%] flex justify-center">
                   <AvatarGroup
                     users={project.members?.slice(0, 4).map(m => ({
                       name: m.full_name || m.username,
@@ -153,7 +153,7 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                 </div>
 
                 {/* Роль */}
-                <div className="w-[10%]">
+                <div className="w-[15%] flex justify-center">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                     {project.user_role}
                   </span>
@@ -173,13 +173,13 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
             Нет проектов
           </h3>
           <p className="text-gray-500 mb-6 text-center max-w-md">
-            Создайте свой первый проект для начала работы с задачами
+            {t('createFirstProject')}
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all"
           >
-            Создать проект
+            {t('createProject')}
           </button>
         </div>
       )}
@@ -192,7 +192,7 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Название проекта *
+                {t('projectNameLabel')} *
               </label>
               <input
                 type="text"
@@ -226,13 +226,13 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
-                Отмена
+                {t('cancel')}
               </button>
               <button
                 onClick={handleCreateProject}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                Создать
+                {t('create')}
               </button>
             </div>
           </div>

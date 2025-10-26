@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { CommentsSection } from './CommentsSection';
 import { AttachmentsSection } from './AttachmentsSection';
@@ -10,6 +11,8 @@ import { AssigneeSelector } from './AssigneeSelector';
 import { useAuth } from '../../../context/AuthContext';
 import { useTaskFieldValues } from '../hooks/useCustomFields';
 import { useProjectMembers } from '../hooks/useProjectMembers';
+import { useStatusTranslation } from '../hooks/useStatusTranslation';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface Task {
   id: number;
@@ -40,10 +43,10 @@ interface TaskDetailsModalProps {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Низкий', icon: '◔', color: '#10b981' },
-  { value: 'medium', label: 'Средний', icon: '◑', color: '#f59e0b' },
-  { value: 'high', label: 'Высокий', icon: '◕', color: '#ef4444' },
-  { value: 'critical', label: 'Критический', icon: '●', color: '#7c3aed' },
+  { value: 'low', icon: '◔', color: '#10b981' },
+  { value: 'medium', icon: '◑', color: '#f59e0b' },
+  { value: 'high', icon: '◕', color: '#ef4444' },
+  { value: 'critical', icon: '●', color: '#7c3aed' },
 ];
 
 export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
@@ -53,13 +56,23 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   onUpdate,
   onDelete,
 }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const { user } = useAuth();
+  const { translateStatus } = useStatusTranslation();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [statusId, setStatusId] = useState(task.status_id);
   const [priority, setPriority] = useState(task.priority);
   const [assigneeId, setAssigneeId] = useState(task.assignee_id);
   const [assigneeName, setAssigneeName] = useState(task.assignee_name);
+
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
   
   // Форматируем дату в формат YYYY-MM-DD для input type="date"
   const formatDateForInput = (dateStr: string | undefined) => {
@@ -96,7 +109,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
     if (emptyRequiredFields.length > 0) {
       alert(
-        `Заполните обязательные поля:\n${emptyRequiredFields.map(f => `• ${f.field_name}`).join('\n')}`
+        `${t('validation.fillRequiredFields')}\n${emptyRequiredFields.map(f => `• ${f.field_name}`).join('\n')}`
       );
       return;
     }
@@ -131,7 +144,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
+    if (confirm(t('validation.deleteTaskConfirm'))) {
       await onDelete();
       onClose();
     }
@@ -149,7 +162,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-xl font-semibold flex-1 border-none focus:outline-none focus:ring-0 bg-transparent"
-              placeholder="Название задачи"
+              placeholder={t('taskModalTitle')}
             />
           </div>
           <button
@@ -168,14 +181,14 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Описание */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Описание
+                {t('taskModalDescription')}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={4}
-                placeholder="Добавьте описание задачи..."
+                placeholder={t('taskModalDescriptionPlaceholder')}
               />
             </div>
 
@@ -190,7 +203,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       : 'border-transparent text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Подзадачи ({subtaskCount})
+                  {t('taskModalSubtasks')} ({subtaskCount})
                 </button>
                 <button
                   onClick={() => setActiveTab('comments')}
@@ -200,7 +213,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       : 'border-transparent text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Комментарии ({commentCount})
+                  {t('taskModalComments')} ({commentCount})
                 </button>
                 <button
                   onClick={() => setActiveTab('files')}
@@ -210,7 +223,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       : 'border-transparent text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Файлы ({attachmentCount})
+                  {t('taskModalFiles')} ({attachmentCount})
                 </button>
                 <button
                   onClick={() => setActiveTab('approvals')}
@@ -220,7 +233,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                       : 'border-transparent text-gray-600 hover:text-gray-800'
                   }`}
                 >
-                  Согласования
+                  {t('taskModalApprovals')}
                 </button>
               </div>
 
@@ -270,15 +283,15 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Метаинформация */}
             <div className="pt-4 mt-auto border-t text-sm text-gray-500 space-y-1">
               <div>
-                <span className="font-medium">Создатель:</span> {task.creator_name || 'N/A'}
+                <span className="font-medium">{t('taskModalCreator')}</span> {task.creator_name || 'N/A'}
               </div>
               <div>
-                <span className="font-medium">Создана:</span>{' '}
+                <span className="font-medium">{t('taskModalCreated')}</span>{' '}
                 {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy HH:mm') : 'N/A'}
               </div>
               {task.updated_at && task.updated_at !== task.created_at && (
                 <div>
-                  <span className="font-medium">Обновлена:</span>{' '}
+                  <span className="font-medium">{t('taskModalUpdated')}</span>{' '}
                   {format(new Date(task.updated_at), 'dd.MM.yyyy HH:mm')}
                 </div>
               )}
@@ -293,7 +306,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Статус */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                Статус
+                {t('taskModalStatus')}
               </label>
               <select
                 value={statusId}
@@ -302,7 +315,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               >
                 {statuses.map((status) => (
                   <option key={status.id} value={status.id}>
-                    {status.name}
+                    {translateStatus(status)}
                   </option>
                 ))}
               </select>
@@ -311,7 +324,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Приоритет */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                Приоритет
+                {t('taskModalPriority')}
               </label>
               <PriorityDropdown value={priority} onChange={setPriority} />
             </div>
@@ -319,7 +332,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Срок выполнения */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                Срок выполнения
+                {t('taskModalDueDate')}
               </label>
               <input
                 type="date"
@@ -332,7 +345,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Исполнитель */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                Исполнитель
+                {t('taskModalAssignee')}
               </label>
               <AssigneeSelector
                 projectId={task.project_id}
@@ -353,7 +366,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {/* Теги */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                Теги
+                {t('taskModalTags')}
               </label>
               {task.tags && task.tags.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
@@ -372,7 +385,7 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">Тегов нет</p>
+                <p className="text-xs text-gray-500">{t('taskModalNoTags')}</p>
               )}
             </div>
 
@@ -386,15 +399,15 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <div className="pt-4 mt-auto border-t">
               <div className="space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-xs">Подзадачи</span>
+                  <span className="text-gray-600 text-xs">{t('taskModalSubtasks')}</span>
                   <span className="font-medium text-gray-900">{subtaskCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-xs">Комментарии</span>
+                  <span className="text-gray-600 text-xs">{t('taskModalComments')}</span>
                   <span className="font-medium text-gray-900">{commentCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-xs">Файлы</span>
+                  <span className="text-gray-600 text-xs">{t('taskModalFiles')}</span>
                   <span className="font-medium text-gray-900">{attachmentCount}</span>
                 </div>
               </div>
@@ -409,21 +422,21 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             onClick={handleDelete}
             className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
-            Удалить задачу
+            {t('taskModalDeleteTask')}
           </button>
           <div className="flex gap-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
             >
-              Отмена
+              {t('taskModalCancel')}
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
               className="px-6 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {isSaving ? 'Сохранение...' : 'Сохранить'}
+              {isSaving ? t('taskModalSaving') : t('taskModalSave')}
             </button>
           </div>
         </div>

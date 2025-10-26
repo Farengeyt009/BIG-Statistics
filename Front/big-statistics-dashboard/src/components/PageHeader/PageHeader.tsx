@@ -9,10 +9,11 @@ interface TabDef {
 
 interface PageHeaderProps {
   title: string;
-  view: string;
-  onViewChange: (v: string) => void;
+  view?: string;
+  onViewChange?: (v: string) => void;
   rightSlot?: React.ReactNode;
-  tabs: TabDef[];
+  tabs?: TabDef[];
+  hideTabs?: boolean;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
@@ -21,6 +22,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   onViewChange,
   rightSlot,
   tabs,
+  hideTabs = false,
 }) => {
   const headerRef = useRef<HTMLElement | null>(null);
   const [spacerHeight, setSpacerHeight] = useState(0);
@@ -57,25 +59,30 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <div className="flex flex-col gap-3 pr-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{title}</h1>
+            {hideTabs && rightSlot}
           </div>
-          <div className="flex items-center justify-between">
-            <Tabs value={view} onValueChange={onViewChange}>
-              <TabsList
-                className="flex gap-2 bg-gray-100 rounded-lg border border-gray-300 p-1 w-fit shadow-sm"
-              >
-                {tabs.map(tab => (
-                  <TabsTrigger
-                    key={tab.key}
-                    value={tab.key}
-                    className="data-[state=active]:bg-[#0d1c3d] data-[state=active]:text-white data-[state=active]:shadow data-[state=active]:border data-[state=active]:border-gray-300 data-[state=active]:border-b-white data-[state=active]:z-10 px-4 py-1 rounded-md text-sm font-medium text-gray-600 transition-colors"
+          {!hideTabs && (
+            <div className="flex items-center justify-between">
+              {tabs && tabs.length > 0 && view && onViewChange && (
+                <Tabs value={view} onValueChange={onViewChange}>
+                  <TabsList
+                    className="flex gap-2 bg-gray-100 rounded-lg border border-gray-300 p-1 w-fit shadow-sm"
                   >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-            {rightSlot}
-          </div>
+                    {tabs.map(tab => (
+                      <TabsTrigger
+                        key={tab.key}
+                        value={tab.key}
+                        className="data-[state=active]:bg-[#0d1c3d] data-[state=active]:text-white data-[state=active]:shadow data-[state=active]:border data-[state=active]:border-gray-300 data-[state=active]:border-b-white data-[state=active]:z-10 px-4 py-1 rounded-md text-sm font-medium text-gray-600 transition-colors"
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              )}
+              {rightSlot}
+            </div>
+          )}
           <div style={{ marginBottom: 4 }} />
         </div>
         <Separator />

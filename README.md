@@ -224,15 +224,44 @@ Front/big-statistics-dashboard/
 - Node.js 18+
 - SQL Server с ODBC Driver 18
 - Git
+- PowerShell 5.1+ (встроен в Windows)
 
-### Backend
+### 🎯 Запуск через PowerShell (Рекомендуется!)
+
+#### Development режим (с hot-reload):
+```powershell
+# Запустить ВСЁ одной командой
+.\start_all.ps1
+
+# ИЛИ запускать отдельно:
+.\start_backend.ps1   # Только Backend
+.\start_frontend.ps1  # Только Frontend
+```
+
+#### Production режим:
+```powershell
+# Собрать фронт и запустить production сервер
+.\start_production.ps1
+```
+
+**📖 Полная документация:** [POWERSHELL_START_GUIDE.md](POWERSHELL_START_GUIDE.md)
+
+---
+
+### 🔧 Ручной запуск (альтернатива)
+
+#### Backend
 ```bash
 # Клонирование репозитория
 git clone <repository-url>
 cd BIG_STATISTICS
 
+# Создание виртуального окружения
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
 # Установка зависимостей
-cd Back
 pip install -r requirements.txt
 
 # Настройка переменных окружения
@@ -240,10 +269,10 @@ cp .env.example .env
 # Отредактируйте .env файл с вашими настройками БД
 
 # Запуск сервера
-python Run_Server.py
+python Back/Run_Server.py
 ```
 
-### Frontend
+#### Frontend
 ```bash
 # Переход в папку фронтенда
 cd Front/big-statistics-dashboard
@@ -253,6 +282,9 @@ npm install
 
 # Запуск dev-сервера
 npm run dev
+
+# ИЛИ сборка для продакшена
+npm run build
 ```
 
 ## ⚙️ Конфигурация

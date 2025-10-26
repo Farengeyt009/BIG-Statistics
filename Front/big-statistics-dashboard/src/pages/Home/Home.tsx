@@ -43,18 +43,32 @@ const Home: React.FC = () => {
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative">
             <span
-              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shadow"
-              aria-label="in-progress"
-              title="In progress"
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center shadow"
+              aria-label="suspended"
+              title="Приостановлена"
             >
-              ↻
+              ✗
             </span>
             <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">Planning</h3>
             <p className="text-gray-600">15 October</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mt-6">
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow relative">
+            <span
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center shadow"
+              aria-label="completed"
+              title="Completed"
+            >
+              ✓
+            </span>
+            <span
+              className="absolute -top-2 left-5 w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shadow"
+              aria-label="in-progress"
+              title="In progress"
+            >
+              ↻
+            </span>
             <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">HR & Work Processes</h3>
             <p className="text-gray-600">15 November</p>
           </div>

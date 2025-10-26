@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Avatar } from './components/ui/Avatar';
 import { useProjectMembers } from './hooks/useProjectMembers';
 import { CustomFieldsManager } from './components/CustomFieldsManager';
@@ -6,15 +7,18 @@ import { DefaultAssigneesSettings } from './components/DefaultAssigneesSettings'
 import { WorkflowEditor } from './components/WorkflowEditor';
 import { GeneralSettings } from './components/GeneralSettings';
 import { useNavigate } from 'react-router-dom';
+import TaskManagerTranslation from './TaskManagerTranslation.json';
 
 interface ProjectSettingsPageProps {
   projectId: number;
   userRole: string;
   onClose: () => void;
   onProjectDeleted?: () => void;
+  onSettingsChange?: () => void;
 }
 
-export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projectId, userRole, onClose, onProjectDeleted }) => {
+export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projectId, userRole, onClose, onProjectDeleted, onSettingsChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [activeTab, setActiveTab] = useState<'general' | 'members' | 'workflow' | 'fields' | 'assignees'>('members');
   const { members, allUsers, loading, addMember, updateMemberRole, removeMember } = useProjectMembers(projectId);
   const [showAddMember, setShowAddMember] = useState(false);
@@ -24,11 +28,19 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [editingRoleId, setEditingRoleId] = useState<number | null>(null);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const roleLabels: Record<string, string> = {
-    owner: 'Владелец',
-    admin: 'Администратор',
-    member: 'Участник',
-    viewer: 'Наблюдатель',
+    owner: t('projectSettingsOwner'),
+    admin: t('projectSettingsAdmin'),
+    member: t('projectSettingsMember'),
+    viewer: t('projectSettingsViewer'),
   };
 
   const roleColors: Record<string, string> = {
@@ -43,7 +55,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
       <div className="bg-white rounded-lg w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">Настройки проекта</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('projectSettingsTitle')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -63,7 +75,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              Общее
+              {t('projectSettingsGeneral')}
             </button>
             <button
               onClick={() => setActiveTab('members')}
@@ -73,7 +85,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              Участники ({members.length})
+              {t('projectSettingsMembers')} ({members.length})
             </button>
             <button
               onClick={() => setActiveTab('workflow')}
@@ -83,7 +95,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              Воркфлоу
+              {t('projectSettingsWorkflow')}
             </button>
             <button
               onClick={() => setActiveTab('fields')}
@@ -93,7 +105,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              Кастомные поля
+              {t('projectSettingsCustomFields')}
             </button>
             <button
               onClick={() => setActiveTab('assignees')}
@@ -103,7 +115,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
-              Исполнители
+              {t('projectSettingsAssignees')}
             </button>
           </div>
         </div>
@@ -113,12 +125,12 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
           {activeTab === 'members' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Участники проекта</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('projectSettingsProjectMembers')}</h3>
                 <button
                   onClick={() => setShowAddMember(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                 >
-                  + Добавить участника
+                  + {t('projectSettingsAddMember')}
                 </button>
               </div>
 
@@ -128,13 +140,13 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   type="text"
                   value={memberSearchQuery}
                   onChange={(e) => setMemberSearchQuery(e.target.value)}
-                  placeholder="Поиск участника..."
+                  placeholder={t('projectSettingsSearchMember')}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
 
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Загрузка...</div>
+                <div className="text-center py-8 text-gray-500">{t('projectSettingsLoading')}</div>
               ) : (
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {members
@@ -179,9 +191,9 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                               className="px-2 py-1 border border-gray-200 rounded text-xs"
                               autoFocus
                             >
-                              <option value="viewer">Наблюдатель</option>
-                              <option value="member">Участник</option>
-                              <option value="admin">Администратор</option>
+                              <option value="viewer">{t('projectSettingsViewer')}</option>
+                              <option value="member">{t('projectSettingsMember')}</option>
+                              <option value="admin">{t('projectSettingsAdmin')}</option>
                             </select>
                             <button
                               onClick={() => setEditingRoleId(null)}
@@ -197,7 +209,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
                               roleColors[member.role] || roleColors.viewer
                             } ${member.role !== 'owner' ? 'hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
-                            title={member.role !== 'owner' ? 'Кликните чтобы изменить роль' : ''}
+                            title={member.role !== 'owner' ? t('projectSettingsClickToChangeRole') : ''}
                           >
                             {roleLabels[member.role] || member.role}
                           </button>
@@ -206,12 +218,12 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                         {member.role !== 'owner' && (
                           <button
                             onClick={() => {
-                              if (confirm(`Удалить участника ${member.full_name || member.username}?`)) {
+                              if (confirm(`${t('projectSettingsConfirmRemoveMember')} ${member.full_name || member.username}?`)) {
                                 removeMember(member.user_id);
                               }
                             }}
                             className="text-gray-400 hover:text-red-600 transition-colors"
-                            title="Удалить участника"
+                            title={t('projectSettingsRemoveMember')}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -240,7 +252,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
           )}
 
           {activeTab === 'workflow' && (
-            <WorkflowEditor projectId={projectId} />
+            <WorkflowEditor projectId={projectId} onStatusChange={onSettingsChange} />
           )}
 
           {activeTab === 'fields' && (
@@ -258,7 +270,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
             onClick={onClose}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Закрыть
+            {t('projectSettingsClose')}
           </button>
         </div>
       </div>
@@ -267,18 +279,18 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
       {showAddMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-xl font-semibold mb-4">Добавить участника</h3>
+            <h3 className="text-xl font-semibold mb-4">{t('projectSettingsAddMemberTitle')}</h3>
 
             {/* Поиск пользователя */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Поиск пользователя
+                {t('projectSettingsSearchUser')}
               </label>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Начните вводить имя..."
+                placeholder={t('projectSettingsStartTyping')}
                 className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 mb-2"
               />
               
@@ -321,7 +333,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                   ))}
                 {allUsers.filter((user) => !members.some((m) => m.user_id === user.user_id)).length === 0 && (
                   <div className="p-4 text-center text-sm text-gray-500">
-                    Все пользователи уже добавлены
+                    {t('projectSettingsAllUsersAdded')}
                   </div>
                 )}
               </div>
@@ -330,16 +342,16 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
             {/* Выбор роли */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Роль
+                {t('projectSettingsRole')}
               </label>
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500"
               >
-                <option value="viewer">Наблюдатель</option>
-                <option value="member">Участник</option>
-                <option value="admin">Администратор</option>
+                <option value="viewer">{t('projectSettingsViewer')}</option>
+                <option value="member">{t('projectSettingsMember')}</option>
+                <option value="admin">{t('projectSettingsAdmin')}</option>
               </select>
             </div>
 
@@ -354,12 +366,12 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
               >
-                Отмена
+                {t('projectSettingsCancel')}
               </button>
               <button
                 onClick={async () => {
                   if (!selectedUserId) {
-                    alert('Выберите пользователя');
+                    alert(t('projectSettingsSelectUser'));
                     return;
                   }
                   const success = await addMember(selectedUserId, selectedRole);
@@ -373,7 +385,7 @@ export const ProjectSettingsPage: React.FC<ProjectSettingsPageProps> = ({ projec
                 disabled={!selectedUserId}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                Добавить
+                {t('projectSettingsAdd')}
               </button>
             </div>
           </div>

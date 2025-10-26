@@ -16,6 +16,27 @@ from ..service.audit_service import log_action
 from ..service.skud_service import check_empcode_in_skud
 from ...database.db_connector import get_connection
 
+def get_translated_message(key: str, language: str = 'en') -> str:
+    """
+    Возвращает переведенное сообщение для указанного языка
+    """
+    translations = {
+        'en': {
+            'employeeNotActiveInHR': 'Employee is not active in HR System',
+            'employeeNotFoundInHR': 'Employee code not found in HR System'
+        },
+        'zh': {
+            'employeeNotActiveInHR': '员工在人事系统中未激活',
+            'employeeNotFoundInHR': '在人事系统中未找到员工代码'
+        },
+        'ru': {
+            'employeeNotActiveInHR': 'Сотрудник не активен в системе кадрового учета',
+            'employeeNotFoundInHR': 'Код сотрудника не найден в системе кадрового учета'
+        }
+    }
+    
+    return translations.get(language, translations['en']).get(key, key)
+
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
@@ -395,6 +416,7 @@ def check_empcode():
     try:
         data = request.get_json()
         empcode = data.get('empcode')
+        language = data.get('language', 'en')  # По умолчанию английский
         
         if not empcode:
             return jsonify({"success": False, "error": "empcode is required"}), 400
@@ -426,7 +448,7 @@ def check_empcode():
             if not skud_data.get('isactive'):
                 return jsonify({
                     "success": False,
-                    "error": "Employee is not active in SKUD"
+                    "error": get_translated_message('employeeNotActiveInHR', language)
                 }), 403
             
             return jsonify({
@@ -442,7 +464,7 @@ def check_empcode():
         else:
             return jsonify({
                 "success": False,
-                "error": "Employee code not found in SKUD"
+                "error": get_translated_message('employeeNotFoundInHR', language)
             }), 404
         
     except Exception as e:

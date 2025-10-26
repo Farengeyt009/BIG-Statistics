@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AssigneeSelector } from './AssigneeSelector';
 import { useProjectMembers } from '../hooks/useProjectMembers';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface GeneralSettingsProps {
   projectId: number;
@@ -11,6 +13,7 @@ interface GeneralSettingsProps {
 const API_BASE = '';
 
 export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, userRole, onProjectDeleted }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [ownerId, setOwnerId] = useState<number | null>(null);
@@ -18,6 +21,14 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { members } = useProjectMembers(projectId);
+
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
 
   const getToken = () => localStorage.getItem('authToken');
 
@@ -64,13 +75,13 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
 
       const data = await response.json();
       if (data.success) {
-        alert('Настройки сохранены');
+        alert(t('generalSettingsSettingsSaved'));
       } else {
-        alert(data.error || 'Ошибка сохранения');
+        alert(data.error || t('generalSettingsSaveError'));
       }
     } catch (err) {
       console.error('Ошибка:', err);
-      alert('Ошибка сохранения');
+      alert(t('generalSettingsSaveError'));
     } finally {
       setIsSaving(false);
     }
@@ -79,7 +90,7 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
   const handleTransferOwnership = async (newOwnerId: number | null) => {
     if (!newOwnerId) return;
 
-    if (!confirm('Передать права владельца? Вы потеряете полный контроль над проектом.')) {
+    if (!confirm(t('generalSettingsTransferConfirm'))) {
       return;
     }
 
@@ -96,23 +107,23 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
 
       const data = await response.json();
       if (data.success) {
-        alert('Права владельца переданы');
+        alert(t('generalSettingsTransferSuccess'));
         window.location.reload();
       } else {
-        alert(data.error || 'Ошибка передачи прав');
+        alert(data.error || t('generalSettingsTransferError'));
       }
     } catch (err) {
       console.error('Ошибка:', err);
-      alert('Ошибка передачи прав');
+      alert(t('generalSettingsTransferError'));
     }
   };
 
   const handleDeleteProject = async () => {
-    if (!confirm('Удалить проект? Все задачи, комментарии и файлы будут потеряны безвозвратно!')) {
+    if (!confirm(t('generalSettingsDeleteConfirm'))) {
       return;
     }
 
-    if (!confirm('ЭТО НЕОБРАТИМО! Вы точно уверены?')) {
+    if (!confirm(t('generalSettingsDeleteConfirmFinal'))) {
       return;
     }
 
@@ -127,16 +138,16 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
       if (data.success) {
         onProjectDeleted();
       } else {
-        alert(data.error || 'Ошибка удаления');
+        alert(data.error || t('generalSettingsDeleteError'));
       }
     } catch (err) {
       console.error('Ошибка:', err);
-      alert('Ошибка удаления проекта');
+      alert(t('generalSettingsDeleteProjectError'));
     }
   };
 
   if (loading) {
-    return <div className="text-center py-8">Загрузка...</div>;
+    return <div className="text-center py-8">{t('generalSettingsLoading')}</div>;
   }
 
   return (
@@ -144,7 +155,7 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
       {/* Название */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Название проекта
+          {t('generalSettingsProjectName')}
         </label>
         <input
           type="text"
@@ -157,7 +168,7 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
       {/* Описание */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Описание
+          {t('generalSettingsDescription')}
         </label>
         <textarea
           value={projectDescription}
@@ -174,21 +185,21 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
           disabled={isSaving}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSaving ? 'Сохранение...' : 'Сохранить изменения'}
+          {isSaving ? t('generalSettingsSaving') : t('generalSettingsSaveChanges')}
         </button>
       </div>
 
       {/* Владелец (только для owner) */}
       {userRole === 'owner' && (
         <div className="pt-6 border-t">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Владелец проекта</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('generalSettingsProjectOwner')}</h3>
           <p className="text-sm text-gray-600 mb-3">
-            Текущий владелец: <span className="font-medium">{ownerName}</span>
+            {t('generalSettingsCurrentOwner')} <span className="font-medium">{ownerName}</span>
           </p>
           
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Передать права новому владельцу:
+              {t('generalSettingsTransferRights')}
             </label>
             <AssigneeSelector
               projectId={projectId}
@@ -198,7 +209,7 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
             />
           </div>
           <p className="text-xs text-yellow-600 bg-yellow-50 p-3 rounded">
-            ⚠️ После передачи прав вы станете администратором проекта
+            ⚠️ {t('generalSettingsTransferWarning')}
           </p>
         </div>
       )}
@@ -206,17 +217,17 @@ export const GeneralSettings: React.FC<GeneralSettingsProps> = ({ projectId, use
       {/* Опасная зона (только для owner) */}
       {userRole === 'owner' && (
         <div className="pt-6 border-t border-red-200">
-          <h3 className="text-lg font-semibold text-red-600 mb-4">Опасная зона</h3>
+          <h3 className="text-lg font-semibold text-red-600 mb-4">{t('generalSettingsDangerZone')}</h3>
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Удалить проект</h4>
+            <h4 className="font-medium text-gray-900 mb-2">{t('generalSettingsDeleteProject')}</h4>
             <p className="text-sm text-gray-600 mb-3">
-              Удаление проекта безвозвратно. Все задачи, комментарии, файлы и история будут потеряны.
+              {t('generalSettingsDeleteWarning')}
             </p>
             <button
               onClick={handleDeleteProject}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
-              Удалить проект
+              {t('generalSettingsDeleteButton')}
             </button>
           </div>
         </div>

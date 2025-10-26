@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import ForgotPasswordBanner from "./ForgotPasswordBanner";
 
 const LoginForm: React.FC = () => {
-  const { t } = useTranslation('loginPage');
+  const { t, i18n } = useTranslation('loginPage');
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +61,10 @@ const LoginForm: React.FC = () => {
         const checkResponse = await fetch('/api/auth/check-empcode', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ empcode: username })
+          body: JSON.stringify({ 
+            empcode: username,
+            language: i18n.language 
+          })
         });
         
         const checkData = await checkResponse.json();

@@ -27,6 +27,7 @@ export default function Production() {
   const [loading, setLoading]               = useState(false);
   const [hoveredWorkShop, setHoveredWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
   const [defaultWorkShop, setDefaultWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
+  const [pinnedWorkShop, setPinnedWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
 
   /** -------------------- обработка данных из table4 totals -------------------- */
   const processTable4Data = useCallback((table4Data: any) => {
@@ -105,10 +106,14 @@ export default function Production() {
   }, [translateWorkShop]);
 
   /** -------------------- API‑запрос -------------------- */
-  const fetchProductionData = useCallback(async (date: Date | null) => {
+  const fetchProductionData = useCallback(async (date: Date | null, silent: boolean = false) => {
     if (!date) return;
 
-    setLoading(true);
+    console.log(`📡 Fetching Production data (silent: ${silent})`);
+
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       // Форматируем дату в локальном часовом поясе
       const year = date.getFullYear();
@@ -130,17 +135,23 @@ export default function Production() {
       // Сбрасываем состояния при загрузке новых данных
       setHoveredWorkShop(null);
       setDefaultWorkShop(null);
+      setPinnedWorkShop(null);
     } catch (err) {
       console.error('Ошибка загрузки данных:', err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
+      console.log('✅ Production data fetched successfully');
     }
   }, []);
 
   /** -------------------- подгружаем при смене даты -------------------- */
   useEffect(() => {
+    console.log('📅 Date changed (Production), fetching data...', { selectedDate });
     fetchProductionData(selectedDate);
-  }, [selectedDate, fetchProductionData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]); // Убрали fetchProductionData из зависимостей
 
   /** -------------------- верстка -------------------- */
   
@@ -153,7 +164,9 @@ export default function Production() {
       setHoveredWorkShop,
       workShopRows,
       selectedDate,
-      productionData
+      productionData,
+      pinnedWorkShop,
+      setPinnedWorkShop
     }}>
       <AutoDashboard>
         <div className="container">
@@ -207,6 +220,19 @@ export default function Production() {
                 />
               );
             }
+            // Для "Rework" используем данные из rework_tasks_count
+            if (kpi.label === "Rework" && productionData.rework_tasks_count !== undefined) {
+              const reworkCount = productionData.rework_tasks_count || 0;
+              return (
+                <MetricCard
+                  key={kpi.label}
+                  label={kpi.label}
+                  value={`${reworkCount}`}
+                  changePercent={0}
+                  isPositiveMetric={false}
+                />
+              );
+            }
             // Для остальных карточек используем статические данные
             return (
               <MetricCard
@@ -256,11 +282,30 @@ export default function Production() {
             item.completed,
           ])}
           onRowHover={(workShop, workCenter) => {
-            setHoveredWorkShop({ workShop, workCenter });
+            // Если строка закреплена, не реагируем на hover
+            if (!pinnedWorkShop) {
+              setHoveredWorkShop({ workShop, workCenter });
+            }
           }}
           onRowLeave={() => {
-            setHoveredWorkShop(null);
+            // Если строка закреплена, не сбрасываем при уходе курсора
+            if (!pinnedWorkShop) {
+              setHoveredWorkShop(null);
+            }
           }}
+          onRowClick={(workShop, workCenter) => {
+            // Переключаем закрепление строки
+            if (pinnedWorkShop?.workShop === workShop && pinnedWorkShop?.workCenter === workCenter) {
+              // Если кликнули на уже закрепленную строку - открепляем
+              setPinnedWorkShop(null);
+              setHoveredWorkShop(null);
+            } else {
+              // Закрепляем новую строку
+              setPinnedWorkShop({ workShop, workCenter });
+              setHoveredWorkShop({ workShop, workCenter });
+            }
+          }}
+          pinnedWorkShop={pinnedWorkShop}
         />
 
         {/* Вертикальная линия‑разделитель */}

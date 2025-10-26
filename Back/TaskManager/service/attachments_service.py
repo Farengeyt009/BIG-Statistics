@@ -190,6 +190,57 @@ class AttachmentsService:
         return attachment
     
     @staticmethod
+    def get_project_attachments(project_id: int, user_id: int) -> List[Dict]:
+        """
+        Получить все вложения проекта
+        """
+        # Проверяем доступ к проекту
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 1 
+            FROM Task_Manager.project_members pm
+            WHERE pm.project_id = ? AND pm.user_id = ?
+        """, (project_id, user_id))
+        
+        if not cursor.fetchone():
+            cursor.close()
+            conn.close()
+            raise PermissionError("Нет доступа к проекту")
+        
+        # Получаем все вложения проекта
+        query = """
+            SELECT 
+                a.id,
+                a.task_id,
+                a.file_name,
+                a.file_path,
+                a.file_size,
+                a.mime_type,
+                a.uploaded_by,
+                u.Username as uploaded_by_name,
+                a.uploaded_at,
+                t.title as task_title,
+                t.id as task_id,
+                t.created_at as task_created_at
+            FROM Task_Manager.task_attachments a
+            INNER JOIN Task_Manager.tasks t ON a.task_id = t.id
+            INNER JOIN Users.users u ON a.uploaded_by = u.UserID
+            WHERE t.project_id = ?
+            ORDER BY a.uploaded_at DESC
+        """
+        
+        cursor.execute(query, (project_id,))
+        columns = [column[0] for column in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        cursor.close()
+        conn.close()
+        
+        return results
+    
+    @staticmethod
     def delete_attachment(attachment_id: int, user_id: int) -> bool:
         """
         Удалить вложение (автор или admin проекта)

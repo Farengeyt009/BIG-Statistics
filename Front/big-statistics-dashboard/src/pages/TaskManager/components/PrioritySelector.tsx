@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface PrioritySelectorProps {
   priority: string;
@@ -14,10 +16,25 @@ const priorities = [
 ];
 
 export const PrioritySelector: React.FC<PrioritySelectorProps> = ({ priority, taskId, onUpdate }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const currentPriority = priorities.find((p) => p.value === priority) || priorities[1];
+
+  // Function to get translated priority label
+  const getPriorityLabel = (priorityValue: string) => {
+    const priorityKey = `priority${priorityValue.charAt(0).toUpperCase() + priorityValue.slice(1)}`;
+    return t ? t(priorityKey) : priorities.find(p => p.value === priorityValue)?.label || priorityValue;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,7 +65,7 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({ priority, ta
           setIsOpen(!isOpen);
         }}
         className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
-        title={currentPriority.label}
+        title={getPriorityLabel(currentPriority.value)}
       >
         <span
           className="text-sm font-medium"
@@ -74,7 +91,7 @@ export const PrioritySelector: React.FC<PrioritySelectorProps> = ({ priority, ta
               <span style={{ color: p.color }} className="font-medium">
                 {p.icon}
               </span>
-              <span className="text-gray-900">{p.label}</span>
+              <span className="text-gray-900">{getPriorityLabel(p.value)}</span>
             </button>
           ))}
         </div>

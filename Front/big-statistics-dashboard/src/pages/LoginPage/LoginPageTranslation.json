@@ -44,7 +44,9 @@
     "registrationSuccess": "Registration successful! Welcome, {{username}}. Please login with your credentials.",
     "enterUsername": "Enter username",
     "enterPassword": "Enter password",
-    "enterEmail": "your@email.com"
+    "enterEmail": "your@email.com",
+    "employeeNotActiveInHR": "Employee is not active in HR System",
+    "employeeNotFoundInHR": "Employee code not found in HR System"
   },
   "zh": {
     "loginButton": "登录",
@@ -91,7 +93,9 @@
     "registrationSuccess": "注册成功！欢迎，{{username}}。请使用您的凭据登录。",
     "enterUsername": "输入用户名",
     "enterPassword": "输入密码",
-    "enterEmail": "your@email.com"
+    "enterEmail": "your@email.com",
+    "employeeNotActiveInHR": "员工在人事系统中未激活",
+    "employeeNotFoundInHR": "在人事系统中未找到员工代码"
   },
   "ru": {
     "loginButton": "Войти",
@@ -138,6 +142,8 @@
     "registrationSuccess": "Регистрация успешна! Добро пожаловать, {{username}}. Пожалуйста, войдите с вашими данными.",
     "enterUsername": "Введите имя пользователя",
     "enterPassword": "Введите пароль",
-    "enterEmail": "your@email.com"
+    "enterEmail": "your@email.com",
+    "employeeNotActiveInHR": "Сотрудник не активен в системе кадрового учета",
+    "employeeNotFoundInHR": "Код сотрудника не найден в системе кадрового учета"
   }
 } 

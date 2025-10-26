@@ -1,11 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import TV from './tabs/TV';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import TV from './TVTile';
+import { AutoDashboard } from './components/AutoDashboard';
 
 type TileId = 'Tv1' | 'Tv2' | 'Tv3' | 'Tv4';
 
 export const TVWall: React.FC = () => {
   const [expanded, setExpanded] = useState<TileId | null>(null);
   const [tileStatus, setTileStatus] = useState<Record<TileId, 'Working' | 'Downtime' | 'Break' | 'Finished' | null>>({
+    Tv1: null,
+    Tv2: null,
+    Tv3: null,
+    Tv4: null,
+  });
+  
+  // Refs для вызова функций обновления каждой плитки
+  const tileRefs = useRef<Record<TileId, { refresh: () => void } | null>>({
     Tv1: null,
     Tv2: null,
     Tv3: null,
@@ -27,9 +36,23 @@ export const TVWall: React.FC = () => {
   const gridClass = expanded
     ? 'grid grid-cols-1 gap-4'
     : 'grid grid-cols-1 md:grid-cols-2 gap-4';
+  
+  // Callback для авто-обновления всех плиток (стабильный с useCallback)
+  const handleAutoRefresh = useCallback(() => {
+    console.log('🔄 [TVWall] Auto-refresh triggered for all TV tiles');
+    tiles.forEach(tileId => {
+      if (tileRefs.current[tileId]?.refresh) {
+        console.log(`📞 [TVWall] Calling refresh for ${tileId}`);
+        tileRefs.current[tileId]!.refresh();
+      } else {
+        console.warn(`⚠️ [TVWall] No refresh method for ${tileId}`);
+      }
+    });
+  }, []); // Пустой массив зависимостей - callback стабилен
 
   return (
-    <div className={gridClass}>
+    <AutoDashboard onAutoRefresh={handleAutoRefresh}>
+      <div className={gridClass}>
       {tiles.map((id) => (
         <div
           key={id}
@@ -60,11 +83,17 @@ export const TVWall: React.FC = () => {
               tileId={id}
               isExpanded={!!expanded}
               onStatusChange={(status) => setTileStatus((s) => ({ ...s, [id]: status }))}
+              ref={(instance) => {
+                if (instance) {
+                  tileRefs.current[id] = instance;
+                }
+              }}
             />
           </div>
         </div>
       ))}
-    </div>
+      </div>
+    </AutoDashboard>
   );
 };
 

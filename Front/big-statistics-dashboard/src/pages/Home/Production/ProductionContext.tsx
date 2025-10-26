@@ -1,11 +1,13 @@
 import React, { createContext, useContext } from 'react';
 
 interface ProductionContextType {
-  fetchProductionData: (date: Date | null) => Promise<void>;
+  fetchProductionData: (date: Date | null, silent?: boolean) => Promise<void>;
   setHoveredWorkShop: (data: { workShop: string; workCenter: string } | null) => void;
   workShopRows: any[];
   selectedDate: Date | null;
   productionData: any;
+  pinnedWorkShop: {workShop: string, workCenter: string} | null;
+  setPinnedWorkShop: (data: { workShop: string; workCenter: string } | null) => void;
 }
 
 const ProductionContext = createContext<ProductionContextType | undefined>(undefined);

@@ -17,11 +17,15 @@ interface Props {
   onRowHover?: (workShop: string, workCenter: string) => void;
   /** Callback для mouse leave (необязательный) */
   onRowLeave?: () => void;
+  /** Callback для клика по строке (необязательный) */
+  onRowClick?: (workShop: string, workCenter: string) => void;
+  /** Закрепленная строка (необязательный) */
+  pinnedWorkShop?: {workShop: string, workCenter: string} | null;
   /** Индекс активной строки для авторежима (необязательный) */
   activeRowIndex?: number | null;
 }
 
-export const MiniTable = ({ title, secondTitle, secondTitlePosition, cols, rows, onRowHover, onRowLeave, activeRowIndex }: Props) => {
+export const MiniTable = ({ title, secondTitle, secondTitlePosition, cols, rows, onRowHover, onRowLeave, onRowClick, pinnedWorkShop, activeRowIndex }: Props) => {
   const { isAutoMode, currentRowIndex } = useAutoDashboard();
   
   // Используем activeRowIndex из пропсов или из авторежима
@@ -31,7 +35,14 @@ export const MiniTable = ({ title, secondTitle, secondTitlePosition, cols, rows,
   <div className="flex-1">
     {/* ── Заголовок ───────────────────────────────────────── */}
     <div className="px-6 pb-2 flex">
-      <p className="font-semibold">{title}</p>
+      <div className="flex items-center gap-2">
+        <p className="font-semibold">{title}</p>
+        {onRowClick && (
+          <span className="text-xs text-gray-500 italic">
+            (click to pin)
+          </span>
+        )}
+      </div>
 
       {secondTitle && (
         <div className={`flex items-center ml-auto ${secondTitlePosition || 'mr-28'}`}>
@@ -83,12 +94,17 @@ export const MiniTable = ({ title, secondTitle, secondTitlePosition, cols, rows,
             parseFloat(String(row[completedIndex])) || 0
           );
 
+          // Проверяем, закреплена ли эта строка
+          const isPinned = pinnedWorkShop && 
+                          String(row[0]) === pinnedWorkShop.workShop && 
+                          String(row[1]) === pinnedWorkShop.workCenter;
+
           return (
             <tr 
               key={i} 
               className={`hover:bg-gray-50 relative cursor-pointer ${
                 effectiveActiveRowIndex === i ? 'bg-gray-50' : ''
-              }`}
+              } ${isPinned ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
               onMouseEnter={() => {
                 if (onRowHover && isWorkShopTable) {
                   onRowHover(String(row[0]), String(row[1])); // workShop, workCenter
@@ -97,6 +113,11 @@ export const MiniTable = ({ title, secondTitle, secondTitlePosition, cols, rows,
               onMouseLeave={() => {
                 if (onRowLeave && isWorkShopTable) {
                   onRowLeave();
+                }
+              }}
+              onClick={() => {
+                if (onRowClick && isWorkShopTable) {
+                  onRowClick(String(row[0]), String(row[1])); // workShop, workCenter
                 }
               }}
             >

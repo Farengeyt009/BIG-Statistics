@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AssigneeSelector } from './AssigneeSelector';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface DefaultAssigneesSettingsProps {
   projectId: number;
@@ -8,9 +10,18 @@ interface DefaultAssigneesSettingsProps {
 const API_BASE = '';
 
 export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> = ({ projectId }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [defaultAssignee, setDefaultAssignee] = useState<number | null>(null);
   const [defaultSubtaskAssignee, setDefaultSubtaskAssignee] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
 
   const getToken = () => localStorage.getItem('authToken');
 
@@ -28,7 +39,7 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
           setDefaultSubtaskAssignee(data.data.default_subtask_assignee_id || null);
         }
       } catch (err) {
-        console.error('Ошибка загрузки настроек:', err);
+        console.error(t('validation.loadingError'), err);
       }
     };
     fetchProject();
@@ -52,11 +63,11 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
 
       const data = await response.json();
       if (data.success) {
-        alert('Настройки сохранены');
+        alert(t('defaultAssigneesSettingsSaved'));
       }
     } catch (err) {
-      console.error('Ошибка сохранения:', err);
-      alert('Ошибка сохранения настроек');
+      console.error(t('validation.loadingError'), err);
+      alert(t('validation.saveSettingsError'));
     } finally {
       setIsSaving(false);
     }
@@ -64,16 +75,16 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Исполнители по умолчанию</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('defaultAssigneesTitle')}</h3>
       <p className="text-sm text-gray-600 mb-6">
-        Укажите участников, которые будут автоматически назначаться при создании новых задач
+        {t('defaultAssigneesDescription')}
       </p>
 
       <div className="space-y-6 max-w-md">
         {/* Исполнитель для основных задач */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Исполнитель для новых задач
+            {t('defaultAssigneesMainTask')}
           </label>
           <AssigneeSelector
             projectId={projectId}
@@ -82,14 +93,14 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
             onUpdate={setDefaultAssignee}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Будет автоматически назначаться при создании задачи
+            {t('defaultAssigneesMainTaskDesc')}
           </p>
         </div>
 
         {/* Исполнитель для подзадач */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Исполнитель для новых подзадач
+            {t('defaultAssigneesSubtask')}
           </label>
           <AssigneeSelector
             projectId={projectId}
@@ -98,7 +109,7 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
             onUpdate={setDefaultSubtaskAssignee}
           />
           <p className="text-xs text-gray-500 mt-1">
-            Будет автоматически назначаться при создании подзадачи
+            {t('defaultAssigneesSubtaskDesc')}
           </p>
         </div>
 
@@ -109,7 +120,7 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
             disabled={isSaving}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
           >
-            {isSaving ? 'Сохранение...' : 'Сохранить настройки'}
+            {isSaving ? t('defaultAssigneesSaving') : t('defaultAssigneesSaveSettings')}
           </button>
         </div>
       </div>

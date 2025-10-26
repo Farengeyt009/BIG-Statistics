@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTaskFieldValues } from '../hooks/useCustomFields';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface CustomFieldsRendererProps {
   taskId: number;
@@ -7,8 +9,17 @@ interface CustomFieldsRendererProps {
 }
 
 export const CustomFieldsRenderer: React.FC<CustomFieldsRendererProps> = ({ taskId, onValuesChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const { fieldValues } = useTaskFieldValues(taskId);
   const [localValues, setLocalValues] = useState<Record<number, string>>({});
+
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
 
   useEffect(() => {
     // Инициализируем локальные значения
@@ -121,7 +132,7 @@ export const CustomFieldsRenderer: React.FC<CustomFieldsRendererProps> = ({ task
   return (
     <div className="space-y-4 pt-4 border-t">
       <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-        Дополнительные поля
+        {t('taskModalAdditionalFields')}
       </h4>
       {fieldValues.map((field) => (
         <div key={field.field_id}>

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { Avatar } from './ui/Avatar';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface AssigneeSelectorProps {
   projectId: number;
@@ -15,10 +17,19 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   assigneeName,
   onUpdate,
 }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { members } = useProjectMembers(projectId);
+
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
 
   // Находим участника по ID если имя не передано
   const currentMember = assigneeId 
@@ -68,7 +79,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             <span className="text-gray-900">{displayName}</span>
           </div>
         ) : (
-          <span className="text-gray-500">Не назначен</span>
+          <span className="text-gray-500">{t('assigneeSelectorNotAssigned')}</span>
         )}
       </button>
 
@@ -80,7 +91,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Поиск..."
+              placeholder={t('assigneeSelectorSearch')}
               className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               autoFocus
             />
@@ -104,7 +115,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
-              <span className="text-gray-700">Не назначен</span>
+              <span className="text-gray-700">{t('assigneeSelectorNotAssigned')}</span>
               {!assigneeId && (
                 <svg className="w-4 h-4 ml-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -146,7 +157,7 @@ export const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
             {filteredMembers.length === 0 && (
               <div className="p-4 text-center text-sm text-gray-500">
-                Участники не найдены
+                {t('assigneeSelectorMembersNotFound')}
               </div>
             )}
           </div>

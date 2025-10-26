@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { Settings } from 'lucide-react';
@@ -6,6 +6,7 @@ import Shipment from './Shipment/Shipment';
 import ShipmentFilterModal from './Shipment/ShipmentFilterModal';
 import OrderData from './OrderData/OrderData';
 import { usePageView } from '../../hooks/usePageView';
+import { WarningModal } from '../../components/WarningModal/WarningModal';
 
 export default function Orders() {
     const [activeTab, setActiveTab] = useState("orderdata");
@@ -14,6 +15,7 @@ export default function Orders() {
     // Логируем посещение страницы Orders
     usePageView('orders');
     const [isShipmentFilterOpen, setShipmentFilterOpen] = useState(false);
+    const [showWarningModal, setShowWarningModal] = useState(false);
     const [startDate, setStartDate] = useState<Date | null>(() => {
         const to = new Date();
         const from = new Date();
@@ -23,6 +25,11 @@ export default function Orders() {
     const [endDate, setEndDate] = useState<Date | null>(() => new Date());
     const [reloadToken, setReloadToken] = useState<number>(0);
     const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+
+    // Показываем предупреждение при загрузке страницы
+    useEffect(() => {
+        setShowWarningModal(true);
+    }, []);
 
     return (
         <div className="p-4">
@@ -69,6 +76,12 @@ export default function Orders() {
                     />
                 </>
             )}
+            
+            {/* Модальное окно с предупреждением */}
+            <WarningModal
+                isOpen={showWarningModal}
+                onClose={() => setShowWarningModal(false)}
+            />
         </div>
     );
 }

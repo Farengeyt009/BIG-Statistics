@@ -53,6 +53,11 @@
       "statistics": "Statistics",
       "orderLog": "Order Log"
     },
+    "warningModal": {
+      "title": "Development Notice",
+      "message": "This section is still under development. You can view this page, but the developer is not responsible for data accuracy.",
+      "understood": "Understood"
+    },
     "filtersModal": {
       "title": "Customer Orders filter settings",
       "saveMode": "Save mode",
@@ -177,6 +182,11 @@
       "statistics": "统计",
       "orderLog": "订单记录"
     },
+    "warningModal": {
+      "title": "开发通知",
+      "message": "此部分仍在开发中。您可以查看此页面，但开发人员不负责数据准确性。",
+      "understood": "明白了"
+    },
     "shipmentPlanFact": {
       "YearNum": "年",
       "MonthNum": "月",
@@ -258,6 +268,11 @@
     "orderData": {
       "statistics": "Статистика",
       "orderLog": "Журнал заказов"
+    },
+    "warningModal": {
+      "title": "Уведомление о разработке",
+      "message": "Этот блок еще не готов. Вы можете посмотреть эту страницу, но за корректность данных разработчик ответственности не несет.",
+      "understood": "Понятно"
     }
   }
 } 

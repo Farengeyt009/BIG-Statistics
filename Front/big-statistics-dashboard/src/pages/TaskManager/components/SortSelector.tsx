@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 export type SortOption = 'created' | 'updated' | 'priority' | 'title' | 'dueDate';
 
@@ -16,10 +18,25 @@ const sortOptions = [
 ];
 
 export const SortSelector: React.FC<SortSelectorProps> = ({ value, onChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const currentSort = sortOptions.find((opt) => opt.value === value) || sortOptions[0];
+
+  // Function to get translated sort label
+  const getSortLabel = (sortValue: SortOption) => {
+    const sortKey = `sort${sortValue.charAt(0).toUpperCase() + sortValue.slice(1)}`;
+    return t ? t(sortKey) : sortOptions.find(opt => opt.value === sortValue)?.label || sortValue;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -42,11 +59,11 @@ export const SortSelector: React.FC<SortSelectorProps> = ({ value, onChange }) =
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        title={getSortLabel(currentSort.value)}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
         </svg>
-        {currentSort.label}
       </button>
 
       {isOpen && (
@@ -62,7 +79,7 @@ export const SortSelector: React.FC<SortSelectorProps> = ({ value, onChange }) =
                 option.value === value ? 'bg-gray-50 font-medium' : ''
               }`}
             >
-              <span className="text-gray-900">{option.label}</span>
+              <span className="text-gray-900">{getSortLabel(option.value)}</span>
               {option.value === value && (
                 <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProductionContext } from '../ProductionContext';
 
 interface AutoDashboardProps {
@@ -29,12 +29,49 @@ export const AutoDashboard = ({
     fetchProductionData, 
     setHoveredWorkShop, 
     workShopRows, 
-    selectedDate 
+    selectedDate,
+    pinnedWorkShop,
+    setPinnedWorkShop
   } = useProductionContext();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [currentRowIndex, setCurrentRowIndex] = useState(0);
   const [lastMouseMove, setLastMouseMove] = useState(Date.now());
+  
+  // Используем ref для хранения актуальных значений
+  const isAutoModeRef = useRef(isAutoMode);
+  const pinnedWorkShopRef = useRef(pinnedWorkShop);
+  const lastMouseMoveRef = useRef(lastMouseMove);
+  
+  // Обновляем refs при изменении состояний
+  useEffect(() => {
+    isAutoModeRef.current = isAutoMode;
+  }, [isAutoMode]);
+  
+  useEffect(() => {
+    pinnedWorkShopRef.current = pinnedWorkShop;
+  }, [pinnedWorkShop]);
+  
+  useEffect(() => {
+    lastMouseMoveRef.current = lastMouseMove;
+  }, [lastMouseMove]);
+
+  // Логируем состояние при монтировании
+  useEffect(() => {
+    console.log('🚀 AutoDashboard mounted (Production)', {
+      refreshInterval: `${refreshInterval}ms (${refreshInterval/1000}s)`,
+      rowSwitchInterval: `${rowSwitchInterval}ms (${rowSwitchInterval/1000}s)`,
+      mouseIdleTime: `${mouseIdleTime}ms (${mouseIdleTime/1000}s)`
+    });
+  }, [refreshInterval, rowSwitchInterval, mouseIdleTime]);
+
+  // Когда включается авторежим - снимаем закрепление строки
+  useEffect(() => {
+    if (isAutoMode && pinnedWorkShop) {
+      console.log('🔓 Auto mode activated - unpinning row');
+      setPinnedWorkShop(null);
+    }
+  }, [isAutoMode, pinnedWorkShop, setPinnedWorkShop]);
 
   // Отслеживание движения мыши
   useEffect(() => {
@@ -52,17 +89,30 @@ export const AutoDashboard = ({
 
   // Проверка неактивности мыши
   useEffect(() => {
+    console.log('🔍 Setting up idle time checker (Production)');
+    
     const checkIdleTime = () => {
-      const idleTime = Date.now() - lastMouseMove;
-      if (idleTime >= mouseIdleTime && !isAutoMode) {
+      const idleTime = Date.now() - lastMouseMoveRef.current;
+      const idleSeconds = Math.floor(idleTime / 1000);
+      
+      // Логируем каждые 10 секунд для отладки
+      if (idleSeconds % 10 === 0 && idleSeconds > 0 && idleSeconds <= mouseIdleTime / 1000) {
+        console.log(`⏱️ Idle for ${idleSeconds}s / ${mouseIdleTime/1000}s (autoMode: ${isAutoModeRef.current}, pinned: ${!!pinnedWorkShopRef.current})`);
+      }
+      
+      // Включаем авторежим при простое (даже если строка закреплена - он её открепит)
+      if (idleTime >= mouseIdleTime && !isAutoModeRef.current) {
         console.log('⏰ Mouse idle for 1 minute - starting auto mode');
         setIsAutoMode(true);
       }
     };
     
     const interval = setInterval(checkIdleTime, 1000);
-    return () => clearInterval(interval);
-  }, [lastMouseMove, isAutoMode, mouseIdleTime]);
+    return () => {
+      console.log('🛑 Clearing idle time checker (Production)');
+      clearInterval(interval);
+    };
+  }, [mouseIdleTime]); // Только mouseIdleTime в зависимостях
 
   // Автопереключение строк
   useEffect(() => {
@@ -89,12 +139,28 @@ export const AutoDashboard = ({
   useEffect(() => {
     if (!isAutoMode) return;
     
+    console.log(`✅ Auto mode ACTIVE - setting up refresh interval (Production) (${refreshInterval}ms = ${refreshInterval/1000}s)`);
+    
+    // Немедленное первое обновление при активации авто-режима
+    if (selectedDate) {
+      console.log('📞 Initial auto-refresh on activation (Production)');
+      fetchProductionData(selectedDate, true);
+    }
+    
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing data');
-      fetchProductionData(selectedDate);
+      console.log('🔄 Auto-refreshing data (Production)', { selectedDate });
+      if (selectedDate) {
+        console.log('📞 Calling fetchProductionData (silent mode)');
+        fetchProductionData(selectedDate, true); // silent = true для тихого обновления
+      } else {
+        console.warn('⚠️ selectedDate is null, skipping refresh');
+      }
     }, refreshInterval);
     
-    return () => clearInterval(interval);
+    return () => {
+      console.log('🛑 Clearing auto-refresh interval (Production)');
+      clearInterval(interval);
+    };
   }, [isAutoMode, refreshInterval, selectedDate, fetchProductionData]);
 
   // Сохранение состояния в localStorage

@@ -36,7 +36,7 @@ class TasksService:
         """
         role = TasksService.check_project_access(project_id, user_id)
         if not role:
-            raise PermissionError("Нет доступа к проекту")
+            raise PermissionError("noProjectAccess")
         
         conn = get_connection()
         cursor = conn.cursor()
@@ -81,8 +81,9 @@ class TasksService:
         columns = [column[0] for column in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
-        # Получаем теги для каждой задачи
+        # Получаем теги и дополнительные поля для каждой задачи
         for task in results:
+            # Теги
             cursor.execute("""
                 SELECT t.id, t.name, t.color
                 FROM Task_Manager.tags t
@@ -92,6 +93,22 @@ class TasksService:
             
             tag_columns = [column[0] for column in cursor.description]
             task['tags'] = [dict(zip(tag_columns, row)) for row in cursor.fetchall()]
+            
+            # Дополнительные поля
+            cursor.execute("""
+                SELECT 
+                    cf.id as field_id,
+                    cf.field_name,
+                    cf.field_type,
+                    COALESCE(cfv.value, '') as value
+                FROM Task_Manager.custom_fields cf
+                LEFT JOIN Task_Manager.custom_field_values cfv ON cf.id = cfv.field_id AND cfv.task_id = ?
+                WHERE cf.project_id = ? AND cf.is_active = 1
+                ORDER BY cf.order_index, cf.id
+            """, (task['id'], project_id))
+            
+            field_columns = [column[0] for column in cursor.description]
+            task['custom_fields'] = [dict(zip(field_columns, row)) for row in cursor.fetchall()]
         
         cursor.close()
         conn.close()
@@ -150,7 +167,7 @@ class TasksService:
         if not role:
             cursor.close()
             conn.close()
-            raise PermissionError("Нет доступа к проекту")
+            raise PermissionError("noProjectAccess")
         
         # Получаем теги
         cursor.execute("""
@@ -162,6 +179,22 @@ class TasksService:
         
         tag_columns = [column[0] for column in cursor.description]
         task['tags'] = [dict(zip(tag_columns, row)) for row in cursor.fetchall()]
+        
+        # Получаем дополнительные поля
+        cursor.execute("""
+            SELECT 
+                cf.id as field_id,
+                cf.field_name,
+                cf.field_type,
+                COALESCE(cfv.value, '') as value
+            FROM Task_Manager.custom_fields cf
+            LEFT JOIN Task_Manager.custom_field_values cfv ON cf.id = cfv.field_id AND cfv.task_id = ?
+            WHERE cf.project_id = ? AND cf.is_active = 1
+            ORDER BY cf.order_index, cf.id
+        """, (task_id, task['project_id']))
+        
+        field_columns = [column[0] for column in cursor.description]
+        task['custom_fields'] = [dict(zip(field_columns, row)) for row in cursor.fetchall()]
         
         cursor.close()
         conn.close()
@@ -178,10 +211,10 @@ class TasksService:
         """
         role = TasksService.check_project_access(project_id, user_id)
         if not role:
-            raise PermissionError("Нет доступа к проекту")
+            raise PermissionError("noProjectAccess")
         
         if role == 'viewer':
-            raise PermissionError("Viewer не может создавать задачи")
+            raise PermissionError("viewerCannotCreate")
         
         conn = get_connection()
         cursor = conn.cursor()
@@ -197,7 +230,7 @@ class TasksService:
                 status_id = result[0] if result else None
             
             if status_id is None:
-                raise ValueError("Не найден начальный статус для проекта")
+                raise ValueError("noInitialStatus")
             
             # Если исполнитель не указан, берем из настроек проекта
             if assignee_id is None:
@@ -267,17 +300,17 @@ class TasksService:
             result = cursor.fetchone()
             
             if not result:
-                raise ValueError("Задача не найдена")
+                raise ValueError("taskNotFound")
             
             project_id, old_status_id = result
             
             # Проверяем доступ
             role = TasksService.check_project_access(project_id, user_id)
             if not role:
-                raise PermissionError("Нет доступа к проекту")
+                raise PermissionError("noProjectAccess")
             
             if role == 'viewer':
-                raise PermissionError("Viewer не может редактировать задачи")
+                raise PermissionError("viewerCannotEdit")
             
             # Формируем UPDATE
             updates = []
@@ -325,14 +358,14 @@ class TasksService:
                                 import json
                                 roles_list = json.loads(allowed_roles) if isinstance(allowed_roles, str) else allowed_roles
                                 if role not in roles_list:
-                                    raise PermissionError(f"У вас нет прав для этого перехода (требуется роль: {', '.join(roles_list)})")
+                                    raise PermissionError(f"insufficientRole:{','.join(roles_list)}")
                         elif permission_type == 'users':
                             # Проверка по конкретным пользователям
                             if allowed_users:
                                 import json
                                 users_list = json.loads(allowed_users) if isinstance(allowed_users, str) else allowed_users
                                 if user_id not in users_list:
-                                    raise PermissionError("У вас нет прав для этого перехода (только определенные пользователи)")
+                                    raise PermissionError("insufficientUser")
                         
                         # Проверка условий перехода
                         if requires_attachment:
@@ -342,7 +375,7 @@ class TasksService:
                             """, (task_id,))
                             attachment_count = cursor.fetchone()[0]
                             if attachment_count == 0:
-                                raise PermissionError("Для этого перехода требуется загрузить хотя бы один файл")
+                                raise PermissionError("uploadFileRequired")
                         
                         # Проверка согласований (получаем из transition)
                         cursor.execute("""
@@ -371,13 +404,13 @@ class TasksService:
                                     approved_from_pool = [u for u in approved_users if u in required_users]
                                     
                                     if len(approved_from_pool) < req_count:
-                                        raise PermissionError(f"Требуется {req_count} согласований от указанных пользователей. Получено: {len(approved_from_pool)} из {req_count}")
+                                        raise PermissionError(f"insufficientApprovals:{req_count}:{len(approved_from_pool)}")
                                 else:
                                     # Нет списка - считаем все согласования
                                     if len(approved_users) < req_count:
-                                        raise PermissionError(f"Требуется {req_count} согласований, получено {len(approved_users)}")
+                                        raise PermissionError(f"insufficientApprovals:{req_count}:{len(approved_users)}")
                     else:
-                        raise PermissionError("Переход между этими статусами не разрешен")
+                        raise PermissionError("transitionNotAllowed")
                 
                 # Проверяем является ли новый статус финальным
                 cursor.execute("""
@@ -466,17 +499,17 @@ class TasksService:
             result = cursor.fetchone()
             
             if not result:
-                raise ValueError("Задача не найдена")
+                raise ValueError("taskNotFound")
             
             project_id = result[0]
             
             # Проверяем доступ
             role = TasksService.check_project_access(project_id, user_id)
             if not role:
-                raise PermissionError("Нет доступа к проекту")
+                raise PermissionError("noProjectAccess")
             
             if role not in ('owner', 'admin'):
-                raise PermissionError("Только owner или admin могут удалять задачи")
+                raise PermissionError("onlyOwnerAdminCanDelete")
             
             # СНАЧАЛА удаляем все подзадачи
             cursor.execute("""
@@ -505,7 +538,7 @@ class TasksService:
         """
         role = TasksService.check_project_access(project_id, user_id)
         if not role:
-            raise PermissionError("Нет доступа к проекту")
+            raise PermissionError("noProjectAccess")
         
         conn = get_connection()
         cursor = conn.cursor()

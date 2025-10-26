@@ -99,6 +99,22 @@ def upload_attachment(task_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@bp.route("/project/<int:project_id>", methods=["GET"])
+def get_project_attachments(project_id):
+    """Получить все вложения проекта"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+        
+        attachments = AttachmentsService.get_project_attachments(project_id, user_data["user_id"])
+        return jsonify({"success": True, "data": attachments}), 200
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @bp.route("/<int:attachment_id>/download", methods=["GET"])
 def download_attachment(attachment_id):
     """Скачать файл"""

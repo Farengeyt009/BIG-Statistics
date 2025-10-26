@@ -32,6 +32,30 @@ def _fetch_multiple_results(conn, sql: str, *params) -> List[List[Dict[str, Any]
     return results
 
 
+def get_rework_tasks_count() -> int:
+    """
+    Возвращает количество открытых основных задач из проекта Rework/返工 (project_id=1)
+    Открытыми считаются задачи, статус которых НЕ является финальным (is_final=0)
+    Учитываются только основные задачи (parent_task_id IS NULL), подзадачи не учитываются
+    
+    Returns:
+        Количество открытых основных задач
+    """
+    with get_connection() as conn:
+        cur = conn.cursor()
+        sql = """
+            SELECT COUNT(*) as open_tasks_count
+            FROM Task_Manager.tasks t
+            INNER JOIN Task_Manager.workflow_statuses ws ON t.status_id = ws.id
+            WHERE t.project_id = 1
+              AND t.parent_task_id IS NULL
+              AND (ws.is_final = 0 OR ws.is_final IS NULL)
+        """
+        cur.execute(sql)
+        result = cur.fetchone()
+        return result[0] if result else 0
+
+
 def get_production_data(selected_date: date = None) -> Dict[str, Any]:
     """
     Возвращает данные из Views_For_Plan.DailyPlan_CustomWS и Month_PlanFact_Summary
@@ -248,6 +272,9 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
     format_dates_in_data(table1_data)
     format_dates_in_data(table4_details)
     
+    # Получаем количество открытых задач Rework
+    rework_count = get_rework_tasks_count()
+    
     return {
         "table1": table1_data,
         "table2": table2_data[0] if table2_data else {},  # Берем первую (и единственную) запись
@@ -256,5 +283,6 @@ def get_production_data(selected_date: date = None) -> Dict[str, Any]:
             "details": table4_details,
             "totals": table4_totals
         },
+        "rework_tasks_count": rework_count,
         "selected_date": selected_date.strftime('%d.%m.%Y')
     } 

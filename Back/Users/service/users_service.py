@@ -4,6 +4,7 @@
 
 from typing import Optional, Dict, Any
 from ...database.db_connector import get_connection
+from .skud_service import get_employee_info
 
 
 def update_user_profile(user_id: int, full_name: Optional[str] = None, password: Optional[str] = None) -> Dict[str, Any]:
@@ -74,7 +75,7 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         Данные пользователя или None
     """
     sql = """
-        SELECT UserID, Username, FullName, Email, IsAdmin, CreatedAt, LastLogin
+        SELECT UserID, Username, FullName, Email, IsAdmin, CreatedAt, LastLogin, empcode
         FROM Users.Users
         WHERE UserID = ?
     """
@@ -87,7 +88,8 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
         if not row:
             return None
         
-        return {
+        # Получаем базовые данные пользователя
+        user_data = {
             'user_id': row.UserID,
             'username': row.Username,
             'full_name': row.FullName,
@@ -96,4 +98,26 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
             'created_at': row.CreatedAt.isoformat() if row.CreatedAt else None,
             'last_login': row.LastLogin.isoformat() if row.LastLogin else None
         }
+        
+        # Получаем дополнительные данные из SKUD если есть empcode
+        if row.empcode:
+            skud_data = get_employee_info(row.empcode)
+            if skud_data:
+                # Формируем строку отдела: deptname2 / deptname3 или только deptname2
+                deptname2 = skud_data.get('deptname2') or ''
+                deptname3 = skud_data.get('deptname3') or ''
+                
+                if deptname2 and deptname3:
+                    department = f"{deptname2}/{deptname3}"
+                elif deptname2:
+                    department = deptname2
+                else:
+                    department = ''
+                
+                user_data.update({
+                    'birthday': skud_data.get('birthday'),
+                    'department': department
+                })
+        
+        return user_data
 

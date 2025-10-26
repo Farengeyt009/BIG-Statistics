@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useStatusTranslation } from '../hooks/useStatusTranslation';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 import { PriorityDropdown } from './PriorityDropdown';
 import { AssigneeSelector } from './AssigneeSelector';
 import { useCustomFields } from '../hooks/useCustomFields';
@@ -20,6 +23,17 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
   onCreate,
 }) => {
+  const { t, i18n } = useTranslation('taskManager');
+  const { translateStatus } = useStatusTranslation();
+  
+  // Load translations for Task Manager
+  useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState(statusId);
@@ -33,7 +47,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const handleCreate = async () => {
     if (!title.trim()) {
-      alert('Введите название задачи');
+      alert(t('validation.enterTaskTitle'));
       return;
     }
 
@@ -45,7 +59,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
     if (emptyRequiredFields.length > 0) {
       alert(
-        `Заполните обязательные поля:\n${emptyRequiredFields.map(f => `• ${f.field_name}`).join('\n')}`
+        t('validation.fillRequiredFields') + '\n' +
+        emptyRequiredFields.map(f => `• ${f.field_name}`).join('\n')
       );
       return;
     }
@@ -107,7 +122,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             value={value}
             onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
             className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder={field.is_required ? 'Обязательное поле' : ''}
+            placeholder={field.is_required ? t('validation.required') : ''}
           />
         );
       case 'number':
@@ -117,7 +132,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             value={value}
             onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
             className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-            placeholder={field.is_required ? 'Обязательное поле' : ''}
+            placeholder={field.is_required ? t('validation.required') : ''}
           />
         );
       case 'date':
@@ -137,7 +152,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
             className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="">Выберите вариант</option>
+            <option value="">{t('taskModalSelectOption')}</option>
             {options.map((option: string, idx: number) => (
               <option key={idx} value={option}>{option}</option>
             ))}
@@ -152,7 +167,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.checked ? 'true' : 'false' }))}
               className="w-4 h-4 text-blue-600 border-gray-300 rounded"
             />
-            <span className="text-sm text-gray-700">Да</span>
+            <span className="text-sm text-gray-700">{t('taskModalYes')}</span>
           </label>
         );
       default:
@@ -169,7 +184,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       <div className="bg-white rounded-lg w-full max-w-6xl h-[85vh] overflow-hidden flex flex-col shadow-xl">
         {/* Заголовок */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Создать задачу</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('taskModalTitle')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             ×
           </button>
@@ -183,14 +198,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Название */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Название *
+                  {t('taskModalTitle')} *
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Введите название задачи"
+                  placeholder={t('taskModalEnterTitle')}
                   autoFocus
                 />
               </div>
@@ -198,19 +213,19 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Описание */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Описание
+                  {t('taskModalDescription')}
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={6}
-                  placeholder="Добавьте описание задачи..."
+                  placeholder={t('taskModalAddDescription')}
                 />
               </div>
 
               <div className="text-sm text-gray-500">
-                После создания задачи вы сможете добавить комментарии, подзадачи и файлы
+                {t('taskModalAfterCreation')}
               </div>
             </div>
           </div>
@@ -221,7 +236,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Статус */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Статус
+                  {t('taskModalStatus')}
                 </label>
                 <select
                   value={selectedStatusId}
@@ -230,7 +245,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 >
                   {statuses.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {translateStatus(s)}
                     </option>
                   ))}
                 </select>
@@ -239,7 +254,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Приоритет */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Приоритет
+                  {t('taskModalPriority')}
                 </label>
                 <PriorityDropdown value={priority} onChange={setPriority} />
               </div>
@@ -247,7 +262,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Срок выполнения */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Срок выполнения
+                  {t('taskModalDueDate')}
                 </label>
                 <input
                   type="date"
@@ -260,7 +275,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {/* Исполнитель */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5 uppercase tracking-wide">
-                  Исполнитель
+                  {t('taskModalAssignee')}
                 </label>
                 <AssigneeSelector
                   projectId={projectId}
@@ -276,7 +291,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {activeFields.length > 0 && (
                 <div className="pt-4 border-t space-y-4">
                   <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    Дополнительные поля
+                    {t('taskModalAdditionalFields')}
                   </h4>
                   {activeFields.map((field) => (
                     <div key={field.id}>
@@ -308,14 +323,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             disabled={isCreating}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors disabled:opacity-50"
           >
-            Отмена
+            {t('taskModalCancel')}
           </button>
           <button
             onClick={handleCreate}
             disabled={isCreating || !title.trim()}
             className="px-6 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isCreating ? 'Создание...' : 'Создать задачу'}
+            {isCreating ? t('taskModalCreating') : t('taskModalCreateTask')}
           </button>
         </div>
       </div>

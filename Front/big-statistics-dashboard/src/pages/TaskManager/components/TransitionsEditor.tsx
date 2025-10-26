@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useProjectMembers } from '../hooks/useProjectMembers';
 import { useTransitions } from '../hooks/useTransitions';
+import { useStatusTranslation } from '../hooks/useStatusTranslation';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface TransitionsEditorProps {
   projectId: number;
@@ -9,6 +12,8 @@ interface TransitionsEditorProps {
 }
 
 export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId, statuses, onSave }) => {
+  const { t, i18n } = useTranslation('taskManager');
+  const { translateStatus } = useStatusTranslation();
   const { members } = useProjectMembers(projectId);
   const { transitions, deleteTransition, fetchTransitions } = useTransitions(projectId);
   const [showModal, setShowModal] = useState(false);
@@ -27,11 +32,19 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
   const [approverSearchQuery, setApproverSearchQuery] = useState('');
   const [autoTransition, setAutoTransition] = useState(false);
 
+  // Load translations for Task Manager
+  React.useEffect(() => {
+    const currentLang = i18n.language;
+    if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(currentLang, 'taskManager', TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
+
   const roles = [
-    { value: 'viewer', label: 'Наблюдатель' },
-    { value: 'member', label: 'Участник' },
-    { value: 'admin', label: 'Администратор' },
-    { value: 'owner', label: 'Владелец' },
+    { value: 'viewer', label: t('transitionsEditorViewer') },
+    { value: 'member', label: t('transitionsEditorMember') },
+    { value: 'admin', label: t('transitionsEditorAdmin') },
+    { value: 'owner', label: t('transitionsEditorOwner') },
   ];
 
   const resetForm = () => {
@@ -95,7 +108,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
 
   const handleSave = async () => {
     if (!fromStatusId || !toStatusId) {
-      alert('Выберите статусы');
+      alert(t('validation.selectStatuses'));
       return;
     }
 
@@ -136,11 +149,11 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
         fetchTransitions();
         onSave();
       } else {
-        alert(data.error || 'Ошибка сохранения');
+        alert(data.error || t('validation.saveError'));
       }
     } catch (err) {
       console.error('Ошибка:', err);
-      alert('Ошибка сохранения перехода');
+      alert(t('validation.saveTransitionError'));
     }
   };
 
@@ -168,16 +181,16 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
     <div className="mt-6 pt-6 border-t">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="font-semibold text-gray-900">Переходы между статусами</h4>
+          <h4 className="font-semibold text-gray-900">{t('transitionsEditorTitle')}</h4>
           <p className="text-sm text-gray-500 mt-1">
-            Настройте кто может переводить задачи из одного статуса в другой
+            {t('transitionsEditorDescription')}
           </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
         >
-          + Добавить переход
+          + {t('transitionsEditorAddTransition')}
         </button>
       </div>
 
@@ -191,12 +204,17 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
             let fullPermissionText = '';
             
             if (permType === 'any') {
-              permissionText = 'Любой участник';
+              permissionText = t('transitionsEditorAnyParticipant');
               fullPermissionText = permissionText;
             } else if (permType === 'roles') {
               const roles = transition.allowed_roles ? JSON.parse(transition.allowed_roles) : [];
               const roleLabels = roles.map((r: string) => {
-                const labels: Record<string, string> = { owner: 'Owner', admin: 'Admin', member: 'Member', viewer: 'Viewer' };
+                const labels: Record<string, string> = { 
+                  owner: t('transitionsEditorOwner'), 
+                  admin: t('transitionsEditorAdmin'), 
+                  member: t('transitionsEditorMember'), 
+                  viewer: t('transitionsEditorViewer') 
+                };
                 return labels[r] || r;
               });
               permissionText = roleLabels.join(', ');
@@ -224,9 +242,11 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
               >
                 <div className="flex items-center gap-3 flex-1">
                   <div className="text-sm flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{transition.from_status_name}</span>
+                    <span className="font-medium text-gray-900">
+                      {translateStatus(statuses.find((s: any) => s.id === transition.from_status_id) || { name: transition.from_status_name, is_system: false })}
+                    </span>
                     {transition.is_bidirectional ? (
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Двунаправленный">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title={t('transitionsEditorBidirectionalTooltip')}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                       </svg>
                     ) : (
@@ -234,7 +254,9 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                     )}
-                    <span className="font-medium text-gray-900">{transition.to_status_name}</span>
+                    <span className="font-medium text-gray-900">
+                      {translateStatus(statuses.find((s: any) => s.id === transition.to_status_id) || { name: transition.to_status_name, is_system: false })}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div 
@@ -244,11 +266,11 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                       {permissionText}
                     </div>
                     {transition.requires_attachment && (
-                      <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded flex items-center gap-1" title="Требуется вложение">
+                      <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded flex items-center gap-1" title={t('transitionsEditorAttachmentTooltip')}>
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                         </svg>
-                        Файл
+                        {t('transitionsEditorFile')}
                       </span>
                     )}
                   </div>
@@ -260,7 +282,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                       setShowModal(true);
                     }}
                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    title="Редактировать"
+                    title={t('transitionsEditorEdit')}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -268,7 +290,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm('Удалить переход?')) {
+                      if (confirm(t('validation.deleteTransitionConfirm'))) {
                         deleteTransition(transition.id);
                       }
                     }}
@@ -285,7 +307,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
         </div>
       ) : (
         <div className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          Переходы не настроены. Добавьте первый переход.
+          {t('transitionsEditorNoTransitions')}
         </div>
       )}
 
@@ -294,21 +316,21 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] backdrop-blur-sm">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-semibold mb-4">
-              {editingTransition ? 'Редактировать переход' : 'Настройка перехода'}
+              {editingTransition ? t('transitionsEditorEditTransition') : t('transitionsEditorConfigureTransition')}
             </h3>
 
             {/* Выбор статусов */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Из статуса *
+                  {t('transitionsEditorFromStatus')} *
                 </label>
                 <select
                   value={fromStatusId || ''}
                   onChange={(e) => setFromStatusId(parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-md"
                 >
-                  <option value="">Выберите</option>
+                  <option value="">{t('transitionsEditorSelect')}</option>
                   {statuses.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -319,14 +341,14 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  В статус *
+                  {t('transitionsEditorToStatus')} *
                 </label>
                 <select
                   value={toStatusId || ''}
                   onChange={(e) => setToStatusId(parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-200 rounded-md"
                 >
-                  <option value="">Выберите</option>
+                  <option value="">{t('transitionsEditorSelect')}</option>
                   {statuses.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -339,7 +361,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
             {/* Тип прав */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Кто может переводить *
+                {t('transitionsEditorWhoCanTransfer')} *
               </label>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
@@ -350,8 +372,8 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Любой участник проекта</div>
-                    <div className="text-xs text-gray-500">Все участники могут переводить</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorAnyMember')}</div>
+                    <div className="text-xs text-gray-500">{t('transitionsEditorAnyMemberDesc')}</div>
                   </div>
                 </label>
 
@@ -363,8 +385,8 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">По ролям</div>
-                    <div className="text-xs text-gray-500">Выбрать роли (owner, admin, member)</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorByRoles')}</div>
+                    <div className="text-xs text-gray-500">{t('transitionsEditorByRolesDesc')}</div>
                   </div>
                 </label>
 
@@ -376,8 +398,8 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Конкретные пользователи</div>
-                    <div className="text-xs text-gray-500">Выбрать конкретных участников</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorSpecificUsers')}</div>
+                    <div className="text-xs text-gray-500">{t('transitionsEditorSpecificUsersDesc')}</div>
                   </div>
                 </label>
               </div>
@@ -387,7 +409,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
             {permissionType === 'roles' && (
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Выберите роли:
+                  {t('transitionsEditorSelectRoles')}
                 </label>
                 <div className="space-y-2">
                   {roles.map((role) => (
@@ -409,14 +431,14 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
             {permissionType === 'users' && (
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Выберите пользователей:
+                  {t('transitionsEditorSelectUsers')}
                 </label>
                 
                 <input
                   type="text"
                   value={userSearchQuery}
                   onChange={(e) => setUserSearchQuery(e.target.value)}
-                  placeholder="Поиск..."
+                  placeholder={t('transitionsEditorSearch')}
                   className="w-full px-3 py-2 border border-gray-200 rounded-md mb-2 text-sm"
                 />
 
@@ -441,7 +463,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                 </div>
 
                 <div className="mt-2 text-sm text-gray-600">
-                  Выбрано: {selectedUsers.length} пользователей
+                  {t('transitionsEditorSelected')} {selectedUsers.length} {t('transitionsEditorUsers')}
                 </div>
               </div>
             )}
@@ -457,9 +479,9 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Двунаправленный переход</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorBidirectional')}</div>
                     <div className="text-xs text-gray-600 mt-0.5">
-                      Разрешить перемещение в обе стороны с одинаковыми правами
+                      {t('transitionsEditorBidirectionalDesc')}
                     </div>
                   </div>
                 </label>
@@ -474,9 +496,9 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4 text-orange-600 border-gray-300 rounded"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Требуется вложение</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorRequiresAttachment')}</div>
                     <div className="text-xs text-gray-600 mt-0.5">
-                      Нельзя перевести задачу без загруженного файла
+                      {t('transitionsEditorRequiresAttachmentDesc')}
                     </div>
                   </div>
                 </label>
@@ -491,9 +513,9 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4 text-purple-600 border-gray-300 rounded"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Требуются согласования</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorRequiresApprovals')}</div>
                     <div className="text-xs text-gray-600 mt-0.5">
-                      Нужно N согласований от указанных пользователей
+                      {t('transitionsEditorRequiresApprovalsDesc')}
                     </div>
                   </div>
                 </label>
@@ -503,7 +525,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     {/* Количество */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Требуется согласований:
+                        {t('transitionsEditorRequiredApprovals')}
                       </label>
                       <input
                         type="number"
@@ -517,13 +539,13 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     {/* Список согласователей */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Кто должен согласовать:
+                        {t('transitionsEditorWhoShouldApprove')}
                       </label>
                       <input
                         type="text"
                         value={approverSearchQuery}
                         onChange={(e) => setApproverSearchQuery(e.target.value)}
-                        placeholder="Поиск..."
+                        placeholder={t('transitionsEditorSearch')}
                         className="w-full px-2 py-1 border border-gray-200 rounded text-sm mb-2"
                       />
                       
@@ -557,7 +579,7 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                           ))}
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
-                        Выбрано: {selectedApprovers.length} пользователей
+                        {t('transitionsEditorSelected')} {selectedApprovers.length} {t('transitionsEditorUsers')}
                       </div>
                     </div>
                   </div>
@@ -573,9 +595,9 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                     className="w-4 h-4 text-indigo-600 border-gray-300 rounded"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Автоперевод при выполнении условий</div>
+                    <div className="font-medium text-gray-900">{t('transitionsEditorAutoTransition')}</div>
                     <div className="text-xs text-gray-600 mt-0.5">
-                      Автоматически переводить задачу когда все условия выполнены
+                      {t('transitionsEditorAutoTransitionDesc')}
                     </div>
                   </div>
                 </label>
@@ -592,14 +614,14 @@ export const TransitionsEditor: React.FC<TransitionsEditorProps> = ({ projectId,
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
               >
-                Отмена
+                {t('transitionsEditorCancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={!fromStatusId || !toStatusId || (permissionType === 'roles' && selectedRoles.length === 0) || (permissionType === 'users' && selectedUsers.length === 0)}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {editingTransition ? 'Сохранить изменения' : 'Сохранить переход'}
+                {editingTransition ? t('transitionsEditorSaveChanges') : t('transitionsEditorSaveTransition')}
               </button>
             </div>
           </div>
