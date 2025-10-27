@@ -81,15 +81,31 @@ order_data_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 
-@app.route('/')
-def index():
-    # Главная страница SPA
-    return send_from_directory(app.static_folder, 'index.html')
+# Список всех маршрутов React Router (SPA страницы)
+SPA_ROUTES = [
+    '/',
+    '/login',
+    '/orders',
+    '/plan',
+    '/production',
+    '/kpi',
+    '/tv',
+    '/task-manager',
+    '/profile',
+    '/admin'
+]
 
+# Регистрируем все SPA маршруты
+for route in SPA_ROUTES:
+    app.add_url_rule(
+        route,
+        endpoint=f'spa_{route.replace("/", "_")}',
+        view_func=lambda: send_from_directory(app.static_folder, 'index.html')
+    )
 
 @app.route('/<path:path>')
 def static_proxy(path):
-    # Если запрашиваемый файл существует в dist — отдаём его
+    # Если запрашиваемый файл существует в dist — отдаём его (CSS, JS, изображения)
     full_path = os.path.join(app.static_folder or '', path)
     if app.static_folder and os.path.exists(full_path):
         return send_from_directory(app.static_folder, path)
