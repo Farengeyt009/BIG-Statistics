@@ -45,7 +45,8 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
       setPreviewInfo(null);
       setLoading(true);
       try {
-        if (shipmentFiltersDraft) {
+        // Для Preview - можем использовать кеш, для Publish - только из БД
+        if (actionMode === 'preview' && shipmentFiltersDraft) {
           if (!ignore) {
             setRules(shipmentFiltersDraft.rules);
             setShowEmpty(shipmentFiltersDraft.showEmpty);
@@ -78,7 +79,7 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
       load();
     }
     return () => { ignore = true; };
-  }, [isOpen]);
+  }, [isOpen, actionMode]);
 
   if (!isOpen) return null;
 

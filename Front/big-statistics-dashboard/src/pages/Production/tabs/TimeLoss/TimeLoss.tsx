@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { ContentLayout } from '../../../../components/Layout';
 import { useTranslation } from 'react-i18next';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import Overview from './Overview';
@@ -26,6 +27,43 @@ const TimeLoss: React.FC = () => {
 
   // Глобальный лоадер показывается пока хотя бы один компонент грузится
   const showGlobalLoader = isOverviewLoading || isTableLoading;
+  
+  // Состояние для отслеживания готовности к показу (после рендеринга)
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (showGlobalLoader) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Очищаем предыдущий таймаут
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    // Ждем следующий кадр рендеринга для гарантии, что DOM обновлен
+    requestAnimationFrame(() => {
+      // Еще один кадр для гарантии, что все размеры рассчитаны
+      requestAnimationFrame(() => {
+        // Небольшая задержка для завершения всех асинхронных операций рендеринга
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [showGlobalLoader]);
   // Инициализация последними 30 днями, включая сегодня
   const today = new Date();
   const start30 = new Date(today);
@@ -114,11 +152,12 @@ const TimeLoss: React.FC = () => {
   }, [selectedWorkShopIds, workshops, t]);
 
   return (
-    <div className="p-2 relative min-h-[70vh]">
-      {/* Глобальный оверлей пока компоненты грузятся */}
-      {showGlobalLoader && (
-        <LoadingSpinner overlay size="xl" />
+    <ContentLayout>
+      {/* Глобальный оверлей пока компоненты грузятся или рендерятся */}
+      {(showGlobalLoader || !isReadyToShow) && (
+        <LoadingSpinner overlay="screen" size="xl" />
       )}
+
       <div className="flex items-center gap-6 mb-3">
         {/* Внутренние вкладки */}
         <div className="flex gap-2">
@@ -263,7 +302,7 @@ const TimeLoss: React.FC = () => {
           isActive={true}
         />
       )}
-    </div>
+    </ContentLayout>
   );
 };
 

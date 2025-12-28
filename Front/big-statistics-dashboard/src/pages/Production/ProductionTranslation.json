@@ -5,6 +5,8 @@
     "chooseWorkshop": "Choose workshop",
     "pageTitle": "Production",
     "overview": "Overview",
+    "workingFlow": "Working Flow",
+    "dashboard": "Analytics Dashboard",
     "details": "Details",
     "table": "Loss Table",
     "dailyStaffing": "Daily Staffing",
@@ -237,7 +239,8 @@
       "focusExit": "Exit focus (Esc)",
       "confirmRefresh": "Are you sure you want to refresh the table? Unsaved data will be lost.",
       "confirmSave": "Confirm saving the document.",
-      "confirmSaveWillDelete": "Some rows will be deleted."
+      "confirmSaveWillDelete": "Some rows will be deleted.",
+      "dateCannotBeAfterTomorrow": "Date cannot be after tomorrow"
     },
     "timeLossOverview": {
       "metric": "Metric",
@@ -277,6 +280,8 @@
     "chooseWorkshop": "选择车间",
     "pageTitle": "生产",
     "overview": "概览",
+    "workingFlow": "工作流程",
+    "dashboard": "分析仪表板",
     "details": "详情",
     "table": "损失表",
     "dailyStaffing": "每日人员",
@@ -525,7 +530,8 @@
       "focusExit": "退出聚焦模式 (Esc)",
       "confirmRefresh": "确定要刷新表格吗？未保存的数据将被清除。",
       "confirmSave": "请确认保存文档。",
-      "confirmSaveWillDelete": "部分行将被删除。"
+      "confirmSaveWillDelete": "部分行将被删除。",
+      "dateCannotBeAfterTomorrow": "日期不能超过明天"
     },
     "timeLossOverview": {
       "metric": "指标",
@@ -565,6 +571,8 @@
     "chooseWorkshop": "Выбрать цех",
     "pageTitle": "Производство",
     "overview": "Обзор",
+    "workingFlow": "Рабочий процесс",
+    "dashboard": "Аналитическая панель",
     "details": "Детали",
     "analytics": "Рабочий календарь",
     "orderTails": "Хвосты заказов",

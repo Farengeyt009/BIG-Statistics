@@ -1,15 +1,27 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageLayout } from '../../components/Layout';
 import { Settings } from 'lucide-react';
 import Shipment from './Shipment/Shipment';
 import ShipmentFilterModal from './Shipment/ShipmentFilterModal';
 import OrderData from './OrderData/OrderData';
+import SalePlan from './SalePlan/SalePlan';
 import { usePageView } from '../../hooks/usePageView';
 import { WarningModal } from '../../components/WarningModal/WarningModal';
 
 export default function Orders() {
-    const [activeTab, setActiveTab] = useState("orderdata");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabFromUrl = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(tabFromUrl || "orderdata");
+    
+    // Обновляем активную вкладку при изменении параметра в URL
+    useEffect(() => {
+        if (tabFromUrl && ['orderdata', 'shipment', 'saleplan'].includes(tabFromUrl)) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [tabFromUrl]);
     const { t } = useTranslation('ordersTranslation');
     
     // Логируем посещение страницы Orders
@@ -26,33 +38,20 @@ export default function Orders() {
     const [reloadToken, setReloadToken] = useState<number>(0);
     const [previewRows, setPreviewRows] = useState<any[] | null>(null);
 
-    // Показываем предупреждение при загрузке страницы
-    useEffect(() => {
-        setShowWarningModal(true);
-    }, []);
+    // Предупреждение убрано с Orders (переместили на KPI и Task Manager)
 
     return (
-        <div className="p-4">
+        <PageLayout>
             <PageHeader
                 title={t('title')}
                 view={activeTab}
                 onViewChange={setActiveTab}
                 tabs={[
                     { key: 'orderdata', label: t('orderDataTab') },
-                    { key: 'shipment', label: t('shipmentTab') }
+                    { key: 'shipment', label: t('shipmentTab') },
+                    { key: 'saleplan', label: 'Sale Plan' }
                 ]}
-                rightSlot={activeTab === 'shipment' ? (
-                    <div className="flex items-center gap-2">
-                        <button
-                            className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 transition flex items-center justify-center"
-                            title={t('ui.settings') as string}
-                            aria-label={t('ui.settings') as string}
-                            onClick={() => setShipmentFilterOpen(true)}
-                        >
-                            <Settings className="w-6 h-6" />
-                        </button>
-                    </div>
-                ) : null}
+                rightSlot={null}
             />
             {activeTab === 'orderdata' && (
                 <OrderData />
@@ -65,6 +64,7 @@ export default function Orders() {
                         onChangeDates={(from, to) => { setStartDate(from); setEndDate(to); }}
                         reloadToken={reloadToken}
                         previewRows={previewRows}
+                        onOpenFilterModal={() => setShipmentFilterOpen(true)}
                     />
                     <ShipmentFilterModal
                         isOpen={isShipmentFilterOpen}
@@ -76,13 +76,17 @@ export default function Orders() {
                     />
                 </>
             )}
+
+            {activeTab === 'saleplan' && (
+                <SalePlan
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChangeDates={(from, to) => { setStartDate(from); setEndDate(to); }}
+                />
+            )}
             
-            {/* Модальное окно с предупреждением */}
-            <WarningModal
-                isOpen={showWarningModal}
-                onClose={() => setShowWarningModal(false)}
-            />
-        </div>
+            {/* Модальное окно с предупреждением убрано */}
+        </PageLayout>
     );
 }
 

@@ -151,7 +151,8 @@ def get_system_statistics():
             'new_users_7days': int,
             'logged_in_today': int,
             'top_active_users': [...],
-            'popular_pages': [...]
+            'popular_pages': [...],
+            'all_users_activity': [...]  # Новое поле
         }
     """
     try:
@@ -232,6 +233,39 @@ def get_system_statistics():
                     'visit_count': row.visit_count
                 })
             
+            # Детальная активность всех пользователей
+            cursor.execute("""
+                SELECT 
+                    u.UserID,
+                    u.Username,
+                    u.FullName,
+                    u.IsAdmin,
+                    u.IsActive,
+                    u.LastLogin,
+                    (SELECT COUNT(*) 
+                     FROM Users.AuditLog a 
+                     WHERE a.UserID = u.UserID 
+                       AND a.ActionType IN ('login', 'session_start')) as total_visits,
+                    (SELECT MAX(a.CreatedAt) 
+                     FROM Users.AuditLog a 
+                     WHERE a.UserID = u.UserID) as last_activity
+                FROM Users.Users u
+                ORDER BY last_activity DESC
+            """)
+            
+            all_users_activity = []
+            for row in cursor.fetchall():
+                all_users_activity.append({
+                    'user_id': row.UserID,
+                    'username': row.Username,
+                    'full_name': row.FullName,
+                    'is_admin': bool(row.IsAdmin),
+                    'is_active': bool(row.IsActive),
+                    'last_login': row.LastLogin.isoformat() if row.LastLogin else None,
+                    'total_visits': row.total_visits or 0,
+                    'last_activity': row.last_activity.isoformat() if row.last_activity else None
+                })
+            
             return {
                 'total_users': total_users,
                 'total_admins': total_admins,
@@ -240,7 +274,8 @@ def get_system_statistics():
                 'new_users_7days': new_users_7days,
                 'logged_in_today': logged_in_today,
                 'top_active_users': top_active_users,
-                'popular_pages': popular_pages
+                'popular_pages': popular_pages,
+                'all_users_activity': all_users_activity
             }
             
     except Exception as e:

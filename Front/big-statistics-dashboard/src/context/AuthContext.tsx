@@ -25,6 +25,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   hasPermission: (pageKey: string, permissionType?: 'view' | 'edit') => boolean;
+  checkAuthError: (response: Response) => boolean; // Новая функция для проверки ошибок авторизации
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +37,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   // Функция для загрузки полных данных профиля
-  const loadFullProfile = async (token: string) => {
+  const loadFullProfile = async (token: string): Promise<{ user: User | null; isTokenValid: boolean }> => {
     try {
       const response = await fetch('/api/users/profile', {
         headers: {
@@ -45,16 +46,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
       
+      // Если токен истек или невалиден - возвращаем флаг
+      if (response.status === 401) {
+        return { user: null, isTokenValid: false };
+      }
+      
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          return data.user;
+          return { user: data.user, isTokenValid: true };
         }
       }
     } catch (error) {
       console.error('Error loading full profile:', error);
     }
-    return null;
+    return { user: null, isTokenValid: true }; // Ошибка сети, но токен может быть валидным
   };
 
   // Загрузка данных из localStorage при инициализации
@@ -65,15 +71,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const storedPermissions = localStorage.getItem('userPermissions');
 
       if (storedToken && storedUser) {
+        // Проверяем валидность токена через запрос профиля
+        const { user: fullProfile, isTokenValid } = await loadFullProfile(storedToken);
+        
+        if (!isTokenValid) {
+          // Токен истек - очищаем все данные
+          console.log('Token expired, logging out...');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+          localStorage.removeItem('userPermissions');
+          localStorage.removeItem('isAuth');
+          setUser(null);
+          setToken(null);
+          setPermissions([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Токен валиден - устанавливаем данные
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
         setPermissions(storedPermissions ? JSON.parse(storedPermissions) : []);
         
-        // Загружаем полные данные профиля
-        const fullProfile = await loadFullProfile(storedToken);
         if (fullProfile) {
           setUser(fullProfile);
           localStorage.setItem('userData', JSON.stringify(fullProfile));
+        } else {
+          // Если профиль не загрузился, используем данные из localStorage
+          setUser(JSON.parse(storedUser));
         }
         
         // Логируем начало сессии (Backend проверит дубликаты по времени)
@@ -113,7 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setPermissions(data.permissions || []);
 
         // Загружаем полные данные профиля
-        const fullProfile = await loadFullProfile(data.token);
+        const { user: fullProfile } = await loadFullProfile(data.token);
         if (fullProfile) {
           setUser(fullProfile);
           localStorage.setItem('userData', JSON.stringify(fullProfile));
@@ -159,6 +183,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('userData');
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('isAuth');
+    
+    // Перенаправляем на страницу логина
+    window.location.href = '/login';
+  };
+
+  // Функция для проверки ответа API на ошибки авторизации
+  // Возвращает true если это ошибка авторизации (и пользователь разлогинен)
+  const checkAuthError = (response: Response): boolean => {
+    if (response.status === 401) {
+      console.log('401 Unauthorized detected, logging out...');
+      logout();
+      return true;
+    }
+    return false;
   };
 
   const hasPermission = (pageKey: string, permissionType: 'view' | 'edit' = 'view'): boolean => {
@@ -205,6 +243,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     hasPermission,
+    checkAuthError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,6 +6,7 @@ import WeeklyPlanTab from './tabs/WeeklyPlanTab';
 import DailyPlanTab from './tabs/DailyPlanTab';
 import MonthPlanTabs from './tabs/MonthPlanTab/MonthPlanTabs';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageLayout } from '../../components/Layout';
 import { usePageView } from '../../hooks/usePageView';
 
 console.log('Plan rendered');
@@ -19,7 +20,7 @@ const Plan = () => {
   usePageView('plan');
 
   return (
-    <div className="p-4">
+    <PageLayout>
       <PageHeader
         title={t('pageTitle')}
         view={activeTab}
@@ -33,7 +34,7 @@ const Plan = () => {
       {activeTab === 'month' && <MonthPlanTabs />}
       {activeTab === 'week' && <WeeklyPlanTab />}
       {activeTab === 'day' && <DailyPlanTab />}
-    </div>
+    </PageLayout>
   );
 };
 

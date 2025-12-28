@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../../../../config/api';
 import ShipmentStatisticsTable from './ShipmentStatisticsTable';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 
 type Props = { fromDate: Date; toDate: Date };
 type Row = Record<string, any>;
 
 export default function Statistics({ fromDate, toDate }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Инициализируем как true, чтобы сразу показать спиннер
   const [error, setError] = useState<string | null>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const y = fromDate.getFullYear();
@@ -30,15 +33,55 @@ export default function Statistics({ fromDate, toDate }: Props) {
     load();
   }, [fromDate, toDate]);
 
-  return (
-    <div className="p-2">
-      <div>
-        {loading && <div className="text-sm text-slate-500 mt-2">Loading…</div>}
-        {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
-        {!loading && !error && (
-          <ShipmentStatisticsTable data={rows} />
-        )}
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
+
+  // Показываем только спиннер при загрузке или рендеринге
+  if (loading || !isReadyToShow) {
+    return (
+      <div className="w-full">
+        <LoadingSpinner overlay="screen" size="xl" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full">
+        <div className="text-sm text-red-600 mt-2">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <ShipmentStatisticsTable data={rows} />
     </div>
   );
 }

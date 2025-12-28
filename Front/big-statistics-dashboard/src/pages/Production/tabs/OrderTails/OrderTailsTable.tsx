@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AgGridReact } from '@ag-grid-community/react';
@@ -9,6 +9,7 @@ import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import { apiGetOrderTails, OrderTailRow } from '../../../../config/timeloss-api';
+import { applyStandardFilters } from '../../../../components/AgGrid/filterUtils';
 
 type Props = { rows?: OrderTailRow[]; suppressLocalLoaders?: boolean; onLoadingChange?: (l: boolean)=>void };
 
@@ -21,6 +22,37 @@ const OrderTailsTable: React.FC<Props> = ({ rows: externalRows, suppressLocalLoa
   const [gridApi, setGridApi] = useState<any | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const copied = useRef<Set<string>>(new Set());
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,13 +119,13 @@ const OrderTailsTable: React.FC<Props> = ({ rows: externalRows, suppressLocalLoa
   }, [rows]);
 
   const columnDefs: ColDef[] = useMemo(() => ([
-    { field: 'LargeGroup', headerName: t('orderTailsStats.largeGroup') as string, minWidth: 160, filter: 'agSetColumnFilter', filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'LargeGroup', r=>String(r.LargeGroup||'').trim()) } },
-    { field: 'OrderNumber', headerName: t('orderTailsTable.orderNo') as string, minWidth: 140, filter: 'agSetColumnFilter', filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'OrderNumber', r=>String(r.OrderNumber||'').trim()) } },
-    { field: 'NomenclatureNumber', headerName: t('orderTailsTable.articleNumber') as string, minWidth: 160, filter: 'agSetColumnFilter', filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'NomenclatureNumber', r=>String(r.NomenclatureNumber||'').trim()) } },
-    { field: 'GroupName', headerName: t('orderTailsStats.groupName') as string, minWidth: 160, filter: 'agSetColumnFilter', filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'GroupName', r=>String(r.GroupName||'').trim()) } },
-    { field: 'Total_QTY', headerName: t('orderTailsTable.orderQty') as string, minWidth: 110, cellClass: 'text-center', valueFormatter: (p:any)=>fmtInt.format(Math.round(parseFloat(String(p.value||'0'))||0)) },
-    { field: 'FactTotal_QTY', headerName: t('orderTailsTable.complQty') as string, minWidth: 120, cellClass: 'text-center', valueFormatter: (p:any)=>fmtInt.format(Math.round(parseFloat(String(p.value||'0'))||0)) },
-    { field: 'TailDays', headerName: t('orderTailsTable.tailDays') as string, minWidth: 110, cellClass: 'text-center', valueFormatter: (p:any)=>fmtInt.format(Math.round(Number(p.value||0))) },
+    { field: 'LargeGroup', headerName: t('orderTailsStats.largeGroup') as string, minWidth: 160, filter: 'agSetColumnFilter', filterValueGetter: (p: any) => String(p?.data?.LargeGroup ?? '').trim(), filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'LargeGroup', r=>String(r.LargeGroup||'').trim()) } },
+    { field: 'OrderNumber', headerName: t('orderTailsTable.orderNo') as string, minWidth: 140, filter: 'agSetColumnFilter', filterValueGetter: (p: any) => String(p?.data?.OrderNumber ?? '').trim(), filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'OrderNumber', r=>String(r.OrderNumber||'').trim()) } },
+    { field: 'NomenclatureNumber', headerName: t('orderTailsTable.articleNumber') as string, minWidth: 160, filter: 'agSetColumnFilter', filterValueGetter: (p: any) => String(p?.data?.NomenclatureNumber ?? '').trim(), filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'NomenclatureNumber', r=>String(r.NomenclatureNumber||'').trim()) } },
+    { field: 'GroupName', headerName: t('orderTailsStats.groupName') as string, minWidth: 160, filter: 'agSetColumnFilter', filterValueGetter: (p: any) => String(p?.data?.GroupName ?? '').trim(), filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (p: any)=>collectValuesIgnoringSelf(p, 'GroupName', r=>String(r.GroupName||'').trim()) } },
+    { field: 'Total_QTY', headerName: t('orderTailsTable.orderQty') as string, minWidth: 110, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p:any)=>fmtInt.format(Math.round(parseFloat(String(p.value||'0'))||0)) },
+    { field: 'FactTotal_QTY', headerName: t('orderTailsTable.complQty') as string, minWidth: 120, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p:any)=>fmtInt.format(Math.round(parseFloat(String(p.value||'0'))||0)) },
+    { field: 'TailDays', headerName: t('orderTailsTable.tailDays') as string, minWidth: 110, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p:any)=>fmtInt.format(Math.round(Number(p.value||0))) },
     { field: 'TailStartDate', headerName: t('orderTailsTable.tailStartDate') as string, minWidth: 160, filter: 'agSetColumnFilter', valueFormatter: (p:any)=> {
       const s = String(p.value ?? '').trim();
       if (!s) return '';
@@ -130,6 +162,10 @@ const OrderTailsTable: React.FC<Props> = ({ rows: externalRows, suppressLocalLoa
     }, valueFormatter: (p:any)=> { const s = String(p.value ?? ''); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : s; } } },
   ]), [t, fmtInt, collectValuesIgnoringSelf, lang]);
 
+  const columnDefsWithStandardFilters = useMemo(() => {
+    return applyStandardFilters(columnDefs);
+  }, [columnDefs]);
+
   const markCopied = useCallback((api: any) => {
     if (!api?.getCellRanges) return;
     const ranges = api.getCellRanges?.() || [];
@@ -160,7 +196,7 @@ const OrderTailsTable: React.FC<Props> = ({ rows: externalRows, suppressLocalLoa
   }, []);
 
   if (loading && suppressLocalLoaders) return null;
-  if (loading) return <div className="flex justify-center items-center h-96"><LoadingSpinner size="xl" /></div>;
+  if (loading || !isReadyToShow) return <LoadingSpinner overlay="screen" size="xl" />;
 
   const autoSizeStrategy = { type: 'fitGridWidth' as const };
 
@@ -174,14 +210,14 @@ const OrderTailsTable: React.FC<Props> = ({ rows: externalRows, suppressLocalLoa
   const actionsSlot = typeof document !== 'undefined' ? document.getElementById('ot-actions-slot') : null;
 
   return (
-    <div className="max-w-[1400px] w-full">
+    <div className="w-full">
       {actionsSlot ? createPortal(actions, actionsSlot) : (
         <div className="flex items-center gap-2 justify-end w-full px-1 mb-2">{actions}</div>
       )}
       <div ref={gridRef} className="ag-theme-quartz" style={{ width: '100%', height: '78vh' }}>
         <AgGridReact
           rowData={rows}
-          columnDefs={columnDefs}
+          columnDefs={columnDefsWithStandardFilters}
           defaultColDef={defaultColDef}
           autoSizeStrategy={autoSizeStrategy}
           onGridReady={(p) => setGridApi(p.api)}

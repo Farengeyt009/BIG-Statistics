@@ -1,11 +1,18 @@
 # Run_Server.py
 
 import os
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, make_response
 from flask_cors import CORS
 
 from Back.Plan.api.Month_PlanFact_Gantt_api import init_app as planfact_init_app
 from Back.Plan.api.Month_PlanFactSummary_api import init_app as planfact_summary_init_app
+from Back.Dashboard.api.PlanSummary_api import init_app as dashboard_plan_summary_init_app
+from Back.Dashboard.api.OrdersSummary_api import init_app as dashboard_orders_summary_init_app
+from Back.Dashboard.api.SalePlanYTD_api import init_app as dashboard_saleplan_ytd_init_app
+from Back.Dashboard.api.ShipmentPlan_api import init_app as dashboard_shipment_plan_init_app
+from Back.Dashboard.api.TimeLossTopReasons_api import init_app as dashboard_timeloss_top_reasons_init_app
+from Back.Dashboard.api.RegionsMonthlyData_api import init_app as dashboard_regions_monthly_data_init_app
+from Back.Dashboard.api.AllData_api import init_app as dashboard_all_data_init_app
 from Back.Home.api.Home_Production_api import init_app as home_production_init_app
 from Back.Production.api.Production_Efficiency_api import init_app as production_efficiency_init_app
 from Back.Production.api.Working_Calendar.WorkingCalendar_api import init_app as working_calendar_init_app
@@ -21,6 +28,9 @@ from Back.orders.api.Shipment_api import init_app as orders_shipment_init_app
 from Back.orders.api.ShipmentPlan_Fact_api import init_app as shipment_plan_fact_init_app
 from Back.orders.api.ShipmentPlan_api import init_app as shipment_plan_init_app
 from Back.orders.api.OrderData.OrderData_api import init_app as order_data_init_app
+from Back.orders.api.OrderData.OrderStatistics_api import init_app as order_statistics_init_app
+from Back.orders.api.SalePlan.SalePlan_Upload_api import init_app as saleplan_upload_init_app
+from Back.orders.api.SalePlan.SalePlan_api import init_app as saleplan_init_app
 from Back.Users.api.auth_api import init_app as auth_init_app
 from Back.Users.api.users_api import init_app as users_init_app
 from Back.Users.api.admin_api import init_app as admin_init_app
@@ -37,6 +47,7 @@ from Back.WeChat.api.wechat_api import wechat_bp
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 FRONT_DIST_DIR = os.path.join(BASE_DIR, 'Front', 'big-statistics-dashboard', 'dist')
+PUBLIC_DIR = os.path.join(BASE_DIR, 'Front', 'big-statistics-dashboard', 'public')
 
 # static_url_path="" → статика доступна с корня (/, /assets/*)
 app = Flask(__name__, static_folder=FRONT_DIST_DIR, static_url_path='')
@@ -63,6 +74,13 @@ app.register_blueprint(wechat_bp)
 
 planfact_init_app(app)
 planfact_summary_init_app(app)
+dashboard_plan_summary_init_app(app)
+dashboard_orders_summary_init_app(app)
+dashboard_saleplan_ytd_init_app(app)
+dashboard_shipment_plan_init_app(app)
+dashboard_timeloss_top_reasons_init_app(app)
+dashboard_regions_monthly_data_init_app(app)
+dashboard_all_data_init_app(app)
 home_production_init_app(app)
 production_efficiency_init_app(app)
 working_calendar_init_app(app)
@@ -78,6 +96,9 @@ orders_shipment_init_app(app)
 shipment_plan_fact_init_app(app)
 shipment_plan_init_app(app)
 order_data_init_app(app)
+order_statistics_init_app(app)
+saleplan_upload_init_app(app)
+saleplan_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 
@@ -102,6 +123,45 @@ for route in SPA_ROUTES:
         endpoint=f'spa_{route.replace("/", "_")}',
         view_func=lambda: send_from_directory(app.static_folder, 'index.html')
     )
+
+# Специальный маршрут для аватарок с контролем кеша
+@app.route('/avatar_<int:user_id>.png')
+def serve_avatar(user_id):
+    """
+    Раздаем аватарки из папки public с правильными Cache-Control заголовками
+    для избежания проблем с кешированием в браузере
+    """
+    try:
+        avatar_filename = f'avatar_{user_id}.png'
+        avatar_path = os.path.join(PUBLIC_DIR, avatar_filename)
+        
+        # Проверяем существует ли файл
+        if os.path.exists(avatar_path):
+            response = make_response(send_from_directory(PUBLIC_DIR, avatar_filename))
+        else:
+            # Если нет - отдаем дефолтную
+            response = make_response(send_from_directory(PUBLIC_DIR, 'avatar.png'))
+        
+        # Добавляем заголовки для контроля кеша
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response
+    except Exception as e:
+        print(f"Error serving avatar: {e}")
+        # Fallback на дефолтную аватарку
+        response = make_response(send_from_directory(PUBLIC_DIR, 'avatar.png'))
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
+
+# Дефолтная аватарка
+@app.route('/avatar.png')
+def serve_default_avatar():
+    """Раздаем дефолтную аватарку"""
+    response = make_response(send_from_directory(PUBLIC_DIR, 'avatar.png'))
+    response.headers['Cache-Control'] = 'public, max-age=86400'  # Кешируем на 1 день
+    return response
 
 @app.route('/<path:path>')
 def static_proxy(path):

@@ -13,6 +13,7 @@ import EditModeToggle from '../../../../components/AgGrid/EditModeToggle';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import { Trash2 } from 'lucide-react';
+import { applyStandardFilters } from '../../../../components/AgGrid/filterUtils';
 import {
   apiAddRow,
   apiGetDicts,
@@ -112,6 +113,24 @@ const normalizeDate = (value: any): string | null => {
   return String(value);
 };
 
+// Получить максимальную дату (сегодня + 1 день) в локальном времени
+const getMaxAllowedDate = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow;
+};
+
+// Получить максимальную дату в формате ISO (YYYY-MM-DD)
+const getMaxAllowedDateISO = (): string => {
+  const maxDate = getMaxAllowedDate();
+  const year = maxDate.getFullYear();
+  const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+  const day = String(maxDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getDictLabel = (o: DictItem | undefined | null, lang: string): string => {
   if (!o) return '';
   if (lang?.startsWith('en')) return o.labelEn ?? o.label;
@@ -157,6 +176,29 @@ function buildWSWCDicts(raw: any): { workshops: DictItem[]; workcentersByWS: Rec
 const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkShop, selectedWorkShopIds, suppressLocalLoaders, onLoadingChange, isActive, canEditFull = false, canEditLimited = false }) => {
   const { t, i18n } = useTranslation('production');
   const lang = i18n.language || 'zh';
+  
+  // Локализация AG-Grid (включая date picker)
+  const localeText = useMemo(() => {
+    if (lang === 'zh') {
+      return {
+        // Date Picker
+        dateFormatOoo: 'yyyy-MM-dd',
+        // Месяцы для календаря
+        january: '一月', february: '二月', march: '三月', april: '四月',
+        may: '五月', june: '六月', july: '七月', august: '八月',
+        september: '九月', october: '十月', november: '十一月', december: '十二月',
+        // Дни недели
+        sunday: '日', monday: '一', tuesday: '二', wednesday: '三',
+        thursday: '四', friday: '五', saturday: '六',
+      };
+    } else if (lang === 'en') {
+      return {
+        dateFormatOoo: 'yyyy-MM-dd',
+        // Английский используется по умолчанию в AG-Grid
+      };
+    }
+    return {}; // Русский
+  }, [lang]);
 
   const gridApiRef = useRef<any>(null);
   const [gridApi, setGridApi] = useState<any | null>(null);
@@ -169,6 +211,37 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
   const [dicts, setDicts] = useState<Dicts | null>(null);
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
   const [error, setError] = useState<string | null>(null);
   // Валидация: включается после первой неудачной попытки сохранения
   const [validationOn, setValidationOn] = useState<boolean>(false);
@@ -304,10 +377,32 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     if (!colId) return;
     markDirty(ev.data._lid, colId, ev.newValue);
     // Живая очистка ошибки после изменения значения
+    const lid = ev.data._lid;
+    const v = (ev.data as any)[colId];
+    
+    // Валидация OnlyDate: дата не может быть больше завтрашнего дня
+    if (colId === 'OnlyDate') {
+      const dateStr = normalizeDate(v);
+      if (dateStr) {
+        const maxDateISO = getMaxAllowedDateISO();
+        if (dateStr > maxDateISO) {
+          const lang = i18n.language || 'zh';
+          const errorMsg = lang === 'en' 
+            ? String(t('timeLossTable.dateCannotBeAfterTomorrow') || 'Date cannot be after tomorrow')
+            : lang === 'zh'
+            ? String(t('timeLossTable.dateCannotBeAfterTomorrow') || '日期不能超过明天')
+            : String(t('timeLossTable.dateCannotBeAfterTomorrow') || 'Date cannot be after tomorrow');
+          setCellError(lid, 'OnlyDate', errorMsg);
+        } else {
+          clearCellError(lid, 'OnlyDate');
+        }
+      } else {
+        clearCellError(lid, 'OnlyDate');
+      }
+    }
+    
     if (validationOn) {
-      const lid = ev.data._lid;
       // Простая проверка только изменённого поля
-      const v = (ev.data as any)[colId];
       const isEmpty = v === null || v === undefined || v === '';
       if (isEmpty) setCellError(lid, colId, String(t('required') || 'Обязательное поле'));
       else if (colId === 'ManHours') {
@@ -318,11 +413,11 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         const s = String(v ?? '').trim();
         if (!s) setCellError(lid, 'CommentText', String(t('required') || 'Обязательное поле'));
         else clearCellError(lid, 'CommentText');
-      } else {
+      } else if (colId !== 'OnlyDate') {
         clearCellError(lid, colId);
       }
     }
-  }, [markDirty]);
+  }, [markDirty, validationOn, t, i18n.language]);
 
   const addRow = useCallback(() => {
     const todayIso = new Date().toISOString().slice(0, 10);
@@ -364,6 +459,20 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         const v = (r as any)[f];
         const isEmpty = v === null || v === undefined || v === '';
         if (isEmpty) rowErrors.set(f, String(t('required') || 'Обязательное поле'));
+      }
+      // Валидация OnlyDate: дата не может быть больше завтрашнего дня
+      const dateStr = normalizeDate(r.OnlyDate);
+      if (dateStr) {
+        const maxDateISO = getMaxAllowedDateISO();
+        if (dateStr > maxDateISO) {
+          const lang = i18n.language || 'zh';
+          const errorMsg = lang === 'en' 
+            ? String(t('timeLossTable.dateCannotBeAfterTomorrow') || 'Date cannot be after tomorrow')
+            : lang === 'zh'
+            ? String(t('timeLossTable.dateCannotBeAfterTomorrow') || '日期不能超过明天')
+            : String(t('timeLossTable.dateCannotBeAfterTomorrow') || 'Date cannot be after tomorrow');
+          rowErrors.set('OnlyDate', errorMsg);
+        }
       }
       const mh = Number(r.ManHours);
       if (!isFinite(mh) || mh <= 0) rowErrors.set('ManHours', String(t('mustBePositiveNumber') || 'Должно быть числом > 0'));
@@ -445,7 +554,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
     } catch (e: any) {
       setError(e.message ?? 'Save failed');
     }
-  }, [rows, editMode]);
+  }, [rows, editMode, t, i18n.language]);
 
   const actions = (
     <div className="flex items-center gap-2">
@@ -669,6 +778,9 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
 
   const columns = useMemo<ColDef<LocalRow>[]>(() => [
     { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', width: 160,
+      cellEditorParams: {
+        maxDate: getMaxAllowedDate(),
+      },
       // держим чекбоксы всегда включёнными; показываем/скрываем через CSS
       checkboxSelection: true as any,
       headerCheckboxSelection: true as any,
@@ -781,6 +893,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { maxLength: 1000, rows: 6, cols: 40 },
     },
     { field: 'ManHours', headerName: t('timeLossTable.manHours') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), filter: 'agSetColumnFilter', width: 120,
+      comparator: (a, b) => Number(a || 0) - Number(b || 0), // Числовая сортировка
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
@@ -840,6 +953,11 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const iso = String(normalizeDate(v) ?? ''); const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : ''; },
     },
   ], [t, lang, dicts, wcByWs, reasonByWs, directnessValues, toggleDelete, deleteMode, editMode, canEditFull, canEditLimited]);
+
+  // Применяем стандартные настройки фильтров (для будущих колонок без явного filter)
+  const columnsWithStandardFilters = useMemo(() => {
+    return applyStandardFilters(columns);
+  }, [columns]);
 
   const defaultColDef = useMemo<ColDef>(() => ({
     resizable: true,
@@ -998,10 +1116,10 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       />
     );
   }
-  if (loading) {
+  if (loading || !isReadyToShow) {
     return (
       <div className="flex justify-center items-center h-96">
-        <LoadingSpinner size="xl" />
+        <LoadingSpinner overlay="screen" size="xl" />
       </div>
     );
   }
@@ -1024,8 +1142,9 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         <AgGridReact<LocalRow>
           onGridReady={(p) => { gridApiRef.current = p.api; setGridApi(p.api); }}
           rowData={filteredRows}
-          columnDefs={columns}
+          columnDefs={columnsWithStandardFilters}
           defaultColDef={defaultColDef}
+          localeText={localeText}
           popupParent={typeof document !== 'undefined' ? (document.body as any) : undefined}
           rowSelection={'multiple'}
           suppressRowClickSelection={deleteMode}

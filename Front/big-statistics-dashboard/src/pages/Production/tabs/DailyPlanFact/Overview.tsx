@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import GroupedGrid from './GroupedGrid';
 import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressCell';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { ContentLayout } from '../../../../components/Layout';
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { ColDef } from '@ag-grid-community/core';
 
@@ -285,7 +286,37 @@ const Overview: React.FC<OverviewProps> = ({ data, loading, error, suppressLocal
   const [expandedWorkshops, setExpandedWorkshops] = useState<Set<string>>(new Set());
   const [expandedWorkCenters, setExpandedWorkCenters] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
 
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
 
   /** -------------------- функция перевода названий цехов -------------------- */
   const translateWorkShop = useCallback((workShopName: string) => {
@@ -417,12 +448,12 @@ const Overview: React.FC<OverviewProps> = ({ data, loading, error, suppressLocal
     );
   }
 
-  if (loading && !suppressLocalLoaders) {
+  if ((loading || !isReadyToShow) && !suppressLocalLoaders) {
     return (
       <div className="mt-6">
         <div className="bg-white p-4 rounded">
           <div className="flex justify-center items-center h-64">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner overlay="screen" size="xl" />
           </div>
         </div>
       </div>
@@ -445,8 +476,7 @@ const Overview: React.FC<OverviewProps> = ({ data, loading, error, suppressLocal
   }
 
   return (
-    <div className="mt-6">
-      <div className="bg-white p-4 rounded">
+    <ContentLayout spacing="mt-6" minHeight="">
         <GroupedGrid
           rowData={treeData}
           columnDefs={allColumns}
@@ -469,8 +499,7 @@ const Overview: React.FC<OverviewProps> = ({ data, loading, error, suppressLocal
             }
           }}
         />
-      </div>
-    </div>
+    </ContentLayout>
   );
 };
 

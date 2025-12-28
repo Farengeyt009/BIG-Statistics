@@ -11,7 +11,8 @@ from ...database.db_connector import get_connection
 # Секретный ключ для JWT (в продакшене должен быть в .env)
 JWT_SECRET = "your-secret-key-change-in-production"
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24  # Токен действителен 24 часа
+JWT_EXPIRATION_HOURS = 24 * 30  # Токен действителен 30 дней
+# JWT_EXPIRATION_HOURS = 0.0167  # ⚠️ ТЕСТИРОВАНИЕ: 1 минута (раскомментируйте для теста)
 
 
 def verify_login(login: str, password: str) -> Optional[Dict[str, Any]]:

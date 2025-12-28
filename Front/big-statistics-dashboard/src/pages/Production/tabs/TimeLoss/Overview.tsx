@@ -191,7 +191,7 @@ const Overview: React.FC<Props> = ({ startDate, endDate, suppressLocalLoaders, o
   }, [workshops, summary, reasons, currentLanguage, t]);
 
   return (
-    <div className="p-4 md:p-6">
+    <div>
       <h2 className="text-2xl font-bold text-[#0d1c3d] mb-4">{t('statistics.timeLoss')}</h2>
 
       {/* Первичная загрузка — без локального спиннера */}

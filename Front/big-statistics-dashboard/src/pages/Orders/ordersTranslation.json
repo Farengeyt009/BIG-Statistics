@@ -38,6 +38,31 @@
       "Market": "Market",
       "Uncompleted_QTY": "Uncomp. Qty"
     },
+    "statisticsTable": {
+      "groupColumn": "Market",
+      "groupColumnByGroup": "Prod. Group",
+      "total": "Total",
+      "totalRow": "Total",
+      "nonDate": "Non Date",
+      "canBeUngrouped": "Can be ungrouped:",
+      "market": "Market",
+      "group": "Group",
+      "model": "Model",
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Feb",
+        "Mar": "Mar",
+        "Apr": "Apr",
+        "May": "May",
+        "Jun": "Jun",
+        "Jul": "Jul",
+        "Aug": "Aug",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Dec"
+      }
+    },
     "fieldGroups": {
       "orderInfo": "Order Info",
       "productInfo": "Product Info",
@@ -166,6 +191,31 @@
       "Total_Order_QTY": "总订单量",
       "Market": "市场",
       "Uncompleted_QTY": "未完量"
+    },
+    "statisticsTable": {
+      "groupColumn": "市场",
+      "groupColumnByGroup": "成品类",
+      "total": "总数",
+      "totalRow": "总计",
+      "nonDate": "日期没定",
+      "canBeUngrouped": "可取消分组：",
+      "market": "市场",
+      "group": "组",
+      "model": "型号",
+      "months": {
+        "Jan": "1月",
+        "Feb": "2月",
+        "Mar": "3月",
+        "Apr": "4月",
+        "May": "5月",
+        "Jun": "6月",
+        "Jul": "7月",
+        "Aug": "8月",
+        "Sep": "9月",
+        "Oct": "10月",
+        "Nov": "11月",
+        "Dec": "12月"
+      }
     },
     "fieldGroups": {
       "orderInfo": "订单信息",

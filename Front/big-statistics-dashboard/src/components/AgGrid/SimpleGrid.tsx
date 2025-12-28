@@ -90,10 +90,21 @@ const SimpleGrid = <T extends object = any,>({
         ?.setAttribute('data-grid-name', name);
       console.debug(`[SimpleGrid:${name}] onGridReady, cols=${safeCols.length}`);
     } catch {}
+    // Подгоняем колонки при инициализации
+    if (autoFit) {
+      try {
+        p.api.sizeColumnsToFit();
+      } catch {}
+    }
   };
 
-  const onFirstDataRendered = () => {
-    // AG Grid с autoSizeStrategy="fitGridWidth" сам корректно подгонит ширины
+  const onFirstDataRendered = (p: any) => {
+    // Подгоняем колонки после загрузки данных
+    if (autoFit) {
+      try {
+        p.api.sizeColumnsToFit();
+      } catch {}
+    }
   };
 
   // Мягкий рефреш заголовков только когда есть валидные колонки
@@ -102,6 +113,22 @@ const SimpleGrid = <T extends object = any,>({
     const id = requestAnimationFrame(refreshHeader);
     return () => cancelAnimationFrame(id);
   }, [autoFit, safeCols.length, refreshHeader]);
+
+  // Пересчитываем ширину колонок при изменении размера окна
+  useEffect(() => {
+    if (!autoFit) return;
+
+    const handleResize = () => {
+      if (apiRef.current) {
+        try {
+          apiRef.current.sizeColumnsToFit();
+        } catch {}
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [autoFit]);
 
   const wrapperStyle: React.CSSProperties = {
     width: '100%',
@@ -131,9 +158,7 @@ const SimpleGrid = <T extends object = any,>({
         pinnedTopRowData={pinnedTopRowData}
         columnDefs={safeCols}
         defaultColDef={{ ...(baseDefault as any), ...((defaultColDef as any) || {}) } as ColDef<any>}
-        autoSizeStrategy={
-          autoFit ? ({ type: 'fitGridWidth', defaultMinWidth: 90, columnLimits } as any) : undefined
-        }
+        // Убираем autoSizeStrategy - используем только явный sizeColumnsToFit()
         onGridReady={onGridReady}
         onFirstDataRendered={onFirstDataRendered}
         rowSelection={enableRangeSelection ? 'multiple' : undefined}

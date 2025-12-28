@@ -9,6 +9,7 @@ import { AgGridReact } from '@ag-grid-community/react';
 import type { ColDef } from '@ag-grid-community/core';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
+import { applyStandardFilters } from '../../../../../components/AgGrid/filterUtils';
 
 type Props = {
   startDate?: string;
@@ -25,6 +26,8 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
   const [rows, setRows] = useState<DailyStaffingRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
 
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [gridHeightPx, setGridHeightPx] = useState<number | null>(null);
@@ -148,7 +151,7 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
   );
 
   const columnDefs: ColDef[] = useMemo(() => [
-    { field: 'OnlyDate', headerName: t('timeLossDailyStaffing.date') as string, minWidth: 90, maxWidth: 150, cellClass: 'text-center',
+    { field: 'OnlyDate', headerName: t('timeLossDailyStaffing.date') as string, minWidth: 90, maxWidth: 200, cellClass: 'text-center',
       valueFormatter: (p: any) => { const s = String(p?.data?.OnlyDateISO || p.value || ''); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : (p.value || ''); },
       filter: 'agSetColumnFilter',
       filterValueGetter: (p: any) => String(p?.data?.OnlyDateISO ?? ''),
@@ -168,26 +171,31 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
         valueFormatter: (p: any) => { const s = String(p.value ?? ''); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : s; }
       }
     },
-    { field: 'WorkShopLabel', headerName: t('timeLossDailyStaffing.workshop') as string, minWidth: 120, maxWidth: 220, filter: 'agSetColumnFilter',
+    { field: 'WorkShopLabel', headerName: t('timeLossDailyStaffing.workshop') as string, minWidth: 120, maxWidth: 280, filter: 'agSetColumnFilter',
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
         values: (params: any) => collectValuesIgnoringSelf(params, 'WorkShopLabel', (r) => String(r.WorkShopLabel ?? '').trim(), (a,b)=>a.localeCompare(b))
       }
     },
-    { field: 'WorkCenterLabel', headerName: t('timeLossDailyStaffing.workCenter') as string, minWidth: 120, maxWidth: 220, filter: 'agSetColumnFilter',
+    { field: 'WorkCenterLabel', headerName: t('timeLossDailyStaffing.workCenter') as string, minWidth: 120, maxWidth: 280, filter: 'agSetColumnFilter',
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
         values: (params: any) => collectValuesIgnoringSelf(params, 'WorkCenterLabel', (r) => String(r.WorkCenterLabel ?? '').trim(), (a,b)=>a.localeCompare(b))
       }
     },
-    { field: 'People', headerName: t('timeLossDailyStaffing.people') as string, minWidth: 90, maxWidth: 120, cellClass: 'text-center', valueFormatter: (p: any) => p.value != null ? fmtInt.format(p.value) : '' },
-    { field: 'WorkHours', headerName: t('timeLossDailyStaffing.workHours') as string, minWidth: 100, maxWidth: 140, cellClass: 'text-center', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '' },
-    { field: 'PeopleWorkHours', headerName: t('timeLossDailyStaffing.peopleWorkHours') as string, minWidth: 120, maxWidth: 160, cellClass: 'text-center', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '' },
-    { field: 'EntryManHours', headerName: t('timeLossDailyStaffing.entryManHours') as string, minWidth: 120, maxWidth: 160, cellClass: 'text-center', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '' },
-    { field: 'EffectiveTime', headerName: t('timeLossDailyStaffing.effectiveTime') as string, minWidth: 120, maxWidth: 160, cellClass: 'text-center', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '' },
+    { field: 'People', headerName: t('timeLossDailyStaffing.people') as string, minWidth: 90, maxWidth: 150, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p: any) => p.value != null ? fmtInt.format(p.value) : '', comparator: (a, b) => Number(a || 0) - Number(b || 0) },
+    { field: 'WorkHours', headerName: t('timeLossDailyStaffing.workHours') as string, minWidth: 100, maxWidth: 180, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '', comparator: (a, b) => Number(a || 0) - Number(b || 0) },
+    { field: 'PeopleWorkHours', headerName: t('timeLossDailyStaffing.peopleWorkHours') as string, minWidth: 120, maxWidth: 200, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '', comparator: (a, b) => Number(a || 0) - Number(b || 0) },
+    { field: 'EntryManHours', headerName: t('timeLossDailyStaffing.entryManHours') as string, minWidth: 120, maxWidth: 200, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '', comparator: (a, b) => Number(a || 0) - Number(b || 0) },
+    { field: 'EffectiveTime', headerName: t('timeLossDailyStaffing.effectiveTime') as string, minWidth: 120, maxWidth: 200, cellClass: 'text-center', cellDataType: 'number', valueFormatter: (p: any) => p.value != null ? fmtNum.format(p.value) : '', comparator: (a, b) => Number(a || 0) - Number(b || 0) },
   ], [processed, t, fmtInt, fmtNum, lang]);
+
+  // Применяем стандартные настройки фильтров
+  const columnDefsWithStandardFilters = useMemo(() => {
+    return applyStandardFilters(columnDefs);
+  }, [columnDefs]);
 
   const markCopied = useCallback((api: any) => {
     if (!api?.getCellRanges) return;
@@ -218,12 +226,41 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
     api.refreshCells?.({ force: true, suppressFlash: true });
   }, []);
 
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
+
   if (loading && suppressLocalLoaders) {
     return <div ref={gridRef} className="ag-theme-quartz" style={{ width: '100%', height: gridHeightPx != null ? `${gridHeightPx}px` : '78vh' }} />;
   }
-  if (loading) {
+  if (loading || !isReadyToShow) {
     return (
-      <div className="flex justify-center items-center h-96"><LoadingSpinner size="xl" /></div>
+      <LoadingSpinner overlay="screen" size="xl" />
     );
   }
   if (error) {
@@ -252,7 +289,7 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
         <div ref={gridRef} className="ag-theme-quartz" style={{ width: '100%', height: gridHeightPx != null ? `${gridHeightPx}px` : '78vh' }}>
         <AgGridReact
           rowData={processed}
-          columnDefs={columnDefs}
+          columnDefs={columnDefsWithStandardFilters}
           defaultColDef={defaultColDef}
             autoSizeStrategy={autoSizeStrategy}
           onGridReady={(p) => setGridApi(p.api)}

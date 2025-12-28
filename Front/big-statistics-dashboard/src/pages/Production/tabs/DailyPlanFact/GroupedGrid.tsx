@@ -258,10 +258,15 @@ const GroupedGrid = <T extends object = any,>({
 
   const onGridReady = (p: any) => {
     apiRef.current = p.api;
+    if (autoFit) {
+      p.api.sizeColumnsToFit();
+    }
   };
 
-  const onFirstDataRendered = () => {
-    // AG Grid с autoSizeStrategy="fitGridWidth" сам корректно подгонит ширины
+  const onFirstDataRendered = (p: any) => {
+    if (autoFit) {
+      p.api.sizeColumnsToFit();
+    }
   };
 
   // Обработчик изменения состояния раскрытия (не используется, логика в HierarchyCellRenderer)
@@ -497,6 +502,20 @@ const GroupedGrid = <T extends object = any,>({
     refreshHeader();
   }, [columnDefs, refreshHeader]);
 
+  // Пересчитываем ширину колонок при любом ресайзе / смене масштаба
+  useEffect(() => {
+    if (!autoFit) return;
+
+    const handleResize = () => {
+      if (apiRef.current) {
+        apiRef.current.sizeColumnsToFit();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [autoFit]);
+
   const wrapperStyle: React.CSSProperties = {
     width: '100%',
   };
@@ -508,7 +527,7 @@ const GroupedGrid = <T extends object = any,>({
         rowData={rowData}
         columnDefs={enhancedColumnDefs}
         defaultColDef={{ ...(baseDefault as any), ...((defaultColDef as any) || {}) } as ColDef<any>}
-        autoSizeStrategy={autoFit ? ({ type: 'fitGridWidth', defaultMinWidth: 90, columnLimits } as any) : undefined}
+        // Убираем autoSizeStrategy - вместо этого используем явный sizeColumnsToFit()
 
         onGridReady={onGridReady}
         onFirstDataRendered={onFirstDataRendered}

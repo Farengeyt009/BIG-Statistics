@@ -251,11 +251,10 @@ const WorkingCalendar: React.FC = () => {
   }, [someSelected, isWorkshopPickerOpen, workshops, draftWorkshopIds]);
 
   return (
-    <div className="p-1">
-      <div className="container mx-auto">
-        <div className="bg-white p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+    <>
+      <div className="bg-white p-6 mb-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
               {/* Year/Month Picker */}
               <div className="w-auto">
@@ -370,7 +369,6 @@ const WorkingCalendar: React.FC = () => {
             calendarData={calendarData}
             loading={calendarLoading}
           />
-        </div>
       </div>
 
       {/* Working Schedules Modal */}
@@ -394,7 +392,7 @@ const WorkingCalendar: React.FC = () => {
         onChangeSelectedWorkShopIds={(ids) => setSelectedWorkShopIds(ids)}
         canEdit={canEdit}
       />
-    </div>
+    </>
   );
 };
 

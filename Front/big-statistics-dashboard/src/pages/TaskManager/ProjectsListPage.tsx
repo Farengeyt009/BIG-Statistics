@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ContentLayout } from '../../components/Layout';
 import { useProjects } from './hooks/useProjects';
 
 interface ProjectsListPageProps {
@@ -38,7 +39,7 @@ export const ProjectsListPage: React.FC<ProjectsListPageProps> = ({ onProjectSel
   }
 
   return (
-    <div className="p-6">
+    <ContentLayout padding="p-6">
       {/* Заголовок */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Task Manager</h1>
@@ -196,7 +197,7 @@ export const ProjectsListPage: React.FC<ProjectsListPageProps> = ({ onProjectSel
           </div>
         </div>
       )}
-    </div>
+    </ContentLayout>
   );
 };
 

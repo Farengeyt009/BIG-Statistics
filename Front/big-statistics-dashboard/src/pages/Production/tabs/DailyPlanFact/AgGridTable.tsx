@@ -10,6 +10,8 @@ import productionTranslations from '../../ProductionTranslation.json';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { ContentLayout } from '../../../../components/Layout';
+import { applyStandardFilters } from '../../../../components/AgGrid/filterUtils';
 
 // Форматтер для отображения чисел как целых (0 знаков после запятой)
 const fmtInt = new Intl.NumberFormat('ru-RU', {
@@ -37,6 +39,37 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   const [gridApi, setGridApi] = useState<any | null>(null);
   const gridWrapperRef = useRef<HTMLDivElement | null>(null);
   const [gridHeightPx, setGridHeightPx] = useState<number | null>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
 
 
   // Refs для работы с копированием
@@ -462,6 +495,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       minWidth: 90, maxWidth: 200,
       tooltipField: 'WorkShopName_CH',
       filter: 'agSetColumnFilter',
+      filterValueGetter: (p: any) => String(p?.data?.WorkShopName_CH ?? '').trim(),
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
@@ -481,6 +515,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       minWidth: 90, maxWidth: 200,
       tooltipField: 'WorkCenterGroup_CN',
       filter: 'agSetColumnFilter',
+      filterValueGetter: (p: any) => String(p?.data?.WorkCenterGroup_CN ?? '').trim(),
       filterParams: {
         includeBlanksInFilter: true,
         refreshValuesOnOpen: true,
@@ -643,6 +678,10 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
     }
   ], [t, monthLabel, collectSetFilterValuesIgnoringSelf, collectValuesFromRowsIgnoringSelf, processedData, workShopValues, workCenterValues, orderNumberValues, nomenclatureValues, productNameValues]);
 
+  const columnDefsWithStandardFilters = useMemo(() => {
+    return applyStandardFilters(columnDefs);
+  }, [columnDefs]);
+
   // Настройки AG Grid
   const defaultColDef: ColDef = {
     resizable: true,
@@ -735,10 +774,10 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   }
 
   // Если хотите оставить локальный спиннер только когда глобальный отключен:
-  if (loading && !suppressLocalLoaders) {
+  if ((loading || !isReadyToShow) && !suppressLocalLoaders) {
     return (
       <div className="flex justify-center items-center h-96 bg-white rounded">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner overlay="screen" size="xl" />
       </div>
     );
   }
@@ -755,7 +794,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <ContentLayout spacing="space-y-3" minHeight="">
       {/* Если слот есть — рендерим туда, иначе показываем сверху справа */}
       {actionsSlot
         ? createPortal(actions, actionsSlot)
@@ -764,12 +803,12 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       <div
         ref={gridWrapperRef}
         data-grid="daily-plan-fact"
-        className="ag-theme-quartz"
-        style={{ width: '100%', height: gridHeightPx != null ? `${gridHeightPx}px` : '78vh' }}
+        className="ag-theme-quartz w-full"
+        style={{ height: gridHeightPx != null ? `${gridHeightPx}px` : '78vh' }}
       >
         <AgGridReact
           rowData={processedData}
-          columnDefs={columnDefs}
+          columnDefs={columnDefsWithStandardFilters}
           defaultColDef={defaultColDef}
           autoSizeStrategy={autoSizeStrategy}
           onGridReady={onGridReady}
@@ -790,7 +829,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
           context={{ gridName: 'daily-plan-fact' }}
         />
       </div>
-    </div>
+    </ContentLayout>
   );
 };
 

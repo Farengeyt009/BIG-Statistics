@@ -446,21 +446,40 @@ def build_report_query(source_table: str, selected_fields: List[str], filters: A
             if operator == 'equals':
                 where_conditions.append(f"{field_escaped} = N'{value}'")
             elif operator == 'not_equals':
-                where_conditions.append(f"{field_escaped} != N'{value}'")
+                # Для not_equals также включаем NULL значения
+                where_conditions.append(f"({field_escaped} != N'{value}' OR {field_escaped} IS NULL)")
             elif operator == 'greater_than':
-                where_conditions.append(f"{field_escaped} > {value}")
+                # Пробуем преобразовать в число, если не получится - используем как строку
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} > {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} > N'{value}'")
             elif operator == 'less_than':
-                where_conditions.append(f"{field_escaped} < {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} < {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} < N'{value}'")
             elif operator == 'greater_or_equal':
-                where_conditions.append(f"{field_escaped} >= {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} >= {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} >= N'{value}'")
             elif operator == 'less_or_equal':
-                where_conditions.append(f"{field_escaped} <= {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} <= {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} <= N'{value}'")
             elif operator == 'between' and isinstance(value, list) and len(value) == 2:
                 where_conditions.append(f"{field_escaped} BETWEEN N'{value[0]}' AND N'{value[1]}'")
             elif operator == 'contains':
                 where_conditions.append(f"{field_escaped} LIKE N'%{value}%'")
             elif operator == 'not_contains':
-                where_conditions.append(f"{field_escaped} NOT LIKE N'%{value}%'")
+                # Для not_contains также включаем NULL значения
+                where_conditions.append(f"({field_escaped} NOT LIKE N'%{value}%' OR {field_escaped} IS NULL)")
             elif operator == 'starts_with':
                 where_conditions.append(f"{field_escaped} LIKE N'{value}%'")
             elif operator == 'ends_with':
@@ -483,21 +502,40 @@ def build_report_query(source_table: str, selected_fields: List[str], filters: A
             if operator == 'equals':
                 where_conditions.append(f"{field_escaped} = N'{value}'")
             elif operator == 'not_equals':
-                where_conditions.append(f"{field_escaped} != N'{value}'")
+                # Для not_equals также включаем NULL значения
+                where_conditions.append(f"({field_escaped} != N'{value}' OR {field_escaped} IS NULL)")
             elif operator == 'greater_than':
-                where_conditions.append(f"{field_escaped} > {value}")
+                # Пробуем преобразовать в число, если не получится - используем как строку
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} > {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} > N'{value}'")
             elif operator == 'less_than':
-                where_conditions.append(f"{field_escaped} < {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} < {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} < N'{value}'")
             elif operator == 'greater_or_equal':
-                where_conditions.append(f"{field_escaped} >= {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} >= {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} >= N'{value}'")
             elif operator == 'less_or_equal':
-                where_conditions.append(f"{field_escaped} <= {value}")
+                try:
+                    numeric_value = float(value)
+                    where_conditions.append(f"{field_escaped} <= {numeric_value}")
+                except (ValueError, TypeError):
+                    where_conditions.append(f"{field_escaped} <= N'{value}'")
             elif operator == 'between' and isinstance(value, list) and len(value) == 2:
                 where_conditions.append(f"{field_escaped} BETWEEN N'{value[0]}' AND N'{value[1]}'")
             elif operator == 'contains':
                 where_conditions.append(f"{field_escaped} LIKE N'%{value}%'")
             elif operator == 'not_contains':
-                where_conditions.append(f"{field_escaped} NOT LIKE N'%{value}%'")
+                # Для not_contains также включаем NULL значения
+                where_conditions.append(f"({field_escaped} NOT LIKE N'%{value}%' OR {field_escaped} IS NULL)")
             elif operator == 'starts_with':
                 where_conditions.append(f"{field_escaped} LIKE N'{value}%'")
             elif operator == 'ends_with':

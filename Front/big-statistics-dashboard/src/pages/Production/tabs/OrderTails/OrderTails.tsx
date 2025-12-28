@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import OrderTailsStatsGrid from './OrderTailsStatsGrid';
 import OrderTailsTable from './OrderTailsTable';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { ContentLayout } from '../../../../components/Layout';
 import { apiGetOrderTails, type OrderTailRow } from '../../../../config/timeloss-api';
 
 const Stats: React.FC<{ rows?: OrderTailRow[]; suppressLocalLoaders?: boolean; onLoadingChange?: (l: boolean)=>void }> = (props) => <OrderTailsStatsGrid {...props} />;
@@ -17,6 +18,43 @@ const OrderTails: React.FC = () => {
   const [pendingLoads, setPendingLoads] = useState<number>(0);
   const isLoading = pendingLoads > 0;
   const handleLoadingChange = (l: boolean) => setPendingLoads((c) => Math.max(0, c + (l ? 1 : -1)));
+  
+  // Состояние для отслеживания готовности к показу (после рендеринга)
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (isLoading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Очищаем предыдущий таймаут
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    // Ждем следующий кадр рендеринга для гарантии, что DOM обновлен
+    requestAnimationFrame(() => {
+      // Еще один кадр для гарантии, что все размеры рассчитаны
+      requestAnimationFrame(() => {
+        // Небольшая задержка для завершения всех асинхронных операций рендеринга
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [isLoading]);
 
   // Кэшируем данные один раз при открытии вкладки
   const [rowsCache, setRowsCache] = useState<OrderTailRow[] | null>(null);
@@ -35,9 +73,9 @@ const OrderTails: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-2 relative min-h-[70vh]">
-      {isLoading && (
-        <LoadingSpinner overlay size="xl" />
+    <ContentLayout>
+      {(isLoading || !isReadyToShow) && (
+        <LoadingSpinner overlay="screen" size="xl" />
       )}
 
       <div className="flex items-center gap-2 mb-3">
@@ -83,7 +121,7 @@ const OrderTails: React.FC = () => {
       {tab === 'table' && (
         <TableView rows={rowsCache ?? undefined} suppressLocalLoaders={isLoading} onLoadingChange={handleLoadingChange} />
       )}
-    </div>
+    </ContentLayout>
   );
 };
 

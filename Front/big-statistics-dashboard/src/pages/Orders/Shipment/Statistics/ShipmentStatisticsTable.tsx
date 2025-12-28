@@ -27,19 +27,6 @@ function fmtDate(d: any): string {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-function colWidth(c: ColDef): number {
-  return (typeof c.width === 'number' && c.width > 0)
-    ? c.width
-    : (typeof c.minWidth === 'number' && c.minWidth > 0)
-      ? c.minWidth
-      : 150;
-}
-
-function totalGridWidth(cols: ColDef[]): number {
-  const sum = cols.reduce((acc, c) => acc + colWidth(c), 0);
-  return Math.ceil(sum + 8);
-}
-
 export default function ShipmentStatisticsTable({ data }: Props) {
   const { t, i18n } = useTranslation('ordersTranslation');
   const gridApiRef = useRef<any>(null);
@@ -48,15 +35,51 @@ export default function ShipmentStatisticsTable({ data }: Props) {
   // 1) Columns (metric + dynamic per week)
   const columnDefs = useMemo<ColDef[]>(() => {
     const cols: ColDef[] = [
-      { field: 'metric', headerName: t('shipmentPlanFact.WeekNo') as string || 'Week', pinned: 'left', width: 240,
+      { 
+        field: 'metric', 
+        headerName: t('shipmentPlanFact.WeekNo') as string || 'Week', 
+        pinned: 'left', 
+        minWidth: 240,
         cellClass: (p: any) => (p?.data?._boldRow ? 'text-left font-semibold' : 'text-left'),
-        tooltipValueGetter: (p: any) => (p?.data?._commentRow ? String(p?.value ?? '') : ''),
+        tooltipValueGetter: (p: any) => {
+          // Для Comment строки показываем полный текст в tooltip
+          if (p?.data?._commentRow && p?.value) {
+            return String(p.value);
+          }
+          return '';
+        },
       },
     ];
     // Total column right after metric
-    cols.push({ field: 'total', headerName: 'Total', width: 200, minWidth: 160,
-      cellClass: (p: any) => (p?.data?._boldRow ? 'text-center font-semibold' : 'text-center'),
-      tooltipValueGetter: (p: any) => (p?.data?._commentRow ? String(p?.value ?? '') : ''),
+    cols.push({ 
+      field: 'total', 
+      headerName: 'Total', 
+      minWidth: 160,
+      cellClass: (p: any) => {
+        // Полужирный шрифт для выделенных строк (Monthly Shipping Plan и Shipped Qty) или для строк с _boldRow
+        const isBold = p?.data?._boldRow || p?.data?._highlightRow;
+        const base = isBold ? 'text-center font-semibold' : 'text-center';
+        return p?.data?._commentRow ? `${base} overflow-hidden text-ellipsis` : base;
+      },
+      cellStyle: (p: any) => {
+        // Для выделенных строк (Monthly Shipping Plan и Shipped Qty) - зеленый фон
+        if (p?.data?._highlightRow) {
+          return { 
+            backgroundColor: '#f0fdf4' // green-50
+          } as any;
+        }
+        // Для остальных строк - светло-синий фон для колонки Total
+        return { 
+          backgroundColor: '#f0f9ff' // blue-50
+        } as any;
+      },
+      tooltipValueGetter: (p: any) => {
+        // Для Comment строки показываем полный текст в tooltip
+        if (p?.data?._commentRow && p?.value) {
+          return String(p.value);
+        }
+        return '';
+      },
       valueFormatter: (p: any) => (typeof p.value === 'number'
         ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(p.value)
         : p.value),
@@ -65,28 +88,30 @@ export default function ShipmentStatisticsTable({ data }: Props) {
       const field = `c${idx}`;
       const w = r?.WeekNo;
       const header = w != null ? `W${w}` : String(idx + 1);
-      const tip = `${fmtDate(r?.WeekStartDay)} - ${fmtDate(r?.WeekFinishDay)}`;
       cols.push({
         field,
         headerName: header,
-        width: 200,
         minWidth: 160,
-        wrapText: true,
-        autoHeight: true,
+        wrapText: (p: any) => !p?.data?._commentRow, // Отключаем wrapText для Comment строки
+        autoHeight: false, // Отключаем авто-высоту
         cellClass: (p: any) => {
           const base = p?.data?._boldRow ? 'text-center font-semibold' : 'text-center';
-          return p?.data?._commentRow ? `${base} comment-cell` : base;
+          return p?.data?._commentRow ? `${base} overflow-hidden text-ellipsis` : base;
         },
         valueFormatter: (p: any) => (typeof p.value === 'number'
           ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(p.value)
           : p.value),
-        tooltipValueGetter: (p: any) => (p?.data?._commentRow ? String(p?.value ?? '') : ''),
+        tooltipValueGetter: (p: any) => {
+          // Для Comment строки показываем полный текст в tooltip
+          if (p?.data?._commentRow && p?.value) {
+            return String(p.value);
+          }
+          return '';
+        },
       });
     });
     return cols;
-  }, [data, i18n.language]);
-
-  const gridPixelWidth = useMemo(() => totalGridWidth(columnDefs), [columnDefs]);
+  }, [data, i18n.language, t]);
 
   // 2) Transposed rows with separators
   const rowData = useMemo(() => {
@@ -128,12 +153,6 @@ export default function ShipmentStatisticsTable({ data }: Props) {
           if (isFinite(n)) sums[k] = (sums[k] || 0) + n;
         });
     });
-    const makeSep = () => {
-      const r: any = { metric: '', _separator: true };
-      (data || []).forEach((_, idx) => { r[`c${idx}`] = ''; });
-      return r;
-    };
-
     // Fill rows
     for (const k of keys) {
       const row: any = { metric: label(k) };
@@ -158,6 +177,9 @@ export default function ShipmentStatisticsTable({ data }: Props) {
         row.total = `${fmtDate(minStart)} - ${fmtDate(maxFinish)}`;
       } else if (k === 'Comment') {
         row.total = '';
+      } else if (k === 'FGStockStartWeekPcs') {
+        // Stock, pcs - ненакопительная единица, Total всегда пусто
+        row.total = '';
       } else {
         if (k === 'DiffQty') {
           const a = sums['FactQty'] || 0;
@@ -168,10 +190,15 @@ export default function ShipmentStatisticsTable({ data }: Props) {
         }
       }
       if (k === 'Comment') row._commentRow = true;
+      // Выделяем строки Monthly Shipping Plan и Shipped Qty тускло-зеленым
+      if (k === 'ShipMonth_PlanPcs' || k === 'ShipQty') {
+        row._highlightRow = true;
+      }
+      // Добавляем флаг для строк с более жирной границей сверху
+      if (k === 'MonthPlanPcs_System' || k === 'ShipMonth_PlanPcs' || k === 'Comment') {
+        row._thickBorderTop = true;
+      }
       out.push(row);
-
-      // separators
-      if (k === 'FGStockStartWeekPcs') { const s = makeSep(); s.total = ''; out.push(s); }
 
       // Calculated rows like before
       if (k === 'DiffQty') {
@@ -188,7 +215,6 @@ export default function ShipmentStatisticsTable({ data }: Props) {
         const sumB = sums['MonthPlanPcs_System'] || 0;
         perc.total = sumB ? `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format((sumA / sumB) * 100)}%` : '';
         out.push(perc);
-        const s = makeSep(); s.total = ''; out.push(s);
       }
 
       if (k === 'ShipQty') {
@@ -218,54 +244,109 @@ export default function ShipmentStatisticsTable({ data }: Props) {
         percS.total = sumPlan ? `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format((sumShip / sumPlan) * 100)}%` : '';
         out.push(percS);
       }
-
-      if (k === 'ContainerQty') { const s = makeSep(); s.total = ''; out.push(s); }
     }
     return out;
-  }, [data, i18n.language]);
+  }, [data, i18n.language, t]);
 
-  // 3) Width = min(total columns, parent width); Height = window-based for inner scroll
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [parentWidth, setParentWidth] = useState<number>(0);
+  // Адаптивная высота таблицы
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [gridHeight, setGridHeight] = useState<number>(800); // Начальная высота больше
+
   useEffect(() => {
-    const el = wrapRef.current?.parentElement;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setParentWidth(el.clientWidth));
-    ro.observe(el);
-    setParentWidth(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-
-  const gridWidth = useMemo(() => Math.min(gridPixelWidth, parentWidth || gridPixelWidth), [gridPixelWidth, parentWidth]);
-
-  const [gridHeight, setGridHeight] = useState<number>(520);
-  useEffect(() => {
-    const recalc = () => {
-      if (!wrapRef.current) return;
-      const top = wrapRef.current.getBoundingClientRect().top;
-      const h = Math.max(280, Math.floor(window.innerHeight - top - 24));
-      setGridHeight(h);
+    const recalcHeight = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        // Вычисляем доступную высоту: высота окна минус позиция контейнера минус отступы
+        if (rect.top > 0) { // Проверяем, что элемент уже отрендерен
+          const availableHeight = window.innerHeight - rect.top - 100; // 100px для отступов, панели действий и заголовков
+          const newHeight = Math.max(700, availableHeight); // минимум 700px, но используем доступное пространство
+          setGridHeight(newHeight);
+        }
+      }
     };
-    recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
+
+    // Пересчитываем при монтировании и изменении данных
+    const timeoutId1 = setTimeout(recalcHeight, 100);
+    const timeoutId2 = setTimeout(recalcHeight, 500); // Дополнительная проверка после полной загрузки
+    
+    window.addEventListener('resize', recalcHeight);
+    
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      window.removeEventListener('resize', recalcHeight);
+    };
+  }, [rowData]); // Пересчитываем при изменении данных
+
+  // Автоматическая подгонка колонок при изменении размера окна
+  useEffect(() => {
+    const handleResize = () => {
+      if (gridApiRef.current) {
+        try {
+          gridApiRef.current.sizeColumnsToFit();
+        } catch (e) {
+          console.warn('sizeColumnsToFit failed', e);
+        }
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <div className="overflow-x-auto" ref={wrapRef}>
+    <div ref={containerRef} className="w-full flex flex-col">
       {(() => {
         const actions = (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2 flex-shrink-0">
             <AgGridExportButton api={gridApi} fileName="shipment_statistics" variant="icon" />
             <FocusModeToggle variant="dark" />
           </div>
         );
         const slot = typeof document !== 'undefined' ? document.getElementById('shipment-actions-slot') : null;
-        return slot ? createPortal(actions, slot) : (<div className="flex items-center gap-2">{actions}</div>);
+        return slot ? createPortal(actions, slot) : actions;
       })()}
-      <div className="stats-grid ag-theme-quartz" style={{ width: gridWidth, height: gridHeight }}>
+      <div className="ag-theme-quartz" style={{ width: '100%', height: `${gridHeight}px` }}>
+        <style>{`
+          .ag-theme-quartz .ag-cell.overflow-hidden.text-ellipsis {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 3 !important;
+            -webkit-box-orient: vertical !important;
+            white-space: normal !important;
+            line-height: 1.3 !important;
+            max-height: 60px !important;
+          }
+          /* Тускло-зеленый фон для выделенных строк */
+          .ag-theme-quartz .ag-row.highlight-row .ag-cell {
+            background-color: #f0fdf4 !important; /* green-50 - более тусклый */
+          }
+          /* При наведении на строки с цветным фоном - показываем стандартное выделение поверх */
+          .ag-theme-quartz .ag-row.highlight-row:hover .ag-cell {
+            background-color: #f3f4f6 !important; /* gray-100 - стандартный цвет выделения AG Grid */
+          }
+          /* Для колонки Total с зеленым фоном - тоже меняем цвет при наведении */
+          .ag-theme-quartz .ag-row.highlight-row:hover .ag-cell[col-id="total"] {
+            background-color: #f3f4f6 !important; /* gray-100 - стандартный цвет выделения AG Grid */
+          }
+          /* Более жирная граница сверху для разделительных строк */
+          .ag-theme-quartz .ag-row.thick-border-top .ag-cell {
+            border-top: 2px solid #e5e7eb !important; /* gray-200, более жирная линия */
+          }
+        `}</style>
         <AgGridReact
-          onGridReady={(p) => { gridApiRef.current = p.api; setGridApi(p.api); }}
+          onGridReady={(p) => { 
+            gridApiRef.current = p.api; 
+            setGridApi(p.api);
+            // Автоматически подгоняем колонки под ширину контейнера
+            setTimeout(() => {
+              try {
+                p.api.sizeColumnsToFit();
+              } catch (e) {
+                console.warn('sizeColumnsToFit failed', e);
+              }
+            }, 100);
+          }}
           columnDefs={columnDefs}
           rowData={rowData}
           defaultColDef={{
@@ -274,16 +355,31 @@ export default function ShipmentStatisticsTable({ data }: Props) {
             filter: false,
             editable: false,
             wrapText: true,
-            autoHeight: true,
+            autoHeight: false, // Отключаем авто-высоту для всех строк
             tooltipValueGetter: (p: any) => (p?.data?._commentRow ? String(p?.value ?? '') : ''),
+            cellStyle: (p: any) => {
+              // Тускло-зеленый фон для выделенных строк (Monthly Shipping Plan и Shipped Qty)
+              // Для колонки Total логика обрабатывается в columnDefs
+              if (p?.data?._highlightRow && p?.colDef?.field !== 'total') {
+                return { backgroundColor: '#f0fdf4' } as any; // green-50 - более тусклый
+              }
+              return undefined;
+            },
           }}
-          suppressRowHoverHighlight={true}
-          getRowHeight={(p: any) => (p?.data?._separator ? 10 : undefined)}
-          getRowClass={(p: any) => (p?.data?._separator ? 'stats-separator' : undefined)}
+          suppressRowHoverHighlight={false}
+          getRowHeight={(p: any) => {
+            if (p?.data?._separator) return 10; // Сепараторы - 10px
+            if (p?.data?._commentRow) return 60; // Строка Comment - фиксированная высота 60px
+            return undefined; // Остальные строки - стандартная высота
+          }}
+          getRowClass={(p: any) => {
+            if (p?.data?._highlightRow) return 'highlight-row';
+            if (p?.data?._thickBorderTop) return 'thick-border-top';
+            return undefined;
+          }}
           tooltipMouseTrack={true}
           tooltipHideDelay={1000000}
           tooltipShowDelay={0}
-          // enable range selection + manual copy like on Shipment Log
           cellSelection={true}
           suppressClipboardPaste={true}
           sendToClipboard={(p: any) => {
@@ -314,6 +410,14 @@ export default function ShipmentStatisticsTable({ data }: Props) {
               }
             } catch {
               (p as any).data = String(p?.data ?? '');
+            }
+          }}
+          onFirstDataRendered={(p) => {
+            // Подгоняем колонки после загрузки данных
+            try {
+              p.api.sizeColumnsToFit();
+            } catch (e) {
+              console.warn('sizeColumnsToFit failed', e);
             }
           }}
         />

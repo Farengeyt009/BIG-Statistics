@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { PageLayout } from '../../components/Layout';
 import { usePageView } from '../../hooks/usePageView';
 
 interface User {
@@ -377,7 +378,7 @@ const AdminPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <PageLayout padding="p-6">
       <h1 className="text-3xl font-bold text-[#142143] mb-6">User Administration</h1>
 
       {/* Вкладки */}
@@ -854,7 +855,7 @@ const AdminPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow">
             <div className="p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800">All Users Activity</h2>
-              <p className="text-xs text-gray-500 mt-1">Detailed login statistics for all users</p>
+              <p className="text-xs text-gray-500 mt-1">Detailed activity statistics for all users</p>
             </div>
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full">
@@ -864,14 +865,16 @@ const AdminPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Logins</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Visits</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => {
-                    const lastLogin = user.last_login 
-                      ? new Date(user.last_login).toLocaleString('ru-RU', {
+                  {(systemStats.all_users_activity || users).map((user: any) => {
+                    // Используем last_activity если доступна, иначе last_login
+                    const activityDate = user.last_activity || user.last_login;
+                    const lastActivity = activityDate
+                      ? new Date(activityDate).toLocaleString('ru-RU', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -880,9 +883,9 @@ const AdminPage: React.FC = () => {
                         })
                       : 'Never';
                     
-                    // Проверяем был ли пользователь активен сегодня
-                    const isActiveToday = user.last_login && 
-                      new Date(user.last_login).toDateString() === new Date().toDateString();
+                    // Проверяем был ли пользователь активен сегодня (по last_activity)
+                    const isActiveToday = activityDate && 
+                      new Date(activityDate).toDateString() === new Date().toDateString();
                     
                     return (
                       <tr key={user.user_id} className="hover:bg-gray-50">
@@ -918,11 +921,11 @@ const AdminPage: React.FC = () => {
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                               </span>
                             )}
-                            <span className="text-sm text-gray-500">{lastLogin}</span>
+                            <span className="text-sm text-gray-500">{lastActivity}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                          -
+                          {user.total_visits || 0}
                         </td>
                       </tr>
                     );
@@ -1136,7 +1139,7 @@ const AdminPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 };
 

@@ -25,8 +25,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   variant = 'light',
   className = '',
   overlay,
-  overlayBgClass = 'bg-white/60 backdrop-blur-sm',
-  overlayZIndexClass = 'z-[1000]'
+  overlayBgClass,
+  overlayZIndexClass = 'z-20'
 }) => {
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -72,9 +72,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   // Оборачивание в оверлей по запросу
   if (overlay) {
     const mode = overlay === 'screen' ? 'screen' : 'content';
-    const positionClass = mode === 'screen' ? 'fixed inset-0' : 'absolute inset-0';
+    // Для полноэкранного оверлея используем fixed с отступами от сайдбара и шапки
+    // Для content используем absolute относительно родителя
+    const positionClass = mode === 'screen' 
+      ? 'fixed top-[var(--header-height,80px)] left-[var(--sidebar-width,4rem)] right-0 bottom-0' 
+      : 'absolute inset-0';
+    // Для полноэкранного оверлея используем непрозрачный белый фон по умолчанию
+    const defaultBg = mode === 'screen' ? 'bg-white' : 'bg-white/60 backdrop-blur-sm';
+    const bgClass = overlayBgClass || defaultBg;
     return (
-      <div className={`${positionClass} ${overlayZIndexClass} ${overlayBgClass} flex items-center justify-center`}>
+      <div className={`${positionClass} ${overlayZIndexClass} ${bgClass} flex items-center justify-center`}>
         {spinner}
       </div>
     );

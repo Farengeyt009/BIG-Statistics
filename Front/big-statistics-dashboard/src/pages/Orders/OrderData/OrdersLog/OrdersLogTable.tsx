@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { AgGridReact } from '@ag-grid-community/react';
 import type { ColDef } from '@ag-grid-community/core';
 import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 import { useAuth } from '../../../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import ReportManager from './ReportManager';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
+import { applyStandardFilters, getMonthLabel, toIsoDate, BLANK_VALUE } from '../../../../components/AgGrid/filterUtils';
 
 interface Report {
   report_id: number;
@@ -32,6 +34,7 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
   setIsManagerOpen 
 }) => {
   const { token } = useAuth();
+  const { i18n } = useTranslation();
   const gridRef = useRef<AgGridReact>(null);
   const gridWrapperRef = useRef<HTMLDivElement | null>(null);
   
@@ -43,6 +46,37 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [reloadTrigger, setReloadTrigger] = useState(0);
   const [gridApi, setGridApi] = useState<any>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
   const [gridHeightPx, setGridHeightPx] = useState<number | null>(null);
 
   // Функция загрузки списка отчетов
@@ -77,6 +111,58 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
     }
   }, [token]);
 
+  // Сбор значений для фильтра по дате, учитывая другие set-фильтры
+  // Использует API для получения актуальных данных
+  const createCollectDateValuesIgnoringSelf = useCallback((dateFields: Set<string>) => {
+    return (params: any, colId: string) => {
+      const api = params.api;
+      const model = { ...(api.getFilterModel?.() ?? {}) } as Record<string, any>;
+      delete model[colId];
+
+      // Поддерживаем простые set-фильтры по другим колонкам (в т.ч. датам)
+      const setFilters: Array<{ colId: string; allowed: Set<string> }> = [];
+      for (const [k, m] of Object.entries(model)) {
+        if ((m as any)?.filterType === 'set' && Array.isArray((m as any).values)) {
+          setFilters.push({ colId: k, allowed: new Set((m as any).values as string[]) });
+        }
+      }
+
+      const passOtherSetFilters = (row: any) => {
+        for (const f of setFilters) {
+          const v = dateFields.has(f.colId) ? toIsoDate(row?.[f.colId]) : String(row?.[f.colId] ?? '').trim();
+          if (f.allowed.size && !f.allowed.has(v)) return false;
+        }
+        return true;
+      };
+
+      // Получаем данные через API для актуальности (все данные, не только отфильтрованные)
+      const dataRows: any[] = [];
+      api.forEachNode?.((node: any) => {
+        if (node.data) dataRows.push(node.data);
+      });
+
+      const uniq = new Set<string>();
+      let hasBlanks = false;
+      dataRows.forEach((r) => {
+        if (!passOtherSetFilters(r)) return;
+        const iso = toIsoDate(r?.[colId]);
+        if (iso) {
+          uniq.add(iso);
+        } else {
+          // Отслеживаем наличие пустых значений
+          hasBlanks = true;
+        }
+      });
+      const out = Array.from(uniq);
+      out.sort();
+      // Добавляем специальное значение для blank в конец списка
+      if (hasBlanks) {
+        out.push(BLANK_VALUE);
+      }
+      params.success(out);
+    };
+  }, []);
+
   // Выполнение отчета при выборе или изменении
   useEffect(() => {
     const executeReport = async () => {
@@ -96,11 +182,28 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
         if (data.success) {
           // Генерируем колонки на основе данных с форматированием
           if (data.columns && data.columns.length > 0) {
+            // Определяем поля с датами (проверяем несколько строк, если первая пустая)
+            const dateFields = new Set<string>();
+            data.columns.forEach((colName: string) => {
+              // Ищем первое непустое значение в данных для этого поля
+              let value: any = null;
+              for (const row of data.data || []) {
+                value = row?.[colName];
+                if (value != null && value !== '') break;
+              }
+              // Проверяем формат даты DD.MM.YYYY
+              const isDate = typeof value === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(value);
+              if (isDate) dateFields.add(colName);
+            });
+
+            // Создаем функцию для сбора значений дат (использует API для актуальных данных)
+            const collectDateValues = createCollectDateValuesIgnoringSelf(dateFields);
+
             const cols: ColDef[] = data.columns.map((colName: string) => {
               // Определяем тип данных по первой строке
               const firstValue = data.data?.[0]?.[colName];
               const isNumber = typeof firstValue === 'number';
-              const isDate = typeof firstValue === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(firstValue);
+              const isDate = dateFields.has(colName);
               
               return {
                 field: colName,
@@ -109,8 +212,9 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
                 sortable: true,
                 resizable: true,
                 minWidth: 120,
-                // Форматирование чисел с разделителем тысяч
+                // Явно указываем cellDataType для правильного определения типа фильтра
                 ...(isNumber && {
+                  cellDataType: 'number',
                   // valueFormatter - только для ОТОБРАЖЕНИЯ (с пробелами)
                   valueFormatter: (params: any) => {
                     if (params.value == null) return '';
@@ -118,13 +222,30 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
                   },
                   cellClass: 'text-right',
                 }),
-                // Центрирование дат
+                // Иерархический фильтр дат с группировкой по годам, месяцам, дням
                 ...(isDate && {
                   cellClass: 'text-center',
+                  filter: 'agSetColumnFilter', // Используем Set фильтр с treeList для иерархии
+                  filterParams: {
+                    treeList: true as any,
+                    refreshValuesOnOpen: true,
+                    values: (params: any) => collectDateValues(params, colName),
+                    // treeListPathGetter, valueFormatter и filterValueGetter для blank
+                    // будут автоматически добавлены в filterUtils.ts
+                  },
+                  // Для отображения оставляем строку как есть
+                  valueFormatter: (params: any) => {
+                    return params.value ? String(params.value) : '';
+                  },
                 }),
               };
             });
-            setColumnDefs(cols);
+            
+            // Применяем стандартные настройки фильтров (кнопки Apply/Clear/Reset)
+            // Примечание: agSetColumnFilter не модифицируется утилитой, что правильно
+            // Передаем language для локализации месяцев в фильтре дат
+            const colsWithStandardFilters = applyStandardFilters(cols, { language: i18n?.language });
+            setColumnDefs(colsWithStandardFilters);
           }
           
           setRowData(data.data || []);
@@ -187,19 +308,6 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
       return false;
     },
   }), []);
-  
-  // Генерация уникального ID для каждой строки
-  const getRowId = useMemo(() => {
-    let counter = 0;
-    return (params: any) => {
-      // Используем комбинацию Order_No + Article_number + счётчик для уникальности
-      const orderId = params.data.Order_No || '';
-      const articleId = params.data.Article_number || '';
-      const market = params.data.Market || '';
-      counter++;
-      return `${orderId}_${articleId}_${market}_${counter}`;
-    };
-  }, []);
 
   // Рендерим селектор и кнопку в слоты через Portal
   const selectorSlot = document.getElementById('orderlog-report-selector');
@@ -272,9 +380,9 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
       )}
 
       {/* Таблица */}
-      {loading ? (
+      {(loading || !isReadyToShow) ? (
         <div className="relative" style={{ height: '600px' }}>
-          <LoadingSpinner overlay size="xl" />
+          <LoadingSpinner overlay="screen" size="xl" />
         </div>
       ) : (
         <div 
@@ -287,7 +395,6 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
             rowData={rowData}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
-            getRowId={getRowId}
             onGridReady={(params) => setGridApi(params.api)}
             pagination={false}
             animateRows={false}

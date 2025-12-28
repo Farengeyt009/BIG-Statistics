@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DateRangePickerPro, YearMonthRangePicker } from '../../../components/DatePicker';
+import { ContentLayout } from '../../../components/Layout';
 import ShipmentLog from './Shipment_Log/ShipmentLog';
 import ShipmentPlanFact from './Shipment_PlanFact/ShipmentPlanFact';
 import Statistics from './Statistics/Statistics';
@@ -19,9 +20,10 @@ type ShipmentProps = {
   onChangeDates: (from: Date, to: Date) => void;
   reloadToken?: number;
   previewRows?: any[] | null;
+  onOpenFilterModal?: () => void;
 };
 
-export default function Shipment({ startDate, endDate, onChangeDates, reloadToken, previewRows }: ShipmentProps) {
+export default function Shipment({ startDate, endDate, onChangeDates, reloadToken, previewRows, onOpenFilterModal }: ShipmentProps) {
   const [rows] = useState<ShipmentRow[]>([]);
   const [activeSubtab, setActiveSubtab] = useState<'statistics' | 'planfact' | 'log'>('statistics');
   const { t, i18n } = useTranslation('ordersTranslation');
@@ -35,7 +37,7 @@ export default function Shipment({ startDate, endDate, onChangeDates, reloadToke
   const [statsTo, setStatsTo] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
 
   return (
-    <div className="p-2">
+    <ContentLayout>
       <div className="flex items-center gap-6 mb-3">
         {/* Внутренние вкладки: как на Production */}
         <div className="flex gap-2">
@@ -126,9 +128,15 @@ export default function Shipment({ startDate, endDate, onChangeDates, reloadToke
       )}
 
       {activeSubtab === 'log' && (
-        <ShipmentLog startDate={startDate} endDate={endDate} reloadToken={reloadToken} rowsOverride={previewRows ?? undefined} />
+        <ShipmentLog 
+          startDate={startDate} 
+          endDate={endDate} 
+          reloadToken={reloadToken} 
+          rowsOverride={previewRows ?? undefined}
+          onOpenFilterModal={onOpenFilterModal}
+        />
       )}
-    </div>
+    </ContentLayout>
   );
 }
 

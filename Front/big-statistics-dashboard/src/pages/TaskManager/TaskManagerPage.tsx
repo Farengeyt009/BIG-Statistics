@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProjectsTableView } from './ProjectsTableView';
 import { KanbanView } from './KanbanView';
 import { ListView } from './ListView';
@@ -6,6 +6,8 @@ import { AttachmentsView } from './AttachmentsView';
 import { ViewToggle } from './components/ViewToggle';
 import { ProjectSettingsPage } from './ProjectSettingsPage';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageLayout } from '../../components/Layout';
+import { WarningModal } from '../../components/WarningModal/WarningModal';
 
 export const TaskManagerPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -15,6 +17,11 @@ export const TaskManagerPage: React.FC = () => {
   const [projectName, setProjectName] = useState<string>('');
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+
+  useEffect(() => {
+    setShowWarningModal(true);
+  }, []);
 
   // Функция для обновления данных после изменений в настройках
   const handleSettingsChange = () => {
@@ -47,7 +54,7 @@ export const TaskManagerPage: React.FC = () => {
 
   if (selectedProjectId) {
     return (
-      <div className="p-4">
+      <PageLayout>
         <PageHeader
           title={projectName ? `BIG Task / ${projectName}` : "BIG Task"}
           view=""
@@ -101,12 +108,18 @@ export const TaskManagerPage: React.FC = () => {
             onSettingsChange={handleSettingsChange}
           />
         )}
-      </div>
+
+        <WarningModal
+          isOpen={showWarningModal}
+          onClose={() => setShowWarningModal(false)}
+        />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="p-4">
+    <>
+    <PageLayout>
       <PageHeader
         title="BIG Task"
         view="projects"
@@ -119,7 +132,13 @@ export const TaskManagerPage: React.FC = () => {
       <div className="h-[calc(100vh-200px)] overflow-hidden">
         <ProjectsTableView onProjectSelect={setSelectedProjectId} />
       </div>
-    </div>
+    </PageLayout>
+
+    <WarningModal
+      isOpen={showWarningModal}
+      onClose={() => setShowWarningModal(false)}
+    />
+    </>
   );
 };
 

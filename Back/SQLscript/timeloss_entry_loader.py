@@ -3,7 +3,7 @@
 import os
 import sys
 import pyodbc
-import pandas as pd
+import pandas as pd  # type: ignore
 from datetime import datetime
 
 # === НАСТРОЙКИ ===

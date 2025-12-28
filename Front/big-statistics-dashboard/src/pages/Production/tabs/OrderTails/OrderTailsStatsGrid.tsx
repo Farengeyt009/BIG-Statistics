@@ -148,7 +148,7 @@ const OrderTailsStatsGrid: React.FC<Props> = ({ rows: externalRows, suppressLoca
             <AgGridReact<LeafRow>
           rowData={rows}
           columnDefs={columnDefs}
-          defaultColDef={{ resizable: true, sortable: true, filter: true }}
+          defaultColDef={{ resizable: true, sortable: true, filter: false }}
           treeData={true}
             domLayout={'autoHeight'}
           getDataPath={(r: LeafRow) => [r.LargeGroup || '', r.GroupName || '']}

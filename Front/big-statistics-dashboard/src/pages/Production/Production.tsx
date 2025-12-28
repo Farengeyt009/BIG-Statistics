@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageLayout } from '../../components/Layout';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import DailyPlanFact from './tabs/DailyPlanFact/DailyPlanFact';
 import TimeLoss from './tabs/TimeLoss/TimeLoss';
 import WorkingCalendar from './tabs/WorkingCalendar/WorkingCalendar';
@@ -8,14 +10,23 @@ import OrderTails from './tabs/OrderTails/OrderTails';
 import { usePageView } from '../../hooks/usePageView';
 
 const Production: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('analytics');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'analytics');
   const { t } = useTranslation('production');
+  
+  // Обновляем активную вкладку при изменении параметра в URL
+  useEffect(() => {
+    if (tabFromUrl && ['analytics', 'dailyPlanFact', 'timeLoss', 'orderTails'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
   
   // Логируем посещение страницы Production
   usePageView('production');
 
   return (
-    <div className="p-4">
+    <PageLayout>
       <PageHeader
         title={t('pageTitle')}
         view={activeTab}
@@ -31,7 +42,7 @@ const Production: React.FC = () => {
       {activeTab === 'dailyPlanFact' && <DailyPlanFact />}
       {activeTab === 'timeLoss' && <TimeLoss />}
       {activeTab === 'orderTails' && <OrderTails />}
-    </div>
+    </PageLayout>
   );
 };
 

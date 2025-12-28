@@ -7,9 +7,15 @@ import '@ag-grid-community/styles/ag-grid.css';
 import '@ag-grid-community/styles/ag-theme-quartz.css';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
+import { Settings } from 'lucide-react';
+import { applyStandardFilters } from '../../../../components/AgGrid/filterUtils';
 
 type ShipmentRow = Record<string, any>;
-type Props = { rows?: ShipmentRow[]; suppressLocalLoaders?: boolean };
+type Props = { 
+  rows?: ShipmentRow[]; 
+  suppressLocalLoaders?: boolean;
+  onOpenFilterModal?: () => void;
+};
 
 /** Стабильный уникальный ключ строки по данным */
 function makeRowId(r: ShipmentRow) {
@@ -20,7 +26,7 @@ function makeRowId(r: ShipmentRow) {
   return `${a}|${b}|${c}|${d}`;
 }
 
-const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLocalLoaders }) => {
+const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLocalLoaders, onOpenFilterModal }) => {
   const rows: ShipmentRow[] = externalRows || [];
   const { t, i18n } = useTranslation('ordersTranslation');
   const [gridApi, setGridApi] = useState<any | null>(null);
@@ -229,18 +235,16 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
         };
       } else if (NUM_FIELDS.has(key)) {
         base.valueFormatter = (p: any) => formatNumberSmart(p.value);
-        base.filter = 'agSetColumnFilter';
-        (base as any).filterParams = {
-          includeBlanksInFilter: true,
-          refreshValuesOnOpen: true,
-          keyCreator: (p: any) => normalizeNumberKey(p.value),
-          valueFormatter: (p: any) => formatNumberSmart(p.value),
-        };
         (base as any).cellDataType = 'number';
+        // Убираем явный filter, чтобы applyStandardFilters применил стандартный числовой фильтр
       }
       return base;
     });
   }, [rows, i18n.language]);
+
+  const columnDefsWithStandardFilters = useMemo(() => {
+    return applyStandardFilters(columnDefs);
+  }, [columnDefs]);
 
   if (suppressLocalLoaders) return null;
   if (!rows.length) return <div className="text-center text-gray-500 py-10">Нет данных для выбранного периода</div>;
@@ -249,6 +253,16 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
     <div className="flex items-center gap-2">
       <AgGridExportButton api={gridApi} fileName="shipment_log" variant="icon" />
       <FocusModeToggle variant="dark" />
+      {onOpenFilterModal && (
+        <button
+          className="h-8 w-8 p-2 rounded-md border border-gray-300 bg-white text-slate-700 hover:bg-gray-100 transition flex items-center justify-center"
+          title="Filter Settings"
+          aria-label="Filter Settings"
+          onClick={onOpenFilterModal}
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 
@@ -285,7 +299,7 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
         <AgGridReact
           key={columnDefs.map(c => String(c.field)).join('|')}
           rowData={rows}
-          columnDefs={columnDefs}
+          columnDefs={columnDefsWithStandardFilters}
           defaultColDef={defaultColDef}
           autoSizeStrategy={autoSizeStrategy}
           getRowId={(p: any) => makeRowId(p.data)}

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { ContentLayout } from "../../../../components/Layout";
 import MonthPlanGantt from "./MonthPlanGantt";
 import MonthPlanSummary from "./MonthPlanSummary";
 
@@ -12,7 +13,7 @@ const MonthPlanTabs: React.FC = () => {
   const ymPanelRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="container">
+    <ContentLayout spacing="">
       <div ref={ymPanelRef} className="flex items-center gap-4 mb-4">
         {/* Внутренние вкладки */}
         <div className="flex gap-2">
@@ -68,7 +69,7 @@ const MonthPlanTabs: React.FC = () => {
       </div>
       {activeTab === 'summary' && <MonthPlanSummary year={year} month={month} ymPanelRef={ymPanelRef} />}
       {activeTab === 'gantt' && <MonthPlanGantt year={year} month={month} ymPanelRef={ymPanelRef} />}
-    </div>
+    </ContentLayout>
   );
 };
 

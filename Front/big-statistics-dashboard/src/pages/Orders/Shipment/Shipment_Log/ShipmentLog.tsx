@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import ShipmentLogTable from './ShipmentLogTable';
 import { API_ENDPOINTS } from '../../../../config/api';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 
 function toYmdLocal(d: Date) {
   const y = d.getFullYear();
@@ -9,15 +10,24 @@ function toYmdLocal(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-type Props = { startDate: Date | null; endDate: Date | null; reloadToken?: number; rowsOverride?: any[] };
+type Props = { 
+  startDate: Date | null; 
+  endDate: Date | null; 
+  reloadToken?: number; 
+  rowsOverride?: any[];
+  onOpenFilterModal?: () => void;
+};
 
-export default function ShipmentLog({ startDate, endDate, reloadToken, rowsOverride }: Props) {
+export default function ShipmentLog({ startDate, endDate, reloadToken, rowsOverride, onOpenFilterModal }: Props) {
   const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Инициализируем как true, чтобы сразу показать спиннер
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (rowsOverride && Array.isArray(rowsOverride)) {
       setRows(rowsOverride);
+      setLoading(false);
       return;
     }
     const fetchData = async () => {
@@ -54,13 +64,47 @@ export default function ShipmentLog({ startDate, endDate, reloadToken, rowsOverr
     fetchData();
   }, [startDate, endDate, reloadToken, rowsOverride]);
 
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
+
+  // Показываем только спиннер при загрузке или рендеринге
+  if (loading || !isReadyToShow) {
+    return (
+      <div className="p-2">
+        <LoadingSpinner overlay="screen" size="xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-2">
-      {loading ? (
-        <div className="text-center text-gray-500 py-10">Загрузка…</div>
-      ) : (
-        <ShipmentLogTable rows={rows} suppressLocalLoaders={false} />
-      )}
+      <ShipmentLogTable rows={rows} suppressLocalLoaders={false} onOpenFilterModal={onOpenFilterModal} />
     </div>
   );
 }

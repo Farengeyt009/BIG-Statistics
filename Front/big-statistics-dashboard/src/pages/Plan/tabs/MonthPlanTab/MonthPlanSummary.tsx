@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { DataTableCustomColumn } from '../../../../components/DataTableCustomColumn/DataTableCustomColumn';
@@ -390,6 +390,43 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
   const [expandedSubgroups, setExpandedSubgroups] = useState<Set<string>>(new Set());
   const [expandedLargeGroups, setExpandedLargeGroups] = useState<Set<string>>(new Set());
   const [expandedLargeSubgroups, setExpandedLargeSubgroups] = useState<Set<string>>(new Set());
+  
+  // Состояние для отслеживания готовности к показу (после рендеринга)
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Очищаем предыдущий таймаут
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    // Ждем следующий кадр рендеринга для гарантии, что DOM обновлен
+    requestAnimationFrame(() => {
+      // Еще один кадр для гарантии, что все размеры рассчитаны
+      requestAnimationFrame(() => {
+        // Небольшая задержка для завершения всех асинхронных операций рендеринга
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
 
   // Функция для загрузки данных с API
   const fetchData = useCallback(async () => {
@@ -485,11 +522,11 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
     : [expandedMarkets, expandedGroups, expandedSubgroups];
   const treeData = getTree(data1, groupKeys, ...expandedSets);
 
-  // Показываем индикатор загрузки
-  if (loading) {
+  // Показываем индикатор загрузки пока данные загружаются или компоненты рендерятся
+  if (loading || !isReadyToShow) {
     return (
-      <div className="container relative min-h-[70vh]">
-        <LoadingSpinner overlay size="xl" />
+      <div className="relative min-h-[70vh]">
+        <LoadingSpinner overlay="screen" size="xl" />
       </div>
     );
   }
@@ -497,7 +534,7 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
   // Показываем ошибку
   if (error) {
     return (
-      <div className="container">
+      <div>
         <div className="flex justify-center items-center h-64">
           <div className="text-lg text-red-600">
             Ошибка загрузки данных: {error}
@@ -508,9 +545,9 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
   }
 
   return (
-    <div className="container">
+    <div>
       {/* KPI карточки горизонтально вверху */}
-      <div className="flex flex-wrap gap-14 mb-2">
+      <div className="flex flex-wrap justify-between gap-6 mb-2">
         <KPICardWithChart
           label="Total, pcs"
           value={`${Math.round(totalQtyData.plan / 1000)}K`}

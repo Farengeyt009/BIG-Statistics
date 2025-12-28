@@ -1,14 +1,16 @@
 // src/pages/Home/Production/Production.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { kpiData, pagesTable, refTable } from './utils/mockData';
 import { MetricCard } from '../../../components/KPICards';
 import { TrendChart } from './components/TrendChart';
 import { MiniTable } from './components/MiniTable';
 import { DateRangePickerPro } from '../../../components/DatePicker';
+import { ContentLayout } from '../../../components/Layout';
 import { useTranslation } from 'react-i18next';
 import homeTranslations from '../HomeTranslation.json';
 import { ProductionProvider } from './ProductionContext';
 import { AutoDashboard } from './components/AutoDashboard';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 export default function Production() {
   const { i18n } = useTranslation();
@@ -24,10 +26,12 @@ export default function Production() {
   /** -------------------- состояния -------------------- */
   const [selectedDate, setSelectedDate]     = useState<Date | null>(new Date());
   const [productionData, setProductionData] = useState<any>({});
-  const [loading, setLoading]               = useState(false);
+  const [loading, setLoading]               = useState(true); // Инициализируем как true, чтобы сразу показать спиннер
   const [hoveredWorkShop, setHoveredWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
   const [defaultWorkShop, setDefaultWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
   const [pinnedWorkShop, setPinnedWorkShop] = useState<{workShop: string, workCenter: string} | null>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
 
   /** -------------------- обработка данных из table4 totals -------------------- */
   const processTable4Data = useCallback((table4Data: any) => {
@@ -153,10 +157,60 @@ export default function Production() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]); // Убрали fetchProductionData из зависимостей
 
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
+
   /** -------------------- верстка -------------------- */
   
   // Подготавливаем данные для контекста
   const workShopRows = processTable4Data(productionData.table4);
+  
+  // Показываем только спиннер при загрузке или рендеринге
+  if (loading || !isReadyToShow) {
+    return (
+      <ProductionProvider value={{
+        fetchProductionData,
+        setHoveredWorkShop,
+        workShopRows,
+        selectedDate,
+        productionData,
+        pinnedWorkShop,
+        setPinnedWorkShop
+      }}>
+        <AutoDashboard>
+          <ContentLayout>
+            <LoadingSpinner overlay="screen" size="xl" />
+          </ContentLayout>
+        </AutoDashboard>
+      </ProductionProvider>
+    );
+  }
   
   return (
     <ProductionProvider value={{
@@ -169,7 +223,7 @@ export default function Production() {
       setPinnedWorkShop
     }}>
       <AutoDashboard>
-        <div className="container">
+        <ContentLayout>
              {/* KPI‑карточки + дату выравниваем в одну строку */}
        <section className="flex flex-wrap items-end gap-6 mb-6 mt-4">
         {/* Карточки: растягиваем пространство с помощью flex-1 */}
@@ -326,9 +380,7 @@ export default function Production() {
           ])}
         />
       </section>
-
-
-        </div>
+        </ContentLayout>
       </AutoDashboard>
     </ProductionProvider>
   );

@@ -31,7 +31,7 @@ export const OVERVIEW_COLUMN_CONFIG: ColumnConfig[] = [
     colId: 'metric',
     headerKey: 'timeLossOverview.metric',
     pinned: 'left',
-    width: 190, // Фиксированная ширина для Metric колонки
+    minWidth: 190, // Минимальная ширина для Metric колонки
     order: 1,
   },
   {
@@ -51,7 +51,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '装配车间', // Heater Assembly
     name_en: 'Heater Assembly',
     name_zh: '装配车间',
-    width: 150,
+    minWidth: 150,
     order: 3,
     enabled: true,
   },
@@ -59,7 +59,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '热水器总装组', // WaterHeaters
     name_en: 'WaterHeaters',
     name_zh: '热水器装组',
-    width: 150,
+    minWidth: 150,
     order: 4,
     enabled: true,
   },
@@ -67,7 +67,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '喷粉车间', // Powder coating
     name_en: 'Powder coating',
     name_zh: '喷粉车间',
-    width: 150,
+    minWidth: 150,
     order: 5,
     enabled: true,
   },
@@ -75,7 +75,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '冲压车间', // Stamping
     name_en: 'Stamping',
     name_zh: '冲压车间',
-    width: 120,
+    minWidth: 120,
     order: 6,
     enabled: true,
   },
@@ -83,7 +83,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '热水器冲压组', // Stamping WH
     name_en: 'Stamping WH',
     name_zh: '热水器冲压组',
-    width: 140,
+    minWidth: 140,
     order: 7,
     enabled: true,
   },
@@ -91,7 +91,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '注塑车间', // Injection
     name_en: 'Injection',
     name_zh: '注塑车间',
-    width: 120,
+    minWidth: 120,
     order: 8,
     enabled: true,
   },
@@ -100,7 +100,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '包布车间', // Fabric
     name_en: 'Fabric',
     name_zh: '包布车间',
-    width: 100,
+    minWidth: 100,
     order: 9,
     enabled: true,
   },
@@ -108,7 +108,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '激光', // Laser
     name_en: 'Laser',
     name_zh: '激光车间',
-    width: 100,
+    minWidth: 100,
     order: 10,
     enabled: true,
   },
@@ -116,7 +116,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '丝印车间', // Silkscreen
     name_en: 'Silkscreen',
     name_zh: '丝印车间',
-    width: 105,
+    minWidth: 105,
     order: 11,
     enabled: true,
   },
@@ -124,7 +124,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '线材车间', // Wire
     name_en: 'Wire',
     name_zh: '线材车间',
-    width: 100,
+    minWidth: 100,
     order: 12,
     enabled: true,
   },
@@ -132,7 +132,7 @@ export const CUSTOM_WORKSHOP_CONFIG: WorkshopConfig[] = [
     key: '超声', // Ultrasonic
     name_en: 'Ultrasonic',
     name_zh: '超声车间',
-    width: 115,
+    minWidth: 115,
     order: 13,
     enabled: true,
   },
@@ -209,12 +209,8 @@ export const createColumnsFromConfig = (
     };
 
     // Применяем настройки ширины
-    if (config.width) {
-      colDef.width = config.width;
-    } else {
-      colDef.minWidth = config.minWidth || 90;
-      colDef.maxWidth = config.maxWidth || 320;
-    }
+    colDef.minWidth = config.minWidth || config.width || 90;
+    colDef.maxWidth = config.maxWidth || 320;
 
     // Специальная логика для колонки Total
     if (config.field === 'total') {
@@ -260,12 +256,8 @@ export const createColumnsFromConfig = (
     };
 
     // Применяем настройки ширины из конфигурации
-    if (config.width) {
-      workshopCol.width = config.width;
-    } else {
-      workshopCol.minWidth = config.minWidth || 90;
-      workshopCol.maxWidth = config.maxWidth || 320;
-    }
+    workshopCol.minWidth = config.minWidth || config.width || 90;
+    workshopCol.maxWidth = config.maxWidth || 320;
 
     columns.push(workshopCol);
   });

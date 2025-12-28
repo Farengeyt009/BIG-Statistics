@@ -21,8 +21,39 @@ const ShipmentPlanFactTable: React.FC<Props> = ({ year, month, toYear, toMonth }
   const gridApiRef = useRef<any>(null);
   const [gridApi, setGridApi] = useState<any | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Инициализируем как true, чтобы сразу показать спиннер
   const [error, setError] = useState<string | null>(null);
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
   const [editMode, setEditMode] = useState<boolean>(false);
   const [confirmState, setConfirmState] = useState<{ open: boolean; message: string; onOk: () => void; danger?: boolean }>({ open: false, message: '', onOk: () => {}, danger: false });
   const hasDirty = useMemo(() => rows.some(r => r._dirty && r._dirty.size > 0), [rows]);
@@ -59,17 +90,38 @@ const ShipmentPlanFactTable: React.FC<Props> = ({ year, month, toYear, toMonth }
 
   const saveDirty = useCallback(async () => {
     const dirty = rows.filter(r => r._dirty && r._dirty.size > 0);
-    for (const r of dirty) {
-      const payload: any = {};
-      for (const f of r._dirty as Set<string>) payload[f] = (r as any)[f];
-      try {
-        await fetch(API_ENDPOINTS.ORDERS.SHIPMENT_PLAN_UPSERT, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ PeriodID: r.PeriodID ?? r.periodId, ...payload }),
-        });
-      } catch {}
+    if (dirty.length === 0) return;
+
+    // Формируем массив объектов для батч-сохранения
+    const batch = dirty.map(r => {
+      const payload: any = { PeriodID: r.PeriodID ?? r.periodId };
+      for (const f of r._dirty as Set<string>) {
+        payload[f] = (r as any)[f];
+      }
+      return payload;
+    });
+
+    try {
+      // Отправляем ВСЕ изменения ОДНИМ запросом
+      const response = await fetch(API_ENDPOINTS.ORDERS.SHIPMENT_PLAN_UPSERT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch), // Отправляем массив
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      // Очищаем _dirty только после успешного сохранения
+      setRows(prev => prev.map(r => (r._dirty && r._dirty.size ? { ...r, _dirty: new Set() } : r)));
+      
+      console.log(`✅ Сохранено ${batch.length} записей`);
+    } catch (error) {
+      console.error('❌ Ошибка при сохранении:', error);
+      alert(`Ошибка при сохранении данных: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     }
-    setRows(prev => prev.map(r => (r._dirty && r._dirty.size ? { ...r, _dirty: new Set() } : r)));
   }, [rows]);
 
   const fmtNum = (v: any) => {
@@ -104,17 +156,17 @@ const ShipmentPlanFactTable: React.FC<Props> = ({ year, month, toYear, toMonth }
     { field: 'YearNum', headerName: String(t('shipmentPlanFact.YearNum')), width: 90, minWidth: 80, editable: false, cellClass: 'text-center' },
     { field: 'MonthNum', headerName: String(t('shipmentPlanFact.MonthNum')), width: 95, minWidth: 90, editable: false, cellClass: 'text-center' },
     { field: 'WeekNo', headerName: String(t('shipmentPlanFact.WeekNo')), width: 90, minWidth: 80, editable: false, cellClass: 'text-center' },
-    { field: 'MonthPlanPcs_System', headerName: String(t('shipmentPlanFact.MonthPlanPcs_System')), width: 180, minWidth: 140, editable: false, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.MonthPlanPcs_System); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'FactQty', headerName: String(t('shipmentPlanFact.FactQty')), width: 130, minWidth: 110, editable: false, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.FactQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'DiffQty', headerName: String(t('shipmentPlanFact.DiffQty')), width: 140, minWidth: 110, editable: false, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.DiffQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'ShipMonth_PlanPcs', headerName: String(t('shipmentPlanFact.ShipMonth_PlanPcs')), width: 200, minWidth: 140, editable: () => editMode, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ShipMonth_PlanPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'ShipWeek_PlanPcs', headerName: String(t('shipmentPlanFact.ShipWeek_PlanPcs')), width: 200, minWidth: 140, editable: () => editMode, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ShipWeek_PlanPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'ShipQty', headerName: String(t('shipmentPlanFact.ShipQty')), width: 140, minWidth: 110, editable: false, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const v = p.data?.ShipQty; const n = Number(v); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'FGStockStartWeekPcs', headerName: String(t('shipmentPlanFact.FGStockStartWeekPcs')), width: 140, minWidth: 150, editable: () => editMode, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.FGStockStartWeekPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'ContainerQty', headerName: String(t('shipmentPlanFact.ContainerQty')), width: 140, minWidth: 160, editable: () => editMode, cellDataType: 'number', filter: 'agNumberColumnFilter', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ContainerQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
-    { field: 'Comment', headerName: String(t('shipmentPlanFact.Comment')), width: 320, minWidth: 200, editable: () => editMode, tooltipComponent: 'commentTooltip', tooltipValueGetter: (p: any) => String(p?.value ?? ''), cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { rows: 8, cols: 60, maxLength: 4000 } },
-    { field: 'WeekStartDay', headerName: String(t('shipmentPlanFact.WeekStartDay')), width: 130, minWidth: 120, editable: false, cellDataType: 'date', filter: 'agDateColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const d = new Date(p.data?.WeekStartDay); return isNaN(d.getTime()) ? null : d; }, valueFormatter: (p: any) => fmtDate(p.value) },
-    { field: 'WeekFinishDay', headerName: String(t('shipmentPlanFact.WeekFinishDay')), width: 130, minWidth: 120, editable: false, cellDataType: 'date', filter: 'agDateColumnFilter', cellClass: 'text-center', valueGetter: (p: any) => { const d = new Date(p.data?.WeekFinishDay); return isNaN(d.getTime()) ? null : d; }, valueFormatter: (p: any) => fmtDate(p.value) },
+    { field: 'MonthPlanPcs_System', headerName: String(t('shipmentPlanFact.MonthPlanPcs_System')), width: 180, minWidth: 140, editable: false, cellDataType: 'number', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.MonthPlanPcs_System); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'FactQty', headerName: String(t('shipmentPlanFact.FactQty')), width: 130, minWidth: 110, editable: false, cellDataType: 'number', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.FactQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'DiffQty', headerName: String(t('shipmentPlanFact.DiffQty')), width: 140, minWidth: 110, editable: false, cellDataType: 'number', cellClass: 'text-center', valueGetter: (p: any) => { const n = Number(p.data?.DiffQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'ShipMonth_PlanPcs', headerName: String(t('shipmentPlanFact.ShipMonth_PlanPcs')), width: 200, minWidth: 140, editable: () => editMode, cellDataType: 'number', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ShipMonth_PlanPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'ShipWeek_PlanPcs', headerName: String(t('shipmentPlanFact.ShipWeek_PlanPcs')), width: 200, minWidth: 140, editable: () => editMode, cellDataType: 'number', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ShipWeek_PlanPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'ShipQty', headerName: String(t('shipmentPlanFact.ShipQty')), width: 140, minWidth: 110, editable: false, cellDataType: 'number', cellClass: 'text-center', valueGetter: (p: any) => { const v = p.data?.ShipQty; const n = Number(v); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'FGStockStartWeekPcs', headerName: String(t('shipmentPlanFact.FGStockStartWeekPcs')), width: 140, minWidth: 150, editable: () => editMode, cellDataType: 'number', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.FGStockStartWeekPcs); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'ContainerQty', headerName: String(t('shipmentPlanFact.ContainerQty')), width: 140, minWidth: 160, editable: () => editMode, cellDataType: 'number', cellClass: 'text-center', valueParser: (p: any) => p.newValue == null || p.newValue === '' ? null : Number(p.newValue), valueGetter: (p: any) => { const n = Number(p.data?.ContainerQty); return isFinite(n) ? n : null; }, valueFormatter: (p: any) => fmtNum(p.value), clipboardValueGetter: (p: any) => (p.value == null ? '' : Number(p.value)) },
+    { field: 'Comment', headerName: String(t('shipmentPlanFact.Comment')), width: 320, minWidth: 200, editable: () => editMode, tooltipComponent: 'commentTooltip', tooltipValueGetter: (p: any) => String(p?.value ?? ''), cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, cellEditorPopupPosition: 'over', cellEditorParams: { rows: 8, cols: 60, maxLength: 4000 }, filter: 'agSetColumnFilter', filterParams: { valueFormatter: (p: any) => { const raw = String(p.value ?? '').replace(/\r?\n/g, ' ').trim(); return raw.length > 50 ? raw.slice(0, 49) + '…' : raw; } } },
+    { field: 'WeekStartDay', headerName: String(t('shipmentPlanFact.WeekStartDay')), width: 130, minWidth: 120, editable: false, cellDataType: 'date', cellClass: 'text-center', valueGetter: (p: any) => { const d = new Date(p.data?.WeekStartDay); return isNaN(d.getTime()) ? null : d; }, valueFormatter: (p: any) => fmtDate(p.value) },
+    { field: 'WeekFinishDay', headerName: String(t('shipmentPlanFact.WeekFinishDay')), width: 130, minWidth: 120, editable: false, cellDataType: 'date', cellClass: 'text-center', valueGetter: (p: any) => { const d = new Date(p.data?.WeekFinishDay); return isNaN(d.getTime()) ? null : d; }, valueFormatter: (p: any) => fmtDate(p.value) },
   ], [editMode, t]);
 
   const defaultColDef = useMemo<ColDef>(() => ({
@@ -166,7 +218,7 @@ const ShipmentPlanFactTable: React.FC<Props> = ({ year, month, toYear, toMonth }
     }
   }, []);
 
-  if (loading) return <div className="flex justify-center items-center h-96"><LoadingSpinner size="xl" /></div>;
+  if (loading || !isReadyToShow) return <LoadingSpinner overlay="screen" size="xl" />;
   if (error) return <div className="text-red-600">{error}</div>;
 
   const actions = (
@@ -212,6 +264,7 @@ const ShipmentPlanFactTable: React.FC<Props> = ({ year, month, toYear, toMonth }
           rowData={rows}
           columnDefs={columns}
           defaultColDef={defaultColDef}
+          getRowId={(p: { data: Row }) => p.data._lid}
           components={components}
           tooltipShowDelay={300}
           tooltipHideDelay={100000}

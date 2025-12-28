@@ -4,6 +4,7 @@ import { usePageView } from '../../hooks/usePageView';
 import { WeChatModal } from '../../components/WeChat/WeChatModal';
 import { useWeChatBinding } from '../../hooks/useWeChatBinding';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageLayout, ContentLayout } from '../../components/Layout';
 import { useTranslation } from 'react-i18next';
 import UserPageTranslation from './UserPageTranslation.json';
 
@@ -239,7 +240,7 @@ const UserPage: React.FC = () => {
   };
 
   return (
-    <>
+    <PageLayout>
       <PageHeader
         title={t('userPage:pageTitle')}
         view=""
@@ -247,8 +248,9 @@ const UserPage: React.FC = () => {
         tabs={[]}
         hideTabs={true}
       />
-      <div className="max-w-2xl p-6">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+      <ContentLayout padding="p-6">
+        <div className="max-w-2xl">
+          <div className="bg-white rounded-lg shadow-lg p-8">
         {/* Информация о пользователе */}
         <div className="flex items-start gap-6 mb-8 pb-6 border-b">
           <div className="relative group">
@@ -509,9 +511,10 @@ const UserPage: React.FC = () => {
           onStatusChange={handleWeChatStatusChange}
         />
 
-      </div>
-    </div>
-    </>
+          </div>
+        </div>
+      </ContentLayout>
+    </PageLayout>
   );
 };
 

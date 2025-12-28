@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { ContentLayout } from '../../../components/Layout';
+import { WarningModal } from '../../../components/WarningModal/WarningModal';
 
 const KPI: React.FC = () => {
+  const [showWarningModal, setShowWarningModal] = useState(false);
+
+  useEffect(() => {
+    setShowWarningModal(true);
+  }, []);
+
   return (
-    <div className="py-8">
+    <>
+    <ContentLayout padding="py-8">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">KPI</h2>
         <p className="text-gray-600 mb-8">Ключевые показатели эффективности</p>
@@ -24,7 +33,13 @@ const KPI: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ContentLayout>
+    
+    <WarningModal
+      isOpen={showWarningModal}
+      onClose={() => setShowWarningModal(false)}
+    />
+    </>
   );
 };
 

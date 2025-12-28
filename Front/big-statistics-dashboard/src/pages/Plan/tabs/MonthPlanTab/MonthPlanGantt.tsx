@@ -61,6 +61,43 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  
+  // Состояние для отслеживания готовности к показу (после рендеринга)
+  const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const renderTimeoutRef = useRef<number | null>(null);
+
+  // После загрузки всех данных ждем завершения рендеринга
+  useLayoutEffect(() => {
+    if (loading) {
+      setIsReadyToShow(false);
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Очищаем предыдущий таймаут
+    if (renderTimeoutRef.current) {
+      clearTimeout(renderTimeoutRef.current);
+    }
+
+    // Ждем следующий кадр рендеринга для гарантии, что DOM обновлен
+    requestAnimationFrame(() => {
+      // Еще один кадр для гарантии, что все размеры рассчитаны
+      requestAnimationFrame(() => {
+        // Небольшая задержка для завершения всех асинхронных операций рендеринга
+        renderTimeoutRef.current = setTimeout(() => {
+          setIsReadyToShow(true);
+        }, 100);
+      });
+    });
+
+    return () => {
+      if (renderTimeoutRef.current) {
+        clearTimeout(renderTimeoutRef.current);
+      }
+    };
+  }, [loading]);
 
   // Функция для загрузки данных с API
   const fetchData = useCallback(async () => {
@@ -98,6 +135,7 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
   const containerRef   = useRef<HTMLDivElement>(null);
   const sigmaThRef     = useRef<HTMLTableCellElement>(null);
   const firstDayThRef  = useRef<HTMLTableCellElement>(null); // нуж­но для легенды
+  const recalcRef      = useRef<(() => void) | null>(null);
 
   const [btnPos,     setBtnPos]     = useState({ left: 0, top: 0 });
   const [legendLeft, setLegendLeft] = useState(0);
@@ -176,7 +214,19 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
     setLegendTop(ym.bottom - cont.top - 15); // поднять на 3px
   }, [ymPanelRef]);
 
-  useLayoutEffect(recalc, [recalc, showDetails, days.length, visibleRows.length]);
+  // Сохраняем recalc в ref для использования в useLayoutEffect
+  recalcRef.current = recalc;
+
+  useLayoutEffect(() => {
+    // Пересчитываем позиции только после того, как контент готов к показу
+    if (isReadyToShow && recalcRef.current) {
+      // Небольшая задержка для гарантии, что все refs установлены
+      const timeoutId = setTimeout(() => {
+        recalcRef.current?.();
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [showDetails, days.length, visibleRows.length, isReadyToShow]);
   useEffect(() => {
     window.addEventListener("resize", recalc);
     window.addEventListener("scroll", recalc, true);
@@ -198,11 +248,11 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
 
   /* ───────── render ───────── */
   
-  // Показываем индикатор загрузки
-  if (loading) {
+  // Показываем индикатор загрузки пока данные загружаются или компоненты рендерятся
+  if (loading || !isReadyToShow) {
     return (
       <div className="relative min-h-[70vh]">
-        <LoadingSpinner overlay size="xl" />
+        <LoadingSpinner overlay="screen" size="xl" />
       </div>
     );
   }
