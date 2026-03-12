@@ -14,6 +14,7 @@ import weChatTranslation from './components/WeChat/WeChatTranslation.json';
 import taskManagerTranslation from './pages/TaskManager/TaskManagerTranslation.json';
 import tvTranslation from './pages/TV/TVTranslation.json';
 import requirePermissionTranslation from './components/requirePermissionTranslation.json';
+import qcTranslation from './pages/QC/QCTranslation.json';
 
 const resources = {
   en: {
@@ -29,7 +30,8 @@ const resources = {
     requirePermission: requirePermissionTranslation.en,
     userPage: userPageTranslation.en,
     weChat: weChatTranslation.en,
-    taskManager: taskManagerTranslation.en
+    taskManager: taskManagerTranslation.en,
+    qc: qcTranslation.en
   },
   zh: {
     sidebar: sidebarTranslation.zh,
@@ -44,7 +46,8 @@ const resources = {
     requirePermission: requirePermissionTranslation.zh,
     userPage: userPageTranslation.zh,
     weChat: weChatTranslation.zh,
-    taskManager: taskManagerTranslation.zh
+    taskManager: taskManagerTranslation.zh,
+    qc: qcTranslation.zh
   },
   ru: {
     sidebar: (sidebarTranslation as any).ru || {},
@@ -59,7 +62,8 @@ const resources = {
     requirePermission: requirePermissionTranslation.ru,
     userPage: userPageTranslation.ru,
     weChat: weChatTranslation.ru,
-    taskManager: taskManagerTranslation.ru
+    taskManager: taskManagerTranslation.ru,
+    qc: qcTranslation.ru
   }
 };
 

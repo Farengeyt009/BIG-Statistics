@@ -12,7 +12,8 @@
     "notifications": "Notif",
     "profile": "Profile",
     "logout": "Logout",
-    "admin": "Admin"
+    "admin": "Admin",
+    "qc": "QC"
   },
   "zh": {
     "logo_alt": "BIG STATISTICS",
@@ -27,7 +28,8 @@
     "notifications": "通知",
     "profile": "个人资料",
     "logout": "退出",
-    "admin": "管理员"
+    "admin": "管理员",
+    "qc": "质检"
   },
   "ru": {
     "logo_alt": "BIG STATISTICS",
@@ -42,6 +44,7 @@
     "notifications": "Уведомления",
     "profile": "Профиль",
     "logout": "Выйти",
-    "admin": "Админ"
+    "admin": "Админ",
+    "qc": "КК"
   }
 }

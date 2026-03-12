@@ -9,6 +9,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Settings,
+    ShieldCheck,
 } from "lucide-react";
 import { SidebarIcon } from "./SidebarIcon";
 import {
@@ -218,6 +219,9 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
                     </Link>
                     <Link to="/task-manager" className="block">
                         <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                    </Link>
+                    <Link to="/qc" className="block">
+                        <SidebarIcon icon={<ShieldCheck className={iconClass} />} label={t('qc')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
                     </Link>
                     {/* Показываем Admin только для администраторов */}
                     {user?.is_admin && (

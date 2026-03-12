@@ -13,6 +13,7 @@ import KPI from './pages/Home/KPI/KPI';
 import UserPage from './pages/UserPage/UserPage';
 import AdminPage from './pages/AdminPage/AdminPage';
 import { TaskManagerPage } from './pages/TaskManager/TaskManagerPage';
+import QC from './pages/QC/QC';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -78,6 +79,7 @@ function AppContent() {
                     />
                     <Route path="/tv" element={<RequireAuth><TVPage /></RequireAuth>} />
                     <Route path="/task-manager" element={<RequireAuth><TaskManagerPage /></RequireAuth>} />
+                    <Route path="/qc" element={<RequireAuth><QC /></RequireAuth>} />
                     <Route path="/profile" element={<RequireAuth><UserPage /></RequireAuth>} />
                     <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
                 </Routes>

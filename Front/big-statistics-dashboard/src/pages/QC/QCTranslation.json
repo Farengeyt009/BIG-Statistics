@@ -1,0 +1,137 @@
+{
+  "en": {
+    "pageTitle": "Quality Control",
+    "comingSoon": "Coming soon...",
+    "tabs": {
+      "defectCards": "Defect Cards",
+      "lqc": "LQC",
+      "dashboard": "Dashboard"
+    },
+    "defectCards": {
+      "tabs": {
+        "log": "Defect Cards Log",
+        "dashboard": "Dashboard"
+      }
+    },
+    "conclusion": {
+      "0": "Repainting",
+      "1": "Rework",
+      "2": "Scrap",
+      "3": "Scrap + Remake",
+      "4": "Rework / Touch-up",
+      "5": "Re-stamping"
+    },
+    "columns": {
+      "del":            "Del",
+      "posted":         "Posted",
+      "date":           "Date",
+      "statusDate":     "Status Date",
+      "cardNo":         "Card No",
+      "guiltyDept":     "Guilty Dept",
+      "customerOrder":  "Customer Order",
+      "orderNo":        "Order No",
+      "article":        "Article",
+      "name":           "Name",
+      "qty":            "QTY",
+      "materialCost":   "Material Cost",
+      "totalCost":      "Total Cost",
+      "conclusion":     "Conclusion",
+      "defectType":     "Defect Type",
+      "cause":          "Cause",
+      "comment":        "Comment",
+      "status":         "Status",
+      "author":         "Author",
+      "laborCost":      "Labor Cost"
+    }
+  },
+  "zh": {
+    "pageTitle": "质量控制",
+    "comingSoon": "即将推出...",
+    "tabs": {
+      "defectCards": "不良卡",
+      "lqc": "LQC",
+      "dashboard": "仪表板"
+    },
+    "defectCards": {
+      "tabs": {
+        "log": "不良卡记录",
+        "dashboard": "数据看板"
+      }
+    },
+    "conclusion": {
+      "0": "返喷",
+      "1": "重新分配",
+      "2": "报废",
+      "3": "报废+重制",
+      "4": "补工",
+      "5": "重冲压"
+    },
+    "columns": {
+      "del":            "删除",
+      "posted":         "已过账",
+      "date":           "日期",
+      "statusDate":     "状态日期",
+      "cardNo":         "不良卡号",
+      "guiltyDept":     "责任部门",
+      "customerOrder":  "客户订单",
+      "orderNo":        "生产订单",
+      "article":        "物料编号",
+      "name":           "名称",
+      "qty":            "数量",
+      "materialCost":   "材料成本",
+      "totalCost":      "总成本",
+      "conclusion":     "结论",
+      "defectType":     "缺陷类型",
+      "cause":          "缺陷原因",
+      "comment":        "备注",
+      "status":         "状态",
+      "author":         "创建人",
+      "laborCost":      "工时成本"
+    }
+  },
+  "ru": {
+    "pageTitle": "Контроль качества",
+    "comingSoon": "В разработке...",
+    "tabs": {
+      "defectCards": "Defect Cards",
+      "lqc": "LQC",
+      "dashboard": "Dashboard"
+    },
+    "defectCards": {
+      "tabs": {
+        "log": "Defect Cards Log",
+        "dashboard": "Dashboard"
+      }
+    },
+    "conclusion": {
+      "0": "Перекрас",
+      "1": "Переназначение",
+      "2": "Уничтожение",
+      "3": "Уничтожение+изготовление",
+      "4": "Доработка",
+      "5": "Перештамповка"
+    },
+    "columns": {
+      "del":            "Del",
+      "posted":         "Posted",
+      "date":           "Date",
+      "statusDate":     "Status Date",
+      "cardNo":         "Card No",
+      "guiltyDept":     "Guilty Dept",
+      "customerOrder":  "Customer Order",
+      "orderNo":        "Order No",
+      "article":        "Article",
+      "name":           "Name",
+      "qty":            "QTY",
+      "materialCost":   "Material Cost",
+      "totalCost":      "Total Cost",
+      "conclusion":     "Conclusion",
+      "defectType":     "Defect Type",
+      "cause":          "Cause",
+      "comment":        "Comment",
+      "status":         "Status",
+      "author":         "Author",
+      "laborCost":      "Labor Cost"
+    }
+  }
+}

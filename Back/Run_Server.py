@@ -43,6 +43,7 @@ from Back.TaskManager.api.attachments_api import init_app as task_manager_attach
 from Back.TaskManager.api.custom_fields_api import init_app as task_manager_custom_fields_init_app
 from Back.TaskManager.api.approvals_api import init_app as task_manager_approvals_init_app
 from Back.WeChat.api.wechat_api import wechat_bp
+from Back.QC.api.DefectCards_api import init_app as qc_defect_cards_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -99,6 +100,9 @@ order_data_init_app(app)
 order_statistics_init_app(app)
 saleplan_upload_init_app(app)
 saleplan_init_app(app)
+
+# QC API
+qc_defect_cards_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 
