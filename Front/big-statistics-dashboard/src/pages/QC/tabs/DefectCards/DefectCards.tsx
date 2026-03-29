@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import DefectCardsLog from './tabs/DefectCardsLog/DefectCardsLog';
-import DefectCardsDashboard from './tabs/DefectCardsDashboard/DefectCardsDashboard';
+import DefectsMovement from './tabs/DefectsMovement/DefectsMovement';
 
 const today = new Date();
 const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -11,7 +11,7 @@ const DefectCards: React.FC = () => {
   const { t, i18n } = useTranslation('qc');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
 
-  const [activeTab, setActiveTab] = useState<'log' | 'dashboard'>('log');
+  const [activeTab, setActiveTab] = useState<'log' | 'movement'>('log');
   const [startDate, setStartDate] = useState<Date | null>(firstDayOfMonth);
   const [endDate, setEndDate] = useState<Date | null>(today);
 
@@ -36,13 +36,13 @@ const DefectCards: React.FC = () => {
           </button>
           <button
             className={`px-4 py-1 rounded-md text-sm font-medium border transition-colors ${
-              activeTab === 'dashboard'
+              activeTab === 'movement'
                 ? 'bg-[#0d1c3d] text-white border-[#0d1c3d]'
                 : 'bg-gray-100 text-gray-700 border-gray-300'
             }`}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab('movement')}
           >
-            {t('defectCards.tabs.dashboard')}
+            {t('defectCards.tabs.movement')}
           </button>
         </div>
 
@@ -63,8 +63,8 @@ const DefectCards: React.FC = () => {
         <DefectCardsLog startDate={startDate} endDate={endDate} />
       )}
 
-      {activeTab === 'dashboard' && (
-        <DefectCardsDashboard startDate={startDate} endDate={endDate} />
+      {activeTab === 'movement' && (
+        <DefectsMovement startDate={startDate} endDate={endDate} />
       )}
     </div>
   );

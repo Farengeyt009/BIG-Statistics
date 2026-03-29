@@ -641,6 +641,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
                               <option value="contains">Contains</option>
                               <option value="not_contains">Not Contains</option>
                               <option value="starts_with">Starts With</option>
+                              <option value="not_starts_with">Does not start with</option>
                               <option value="ends_with">Ends With</option>
                               <option value="is_null">Is Empty</option>
                               <option value="is_not_null">Not Empty</option>

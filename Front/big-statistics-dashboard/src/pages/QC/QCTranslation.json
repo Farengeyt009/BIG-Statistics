@@ -7,9 +7,26 @@
       "lqc": "LQC",
       "dashboard": "Dashboard"
     },
+    "lqc": {
+      "tabs": { "log": "LQC Log", "summary": "LQC Summary" },
+      "summary": { "group": "Group", "defectPct": "Defect %", "titleByGroup": "By Product Group", "titleByDefect": "By Defect Type", "total": "Total", "qty": "QTY" },
+      "docNo":        "Doc No",
+      "controlPoint": "Control Point",
+      "largeGroup":   "Large Group",
+      "groupName":    "Group",
+      "prodFactQty":  "Prod Fact QTY",
+      "defectQty":    "Defect QTY",
+      "prodQty":      "Prod QTY",
+      "pciQty":       "PCI QTY",
+      "qcStatus":     "QC Status",
+      "problem":      "Problem",
+      "problem2":     "Problem 2",
+      "posted":       "Posted"
+    },
     "defectCards": {
       "tabs": {
         "log": "Defect Cards Log",
+        "movement": "Defects Movement",
         "dashboard": "Dashboard"
       }
     },
@@ -42,6 +59,50 @@
       "status":         "Status",
       "author":         "Author",
       "laborCost":      "Labor Cost"
+    },
+    "mvColumns": {
+      "del":            "Del",
+      "posted":         "Posted",
+      "date":           "Date",
+      "docNo":          "Doc No",
+      "nomenclType":    "Type",
+      "article":        "Article",
+      "name":           "Name",
+      "qty":            "QTY",
+      "price":          "Price",
+      "totalCost":      "Total Cost",
+      "docComment":     "Doc Comment",
+      "goodsComment":   "Goods Comment",
+      "guiltyDept":     "Guilty Dept",
+      "author":         "Author",
+      "responsible":    "Responsible",
+      "senderWH":       "Sender WH",
+      "recipientWH":    "Recipient WH"
+    },
+    "dashboard": {
+      "guiltyDept":        "Guilty Department",
+      "workshop":          "Workshop",
+      "warehouseReturn":   "Возврат на склад",
+      "prodQTY":           "Prod QTY",
+      "prodCost":          "Prod Cost",
+      "detectionQTY":      "Def QTY",
+      "detectionCost":     "Def Cost",
+      "defectCostByDept":  "Defect Cost by Dept",
+      "defectQtyByDept":   "Defect QTY by Dept",
+      "prodQtyByDept":     "Production QTY by Dept",
+      "prodCostByDept":    "Production Cost by Dept",
+      "deptBreakdown":     "Breakdown by Department",
+      "dept":              "Department",
+      "depts":             "depts",
+      "total":             "Total",
+      "other":             "Прочее",
+      "defectCardsTitle":  "Defect Cards",
+      "defectTypeTitle":   "Defect Type",
+      "cardsQty":          "Cards QTY",
+      "cardsCost":         "Cards Cost",
+      "group":             "Group",
+      "planLabel":         "Total",
+      "factLabel":         "Posted"
     }
   },
   "zh": {
@@ -52,9 +113,26 @@
       "lqc": "LQC",
       "dashboard": "仪表板"
     },
+    "lqc": {
+      "tabs": { "log": "LQC记录", "summary": "LQC汇总" },
+      "summary": { "group": "分组", "defectPct": "不良率", "titleByGroup": "按产品组", "titleByDefect": "按不良类型", "total": "合计", "qty": "数量" },
+      "docNo":        "单据编号",
+      "controlPoint": "控制点",
+      "largeGroup":   "大类",
+      "groupName":    "小类",
+      "prodFactQty":  "生产实际数量",
+      "defectQty":    "不良数量",
+      "prodQty":      "生产数量",
+      "pciQty":       "PCI数量",
+      "qcStatus":     "QC状态",
+      "problem":      "问题描述",
+      "problem2":     "问题描述2",
+      "posted":       "已过账"
+    },
     "defectCards": {
       "tabs": {
         "log": "不良卡记录",
+        "movement": "不良品移动",
         "dashboard": "数据看板"
       }
     },
@@ -87,6 +165,50 @@
       "status":         "状态",
       "author":         "创建人",
       "laborCost":      "工时成本"
+    },
+    "mvColumns": {
+      "del":            "删除",
+      "posted":         "已过账",
+      "date":           "日期",
+      "docNo":          "单据编号",
+      "nomenclType":    "类型",
+      "article":        "物料编号",
+      "name":           "名称",
+      "qty":            "数量",
+      "price":          "单价",
+      "totalCost":      "总成本",
+      "docComment":     "单据备注",
+      "goodsComment":   "商品备注",
+      "guiltyDept":     "责任部门",
+      "author":         "创建人",
+      "responsible":    "负责人",
+      "senderWH":       "发出仓库",
+      "recipientWH":    "接收仓库"
+    },
+    "dashboard": {
+      "guiltyDept":        "责任部门",
+      "workshop":          "车间",
+      "warehouseReturn":   "退回仓库",
+      "prodQTY":           "产量",
+      "prodCost":          "产值",
+      "detectionQTY":      "不良数",
+      "detectionCost":     "不良成本",
+      "defectCostByDept":  "各部门不良成本",
+      "defectQtyByDept":   "各部门不良数量",
+      "prodQtyByDept":     "各部门生产数量",
+      "prodCostByDept":    "各部门生产成本",
+      "deptBreakdown":     "部门明细",
+      "dept":              "部门",
+      "depts":             "个部门",
+      "total":             "合计",
+      "other":             "其他",
+      "defectCardsTitle":  "不良卡",
+      "defectTypeTitle":   "不良类型",
+      "cardsQty":          "不良卡数量",
+      "cardsCost":         "不良卡成本",
+      "group":             "分组",
+      "planLabel":         "合计",
+      "factLabel":         "已过账"
     }
   },
   "ru": {
@@ -97,9 +219,26 @@
       "lqc": "LQC",
       "dashboard": "Dashboard"
     },
+    "lqc": {
+      "tabs": { "log": "LQC Журнал", "summary": "LQC Сводная" },
+      "summary": { "group": "Группа", "defectPct": "% брака", "titleByGroup": "По группе продукта", "titleByDefect": "По типу дефекта", "total": "Итого", "qty": "Кол-во" },
+      "docNo":        "Номер документа",
+      "controlPoint": "Контрольная точка",
+      "largeGroup":   "Большая группа",
+      "groupName":    "Группа",
+      "prodFactQty":  "Факт выпуска",
+      "defectQty":    "Кол-во брака",
+      "prodQty":      "Выпуск (план-факт)",
+      "pciQty":       "PCI кол-во",
+      "qcStatus":     "Статус QC",
+      "problem":      "Описание проблемы",
+      "problem2":     "Описание проблемы 2",
+      "posted":       "Проведён"
+    },
     "defectCards": {
       "tabs": {
         "log": "Defect Cards Log",
+        "movement": "Defects Movement",
         "dashboard": "Dashboard"
       }
     },
@@ -132,6 +271,50 @@
       "status":         "Status",
       "author":         "Author",
       "laborCost":      "Labor Cost"
+    },
+    "mvColumns": {
+      "del":            "Del",
+      "posted":         "Posted",
+      "date":           "Date",
+      "docNo":          "Doc No",
+      "nomenclType":    "Type",
+      "article":        "Article",
+      "name":           "Name",
+      "qty":            "QTY",
+      "price":          "Price",
+      "totalCost":      "Total Cost",
+      "docComment":     "Doc Comment",
+      "goodsComment":   "Goods Comment",
+      "guiltyDept":     "Guilty Dept",
+      "author":         "Author",
+      "responsible":    "Responsible",
+      "senderWH":       "Sender WH",
+      "recipientWH":    "Recipient WH"
+    },
+    "dashboard": {
+      "guiltyDept":        "Guilty Department",
+      "workshop":          "Цех",
+      "warehouseReturn":   "Возврат на склад",
+      "prodQTY":           "Выпуск шт",
+      "prodCost":          "Выпуск ¥",
+      "detectionQTY":      "Брак шт",
+      "detectionCost":     "Брак ¥",
+      "defectCostByDept":  "Стоимость брака по цехам",
+      "defectQtyByDept":   "Кол-во брака по цехам",
+      "prodQtyByDept":     "Выпуск по цехам (кол-во)",
+      "prodCostByDept":    "Стоимость выпуска по цехам",
+      "deptBreakdown":     "Разбивка по цехам",
+      "dept":              "Цех",
+      "depts":             "цехов",
+      "total":             "Итого",
+      "other":             "Прочее",
+      "defectCardsTitle":  "Карты брака",
+      "defectTypeTitle":   "Типы брака",
+      "cardsQty":          "Кол-во карт",
+      "cardsCost":         "Стоимость карт",
+      "group":             "Группа",
+      "planLabel":         "Всего",
+      "factLabel":         "Проведено"
     }
   }
 }

@@ -207,6 +207,10 @@ def build_statistics_query(source_table: str, selected_fields: List[str],
                 where_conditions.append(f"({field_escaped} NOT LIKE N'%{value}%' OR {field_escaped} IS NULL)")
             elif operator == 'starts_with':
                 where_conditions.append(f"{field_escaped} LIKE N'{value}%'")
+            elif operator == 'not_starts_with':
+                where_conditions.append(
+                    f"({field_escaped} NOT LIKE N'{value}%' OR {field_escaped} IS NULL)"
+                )
             elif operator == 'ends_with':
                 where_conditions.append(f"{field_escaped} LIKE N'%{value}'")
             elif operator == 'is_null':
