@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../context/AuthContext';
 
 interface Field {
@@ -27,6 +28,7 @@ interface ReportManagerProps {
 
 const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReportChanged }) => {
   const { token, user } = useAuth();
+  const { t } = useTranslation('ordersTranslation');
   
   // Состояния
   const [reports, setReports] = useState<Report[]>([]);
@@ -119,12 +121,12 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
   // Сохранение (создание или обновление)
   const handleSave = async () => {
     if (!reportName.trim()) {
-      setError('Введите название отчета');
+      setError(t('reportManager.errors.enterName'));
       return;
     }
 
     if (selectedFields.length === 0) {
-      setError('Выберите хотя бы одно поле');
+      setError(t('reportManager.errors.selectField'));
       return;
     }
 
@@ -173,10 +175,10 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
         onClose();
         onReportChanged(savedReportId);
       } else {
-        setError(data.error || 'Ошибка сохранения отчета');
+        setError(data.error || t('reportManager.errors.saveFailed'));
       }
     } catch (err) {
-      setError('Ошибка соединения с сервером');
+      setError(t('reportManager.errors.connectionError'));
     } finally {
       setLoading(false);
     }
@@ -187,7 +189,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
     if (!selectedReport || !selectedReport.can_edit) return;
     
     const confirmDelete = window.confirm(
-      `Вы уверены что хотите удалить отчет "${selectedReport.report_name}"?`
+      t('reportManager.confirmDelete', { name: selectedReport.report_name })
     );
     
     if (!confirmDelete) return;
@@ -213,10 +215,10 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
         onClose();
         onReportChanged();
       } else {
-        setError(data.error || 'Ошибка удаления отчета');
+        setError(data.error || t('reportManager.errors.deleteFailed'));
       }
     } catch (err) {
-      setError('Ошибка соединения с сервером');
+      setError(t('reportManager.errors.connectionError'));
     }
   };
 
@@ -279,6 +281,12 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
     setFilters(prev => prev.map((filter, i) => 
       i === index ? { ...filter, operator, value } : filter
     ));
+  };
+
+  const handleCopyFiltersFromStandard = () => {
+    const stdReport = reports.find(r => r.is_template);
+    if (!stdReport || !stdReport.filters?.length) return;
+    setFilters([...stdReport.filters]);
   };
 
   if (!isOpen) return null;
@@ -353,7 +361,7 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
                       >
                         <div className="font-medium text-gray-800">{report.report_name}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {report.selected_fields?.length || 0} полей
+                          {report.selected_fields?.length || 0} {t('reportManager.fields')}
                         </div>
                       </div>
                     ))}
@@ -393,9 +401,9 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
                       >
                         <div className="font-medium text-gray-800">{report.report_name}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {report.selected_fields?.length || 0} полей
+                          {report.selected_fields?.length || 0} {t('reportManager.fields')}
                           {(report.filters?.length || 0) > 0 && 
-                            ` • ${report.filters.length} фильтров`
+                            ` • ${report.filters.length} ${t('reportManager.filtersCount')}`
                           }
                         </div>
                       </div>
@@ -409,8 +417,8 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
               {isCreatingNew && (
                 <div className="mt-4">
                   <div className="p-3 rounded-lg border border-dashed border-blue-300 bg-blue-50">
-                    <div className="font-medium text-blue-800">➕ Новый отчет</div>
-                    <div className="text-xs text-blue-600 mt-1">Заполните параметры справа</div>
+                    <div className="font-medium text-blue-800">➕ {t('reportManager.newReport')}</div>
+                    <div className="text-xs text-blue-600 mt-1">{t('reportManager.fillParams')}</div>
                   </div>
                 </div>
               )}
@@ -617,6 +625,19 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
                       <label className="block text-sm font-semibold text-gray-700">
                         Filters (optional) - {filters.length} active
                       </label>
+                      {(isCreatingNew || selectedReport?.can_edit || user?.is_admin) &&
+                        reports.some(r => r.is_template && r.filters?.length > 0) && (
+                        <button
+                          onClick={handleCopyFiltersFromStandard}
+                          title={t('filtersModal.copyFromAllOrders')}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-blue-400 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          {t('filtersModal.copyFromAllOrders')}
+                        </button>
+                      )}
                     </div>
 
                     {/* Список активных фильтров */}

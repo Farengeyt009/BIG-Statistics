@@ -247,7 +247,6 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
   }, [columnDefs]);
 
   if (suppressLocalLoaders) return null;
-  if (!rows.length) return <div className="text-center text-gray-500 py-10">Нет данных для выбранного периода</div>;
 
   const actions = (
     <div className="flex items-center gap-2">
@@ -263,6 +262,13 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
           <Settings className="w-4 h-4" />
         </button>
       )}
+    </div>
+  );
+
+  if (!rows.length) return (
+    <div className="w-full">
+      <div className="flex items-center gap-2 justify-end w-full px-1 mb-2">{actions}</div>
+      <div className="text-center text-gray-500 py-10">Нет данных для выбранного периода</div>
     </div>
   );
 

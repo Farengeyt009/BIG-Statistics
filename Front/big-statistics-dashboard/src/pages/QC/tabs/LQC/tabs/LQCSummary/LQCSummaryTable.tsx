@@ -117,7 +117,7 @@ function buildTreeByGroup(
   expandedL2: Set<string>, expandedL3: Set<string>, lang: string,
   globalPF: Map<DedupKey, number>,
 ): TreeRow[] {
-  type OrderAcc  = { Prod_Order_No: string; Article: string; Name: string; defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number> };
+  type OrderAcc  = { Prod_Order_No: string; Customer_Order_No: string; Article: string; Name: string; defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number> };
   type ProbAcc   = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; orders: Record<string, OrderAcc> };
   type DefectAcc = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; problems: Record<string, ProbAcc> };
   type GroupAcc  = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; defects: Record<string, DefectAcc> };
@@ -133,6 +133,7 @@ function buildTreeByGroup(
     const ord  = r.Prod_Order_No || '';
     const art  = r.Work_Nomenclature_No || '';
     const name = (lang === 'zh' ? r.Work_Nomenclature_Namezh : r.Work_Nomenclature_NameRU) || '';
+    const cust = r.Customer_Order_No || '';
     const ordKey = `${ord}|${art}`;
     const dk: DedupKey = `${r.Date || ''}|${r.Control_Tochka_Ru || ''}|${ord}`;
     const dq = Number(r.Defect_QTY) || 0;
@@ -153,7 +154,7 @@ function buildTreeByGroup(
     addGlobal(defN.problems[prob].seen, defN.problems[prob].prodMap, dk, globalPF); defN.problems[prob].defQty += dq;
 
     const probN = defN.problems[prob];
-    if (!probN.orders[ordKey]) probN.orders[ordKey] = { Prod_Order_No: ord, Article: art, Name: name, defQty: 0, seen: new Set(), prodMap: new Map() };
+    if (!probN.orders[ordKey]) probN.orders[ordKey] = { Prod_Order_No: ord, Customer_Order_No: cust, Article: art, Name: name, defQty: 0, seen: new Set(), prodMap: new Map() };
     addGlobal(probN.orders[ordKey].seen, probN.orders[ordKey].prodMap, dk, globalPF); probN.orders[ordKey].defQty += dq;
   }
 
@@ -190,7 +191,7 @@ function buildTreeByGroup(
                     .sort(([,a],[,b]) => pctDesc(a.defQty, sumSet(a.prodMap), b.defQty, sumSet(b.prodMap)))
                     .forEach(([oKey, oD]) => {
                       const ordPF = sumSet(oD.prodMap);
-                      result.push({ __id: `ord:${probKey}||${oKey}`, _level: 4, _key: '', groupLabel: oD.Prod_Order_No || oD.Article || '—', Prod_Order_No: oD.Prod_Order_No, Article: oD.Article, Name: oD.Name, Prod_Fact_QTY: ordPF, Defect_QTY: oD.defQty });
+                      result.push({ __id: `ord:${probKey}||${oKey}`, _level: 4, _key: '', groupLabel: oD.Customer_Order_No || oD.Prod_Order_No || '—', Prod_Order_No: oD.Prod_Order_No, Article: oD.Article, Name: oD.Name, Prod_Fact_QTY: ordPF, Defect_QTY: oD.defQty });
                     });
                 });
             });
@@ -209,7 +210,7 @@ function buildTreeByDefect(
   expandedL2: Set<string>, expandedL3: Set<string>, lang: string,
   globalPF: Map<DedupKey, number>,
 ): { rows: TreeRow[]; totalDefects: number } {
-  type OrderAcc = { Prod_Order_No: string; Article: string; Name: string; defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number> };
+  type OrderAcc = { Prod_Order_No: string; Customer_Order_No: string; Article: string; Name: string; defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number> };
   type GroupAcc = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; orders: Record<string, OrderAcc> };
   type LgAcc    = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; groups: Record<string, GroupAcc> };
   type ProbAcc  = { defQty: number; seen: Set<DedupKey>; prodMap: Map<DedupKey, number>; largeGroups: Record<string, LgAcc> };
@@ -226,6 +227,7 @@ function buildTreeByDefect(
     const ord  = r.Prod_Order_No || '';
     const art  = r.Work_Nomenclature_No || '';
     const name = (lang === 'zh' ? r.Work_Nomenclature_Namezh : r.Work_Nomenclature_NameRU) || '';
+    const cust = r.Customer_Order_No || '';
     const ordKey = `${ord}|${art}`;
     const dk: DedupKey = `${r.Date || ''}|${r.Control_Tochka_Ru || ''}|${ord}`;
     const dq = Number(r.Defect_QTY) || 0;
@@ -247,7 +249,7 @@ function buildTreeByDefect(
     addGlobal(lgN.groups[grp].seen, lgN.groups[grp].prodMap, dk, globalPF); lgN.groups[grp].defQty += dq;
 
     const grpN = lgN.groups[grp];
-    if (!grpN.orders[ordKey]) grpN.orders[ordKey] = { Prod_Order_No: ord, Article: art, Name: name, defQty: 0, seen: new Set(), prodMap: new Map() };
+    if (!grpN.orders[ordKey]) grpN.orders[ordKey] = { Prod_Order_No: ord, Customer_Order_No: cust, Article: art, Name: name, defQty: 0, seen: new Set(), prodMap: new Map() };
     addGlobal(grpN.orders[ordKey].seen, grpN.orders[ordKey].prodMap, dk, globalPF); grpN.orders[ordKey].defQty += dq;
   }
 
@@ -286,7 +288,7 @@ function buildTreeByDefect(
                     .sort(([,a],[,b]) => pctDesc(a.defQty, sumSet(a.prodMap), b.defQty, sumSet(b.prodMap)))
                     .forEach(([oKey, oD]) => {
                       const ordPF = sumSet(oD.prodMap);
-                      result.push({ __id: `ord2:${grpKey}||${oKey}`, _level: 4, _key: '', groupLabel: oD.Prod_Order_No || oD.Article || '—', Prod_Order_No: oD.Prod_Order_No, Article: oD.Article, Name: oD.Name, Prod_Fact_QTY: ordPF, Defect_QTY: oD.defQty });
+                      result.push({ __id: `ord2:${grpKey}||${oKey}`, _level: 4, _key: '', groupLabel: oD.Customer_Order_No || oD.Prod_Order_No || '—', Prod_Order_No: oD.Prod_Order_No, Article: oD.Article, Name: oD.Name, Prod_Fact_QTY: ordPF, Defect_QTY: oD.defQty });
                     });
                 });
             });
@@ -369,6 +371,11 @@ const LQCSummaryTable: React.FC<LQCSummaryTableProps> = ({ data, loading, error,
   const detailLevel = 4;
   const hasDetail = treeData.some(row => row._level >= detailLevel);
 
+  // Пересчитываем ширины при изменении видимости колонок (detail уровень)
+  useEffect(() => {
+    apiRef.current?.sizeColumnsToFit();
+  }, [hasDetail]);
+
   // Итоговая строка
   const pinnedTotalRow = useMemo(() => {
     if (variant === 'by-defect') {
@@ -404,11 +411,6 @@ const LQCSummaryTable: React.FC<LQCSummaryTableProps> = ({ data, loading, error,
       minWidth: 220, flex: 2, cellRenderer: hierarchyCellRenderer,
     },
     {
-      colId: 'order', field: 'Prod_Order_No', headerName: t('columns.orderNo'),
-      minWidth: 130, flex: 1, hide: !hasDetail,
-      cellRenderer: (p: any) => p.data?._level === detailLevel ? (p.value || '—') : '',
-    },
-    {
       colId: 'article', field: 'Article', headerName: t('columns.article'),
       minWidth: 110, flex: 1, hide: !hasDetail,
       cellRenderer: (p: any) => p.data?._level === detailLevel ? (p.value || '—') : '',
@@ -420,7 +422,6 @@ const LQCSummaryTable: React.FC<LQCSummaryTableProps> = ({ data, loading, error,
     },
     {
       colId: 'prodFact', field: 'Prod_Fact_QTY',
-      // Для by-defect: уровни 0-1 показывают контекстный итог, называем просто QTY
       headerName: isDefectVariant ? t('lqc.summary.qty') : t('lqc.prodFactQty'),
       minWidth: 120, flex: 1, cellStyle: { textAlign: 'center' }, cellRenderer: numCell,
     },
@@ -469,7 +470,7 @@ const LQCSummaryTable: React.FC<LQCSummaryTableProps> = ({ data, loading, error,
   if (error)   return <div className="flex justify-center items-center h-64 text-red-600 text-lg">Error: {error}</div>;
 
   return (
-    <div className="w-full">
+    <div style={{ maxWidth: 1100 }}>
       {title && (
         <div className="px-1 py-2 mb-1 text-sm font-semibold text-[#0d1c3d] border-b border-gray-200">
           {title}

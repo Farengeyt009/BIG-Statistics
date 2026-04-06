@@ -218,6 +218,7 @@ const LQCLogTable: React.FC<LQCLogTableProps> = ({ data, loading, error, onTable
         field: 'Date',
         headerName: t('columns.date'),
         minWidth: 110, width: 110,
+        cellDataType: 'date',
         cellClass: 'text-center',
         filter: 'agSetColumnFilter',
         filterValueGetter: (p: any) => String(p?.data?.Date ?? ''),

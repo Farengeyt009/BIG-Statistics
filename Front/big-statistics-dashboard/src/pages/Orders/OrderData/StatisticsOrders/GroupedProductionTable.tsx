@@ -271,14 +271,14 @@ const GroupedProductionTable: React.FC = () => {
         valueFormatter: (p: any) => (p.value == null || p.value === 0) ? '' : p.value.toLocaleString('ru-RU'),
         cellStyle: { fontWeight: 'bold', backgroundColor: '#f0f9ff' },
       },
-      {
+      ...(grandTotal.no_date > 0 ? [{
         field: 'no_date',
         headerName: t('statisticsTable.nonDate'),
         minWidth: 95,
         aggFunc: 'sum',
         valueFormatter: (p: any) => (p.value == null || p.value === 0) ? '' : p.value.toLocaleString('ru-RU'),
         cellStyle: { backgroundColor: '#fef3c7' },
-      },
+      }] : []),
     ];
 
     // Добавляем колонки дат

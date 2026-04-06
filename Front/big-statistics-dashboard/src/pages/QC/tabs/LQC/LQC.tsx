@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import LQCLog from './tabs/LQCLog/LQCLog';
 import LQCSummary from './tabs/LQCSummary/LQCSummary';
 
 const today = new Date();
-const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const sevenDaysAgo = new Date(today);
+sevenDaysAgo.setDate(today.getDate() - 6);
 
 const toYmdLocal = (d: Date) => {
   const y = d.getFullYear();
@@ -15,12 +17,26 @@ const toYmdLocal = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
+const VALID_SUBTABS = ['summary', 'log'];
+
 const LQC: React.FC = () => {
   const { t, i18n } = useTranslation('qc');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
+  const [searchParams] = useSearchParams();
+  const subtabFromUrl = searchParams.get('subtab');
 
-  const [activeTab, setActiveTab] = useState<'log' | 'summary'>('log');
-  const [startDate, setStartDate] = useState<Date | null>(firstDayOfMonth);
+  const [activeTab, setActiveTab] = useState<'log' | 'summary'>(
+    subtabFromUrl && VALID_SUBTABS.includes(subtabFromUrl)
+      ? subtabFromUrl as 'log' | 'summary'
+      : 'summary'
+  );
+
+  useEffect(() => {
+    if (subtabFromUrl && VALID_SUBTABS.includes(subtabFromUrl)) {
+      setActiveTab(subtabFromUrl as 'log' | 'summary');
+    }
+  }, [subtabFromUrl]);
+  const [startDate, setStartDate] = useState<Date | null>(sevenDaysAgo);
   const [endDate, setEndDate] = useState<Date | null>(today);
 
   const handleDateRangeApply = (from: Date, to?: Date) => {
@@ -50,8 +66,8 @@ const LQC: React.FC = () => {
   const errorMsg = error ? String((error as any)?.message || error) : null;
 
   const tabs: { key: 'log' | 'summary'; label: string }[] = [
-    { key: 'log',     label: t('lqc.tabs.log') },
     { key: 'summary', label: t('lqc.tabs.summary') },
+    { key: 'log',     label: t('lqc.tabs.log') },
   ];
 
   return (
@@ -91,7 +107,7 @@ const LQC: React.FC = () => {
       )}
 
       {activeTab === 'summary' && (
-        <LQCSummary data={data} loading={showLoader} error={errorMsg} />
+        <LQCSummary data={data} loading={showLoader} error={errorMsg} startDate={startDate} endDate={endDate} />
       )}
     </div>
   );

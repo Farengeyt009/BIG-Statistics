@@ -8,13 +8,28 @@ interface Props {
   api: any | null;
   fileName?: string;
   variant?: 'text' | 'icon';
+  leafNameField?: string; // поле данных для отображения имени leaf-ноды (по умолчанию 'GroupName')
+  multiLevelHeader?: boolean; // добавлять prefix из родительской группы к имени колонки: "Jan / Sales Plan"
 }
 
-export default function AgGridGroupedExportButton({ api, fileName = 'table', variant = 'icon' }: Props) {
+export default function AgGridGroupedExportButton({ api, fileName = 'table', variant = 'icon', leafNameField = 'GroupName', multiLevelHeader = false }: Props) {
   const { t } = useTranslation();
 
   const handleExport = useCallback(() => {
     if (!api) return;
+
+    // Вспомогательная функция: получить полное имя колонки с prefix-ом родительской группы
+    const getColHeaderText = (col: any): string => {
+      const def = col.getColDef?.() || {};
+      const leafName = (def.headerName || def.field || '').toString();
+      if (!multiLevelHeader) return leafName;
+      try {
+        const groupName: string = col.getParent?.()?.getColGroupDef?.()?.headerName || '';
+        return groupName ? `${groupName} / ${leafName}` : leafName;
+      } catch {
+        return leafName;
+      }
+    };
 
     // 1) Получаем отображаемые колонки (в порядке показа)
     const displayedCols: any[] = api.getAllDisplayedColumns?.() ?? [];
@@ -37,8 +52,7 @@ export default function AgGridGroupedExportButton({ api, fileName = 'table', var
     const headerRow = [
       { v: 'Group', t: 's' as const, s: headerStyle }, // Колонка для группировки
       ...dataColumns.map((col: any) => {
-        const def = col.getColDef?.() || {};
-        const text: string = (def.headerName || def.field || '').toString();
+        const text = getColHeaderText(col);
         return { v: text, t: 's' as const, s: headerStyle };
       })
     ];
@@ -88,7 +102,7 @@ export default function AgGridGroupedExportButton({ api, fileName = 'table', var
 
       // Первая колонка - название группы или GroupName для leaf nodes
       const indent = '  '.repeat(groupLevel); // Отступ для визуализации иерархии
-      const groupName = isGroup ? (node.key || '') : (node.data?.GroupName ?? '');
+      const groupName = isGroup ? (node.key || '') : (node.data?.[leafNameField] ?? '');
       
       row.push({
         v: indent + groupName,
@@ -213,8 +227,7 @@ export default function AgGridGroupedExportButton({ api, fileName = 'table', var
       }),
       // Добавляем остальные колонки (кроме autoGroupColumn)
       ...dataColumns.map((col: any) => {
-        const def = col.getColDef?.() || {};
-        const text: string = (def.headerName || def.field || '').toString();
+        const text = getColHeaderText(col);
         return { v: text, t: 's' as const, s: headerStyle };
       })
     ];

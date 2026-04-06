@@ -7,6 +7,7 @@ type MatchTypeExt = MatchType | 'NullOrEmpty' | 'IsNull';
 
 type Rule = {
   RuleID?: number;
+  FieldName: string;
   MatchType: MatchTypeExt | string;
   Pattern: string;
   IsExclude: number | boolean;
@@ -14,6 +15,62 @@ type Rule = {
   Priority?: number;
   Comment?: string | null;
 };
+
+const FIELD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Order_No',              label: 'Order No' },
+  { value: 'Article_number',        label: 'Article' },
+  { value: 'Market',                label: 'Market' },
+  { value: 'Security_Scheme',       label: 'Security Scheme' },
+  { value: 'ProductTagZh',          label: 'Product Tag' },
+  { value: 'LargeGroup',            label: 'Large Group' },
+  { value: 'GroupName',             label: 'Group' },
+  { value: 'Name_CN',               label: 'Name CN' },
+  { value: 'Recipient_Name',        label: 'Recipient' },
+  { value: 'Partner_Name',          label: 'Partner' },
+  { value: 'ContainerNO_Realization', label: 'Container' },
+  { value: 'CI_No',                 label: 'CI No' },
+  { value: 'RealizationDoc',        label: 'Realization Doc' },
+  { value: 'SpendingOrder_No',      label: 'Spending Order' },
+];
+
+// UI MatchType → { base MatchType, IsExclude } for API
+const UI_TO_API: Record<string, { mt: string; excl: number }> = {
+  StartsWith:    { mt: 'StartsWith',  excl: 0 },
+  NotStartsWith: { mt: 'StartsWith',  excl: 1 },
+  Contains:      { mt: 'Contains',    excl: 0 },
+  NotContains:   { mt: 'Contains',    excl: 1 },
+  Equals:        { mt: 'Equals',      excl: 0 },
+  NotEquals:     { mt: 'Equals',      excl: 1 },
+  EndsWith:      { mt: 'EndsWith',    excl: 0 },
+  NotEndsWith:   { mt: 'EndsWith',    excl: 1 },
+  NullOrEmpty:   { mt: 'NullOrEmpty', excl: 0 },
+  IsNull:        { mt: 'IsNull',      excl: 0 },
+};
+
+// API { MatchType, IsExclude } → UI MatchType
+function apiToUiMatchType(mt: string, isExclude: number | boolean): string {
+  const excl = Number(isExclude ? 1 : 0);
+  if (excl === 1) {
+    if (mt === 'StartsWith') return 'NotStartsWith';
+    if (mt === 'Contains')   return 'NotContains';
+    if (mt === 'Equals')     return 'NotEquals';
+    if (mt === 'EndsWith')   return 'NotEndsWith';
+  }
+  return mt;
+}
+
+function toApiRule(r: Rule) {
+  const map = UI_TO_API[String(r.MatchType)] ?? { mt: String(r.MatchType), excl: 0 };
+  return {
+    FieldName: r.FieldName || 'Order_No',
+    MatchType: map.mt,
+    Pattern: r.Pattern,
+    IsExclude: map.excl,
+    IsActive: Number(r.IsActive ? 1 : 0),
+    Priority: r.Priority ?? 100,
+    Comment: r.Comment ?? null,
+  };
+}
 
 type ShipmentFilterModalProps = {
   isOpen: boolean;
@@ -25,7 +82,7 @@ type ShipmentFilterModalProps = {
 };
 
 // Runtime cache (resets on full page reload)
-let shipmentFiltersDraft: { rules: Rule[]; showEmpty: boolean } | null = null;
+let shipmentFiltersDraft: { rules: Rule[] } | null = null;
 
 export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDate, onPublished, onApplyPreview }: ShipmentFilterModalProps) {
   const { t } = useTranslation('ordersTranslation');
@@ -36,7 +93,6 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
   const [previewInfo, setPreviewInfo] = useState<{ total: number; start: string; end: string; mode: string } | null>(null);
   const canPreview = useMemo(() => Boolean(startDate && endDate), [startDate, endDate]);
   const [dirty, setDirty] = useState(false);
-  const [showEmpty, setShowEmpty] = useState<boolean>(false);
 
   useEffect(() => {
     let ignore = false;
@@ -45,11 +101,9 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
       setPreviewInfo(null);
       setLoading(true);
       try {
-        // Для Preview - можем использовать кеш, для Publish - только из БД
         if (actionMode === 'preview' && shipmentFiltersDraft) {
           if (!ignore) {
             setRules(shipmentFiltersDraft.rules);
-            setShowEmpty(shipmentFiltersDraft.showEmpty);
             setDirty(true);
           }
         } else {
@@ -58,14 +112,11 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
           const json = await res.json();
           if (!ignore) {
             const allRules: Rule[] = Array.isArray(json.rules) ? json.rules : [];
-            const nullRules = allRules.filter((r: any) => String(r.MatchType) === 'NullOrEmpty');
-            // Определяем состояние чекбокса по опубликованным правилам
-            const hasInclude = nullRules.some((r: any) => Number(r.IsActive ? 1 : 0) === 1 && Number(r.IsExclude ? 1 : 0) === 0);
-            const hasExclude = nullRules.some((r: any) => Number(r.IsActive ? 1 : 0) === 1 && Number(r.IsExclude ? 1 : 0) === 1);
-            setShowEmpty(hasInclude ? true : hasExclude ? false : false);
-            // Скрываем NullOrEmpty из пользовательского списка правил
-            const rest = allRules.filter((r: any) => String(r.MatchType) !== 'NullOrEmpty');
-            setRules(rest as Rule[]);
+            const uiRules = allRules.map((r: any) => ({
+              ...r,
+              MatchType: apiToUiMatchType(String(r.MatchType), r.IsExclude),
+            }));
+            setRules(uiRules as Rule[]);
             setDirty(false);
           }
         }
@@ -89,28 +140,11 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
     setError(null);
     setPreviewInfo(null);
     try {
-      const baseRules = rules.map(r => ({
-        MatchType: r.MatchType,
-        Pattern: r.Pattern,
-        IsExclude: Number(r.IsExclude ? 1 : 0),
-        IsActive: Number(r.IsActive ? 1 : 0),
-        Priority: r.Priority ?? 100,
-        Comment: r.Comment ?? null,
-      }));
-      // Добавляем виртуальное правило для пустых/NULL
-      baseRules.push({
-        MatchType: 'NullOrEmpty',
-        Pattern: '',
-        IsExclude: showEmpty ? 0 : 1,
-        IsActive: 1,
-        Priority: 1,
-        Comment: null,
-      } as any);
       const body = {
         start_date: startDate.toISOString().slice(0, 10),
         end_date: endDate.toISOString().slice(0, 10),
         mode: 'override',
-        rules: baseRules,
+        rules: rules.map(toApiRule),
       };
       const res = await fetch(API_ENDPOINTS.ORDERS.SHIPMENT_PREVIEW, {
         method: 'POST',
@@ -121,8 +155,7 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
       const json = await res.json();
       setPreviewInfo({ total: Number(json.total_records ?? 0), start: String(json.start_date), end: String(json.end_date), mode: String(json.mode) });
       if (onApplyPreview && Array.isArray(json.data)) {
-        // Cache current draft (rules + showEmpty) so it persists while the page is alive
-        shipmentFiltersDraft = { rules, showEmpty };
+        shipmentFiltersDraft = { rules };
         onApplyPreview(json.data);
         onClose();
       }
@@ -137,23 +170,7 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
     setLoading(true);
     setError(null);
     try {
-      const rulesToSend = rules.map(r => ({
-        MatchType: r.MatchType,
-        Pattern: r.Pattern,
-        IsExclude: Number(r.IsExclude ? 1 : 0),
-        IsActive: Number(r.IsActive ? 1 : 0),
-        Priority: r.Priority ?? 100,
-        Comment: r.Comment ?? null,
-      }));
-      rulesToSend.push({
-        MatchType: 'NullOrEmpty',
-        Pattern: '',
-        IsExclude: showEmpty ? 0 : 1,
-        IsActive: 1,
-        Priority: 1,
-        Comment: null,
-      } as any);
-      const body = { rules: rulesToSend };
+      const body = { rules: rules.map(toApiRule) };
       const res = await fetch(API_ENDPOINTS.ORDERS.SHIPMENT_FILTERS_PUBLISH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,7 +180,6 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
       const json = await res.json();
       if (json && json.ok) {
         setDirty(false);
-        // On publish, clear draft cache so next open reflects DB state
         shipmentFiltersDraft = null;
         if (onPublished) onPublished();
       }
@@ -185,7 +201,7 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
   const handleAddRule = () => {
     setRules(prev => [
       ...prev,
-      { MatchType: 'StartsWith', Pattern: '', IsExclude: 1, IsActive: 1, Priority: 100, Comment: '' }
+      { FieldName: 'Order_No', MatchType: 'StartsWith', Pattern: '', IsExclude: 1, IsActive: 1, Priority: 100, Comment: '' }
     ]);
     setDirty(true);
   };
@@ -201,14 +217,18 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
   };
 
   const handleReset = async () => {
-    // перезагрузить опубликованные правила
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(API_ENDPOINTS.ORDERS.SHIPMENT_FILTERS);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      setRules(Array.isArray(json.rules) ? json.rules : []);
+      const allRules: Rule[] = Array.isArray(json.rules) ? json.rules : [];
+      const uiRules = allRules.map((r: any) => ({
+        ...r,
+        MatchType: apiToUiMatchType(String(r.MatchType), r.IsExclude),
+      }));
+      setRules(uiRules as Rule[]);
       setDirty(false);
       setPreviewInfo(null);
     } catch (e: any) {
@@ -216,11 +236,6 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleIncludeNullEmpty = (checked: boolean) => {
-    setShowEmpty(checked);
-    setDirty(true);
   };
 
   return (
@@ -281,30 +296,34 @@ export default function ShipmentFilterModal({ isOpen, onClose, startDate, endDat
             {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
 
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-              {/* Управляющая строка Show Empty (наверху), без удаления */}
-              <div className="p-2 rounded-lg border bg-white grid grid-cols-[150px_1fr_auto] items-center gap-2">
-                <span className="text-sm text-gray-800">{t('filtersModal.showEmpty')}</span>
-                <div />
-                <label className="text-xs text-slate-700 flex items-center gap-1">
-                  <input type="checkbox" checked={showEmpty} onChange={(e) => toggleIncludeNullEmpty(e.target.checked)} />
-                  {t('filtersModal.active')}
-                </label>
-              </div>
-
               {rules.length === 0 ? (
                 <div className="text-sm text-slate-500">-</div>
               ) : (
                 rules.map((r, idx) => (
-                  <div key={idx} className="p-2 rounded-lg border bg-white grid grid-cols-[150px_1fr_auto] items-center gap-2">
+                  <div key={idx} className="p-2 rounded-lg border bg-white grid grid-cols-[140px_140px_1fr_auto] items-center gap-2">
+                    <select
+                      value={r.FieldName || 'Order_No'}
+                      onChange={e => updateRule(idx, { FieldName: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm"
+                      title="Field"
+                    >
+                      {FIELD_OPTIONS.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
                     <select
                       value={String(r.MatchType) as MatchTypeExt}
                       onChange={e => updateRule(idx, { MatchType: e.target.value, ...(e.target.value === 'NullOrEmpty' || e.target.value === 'IsNull' ? { Pattern: '' } : {}) })}
                       className="border rounded px-2 py-1 text-sm"
                     >
                       <option value="StartsWith">{t('filtersModal.matchTypes.StartsWith')}</option>
+                      <option value="NotStartsWith">{t('filtersModal.matchTypes.NotStartsWith')}</option>
                       <option value="Contains">{t('filtersModal.matchTypes.Contains')}</option>
+                      <option value="NotContains">{t('filtersModal.matchTypes.NotContains')}</option>
                       <option value="Equals">{t('filtersModal.matchTypes.Equals')}</option>
+                      <option value="NotEquals">{t('filtersModal.matchTypes.NotEquals')}</option>
                       <option value="EndsWith">{t('filtersModal.matchTypes.EndsWith')}</option>
+                      <option value="NotEndsWith">{t('filtersModal.matchTypes.NotEndsWith')}</option>
                       <option value="NullOrEmpty">{t('filtersModal.matchTypes.NullOrEmpty')}</option>
                       <option value="IsNull">{t('filtersModal.matchTypes.IsNull')}</option>
                     </select>

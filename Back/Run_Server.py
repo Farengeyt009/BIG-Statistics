@@ -48,6 +48,8 @@ from Back.QC.api.DefectsMovement_api import init_app as qc_defects_movement_init
 from Back.QC.api.ProductionVsDefects_api import init_app as qc_production_vs_defects_init_app
 from Back.QC.api.LQCJournal_api import init_app as qc_lqc_journal_init_app
 from Back.QC.api.LQCSummary_api import init_app as qc_lqc_summary_init_app
+from Back.QC.api.StampingWastes_api import init_app as qc_stamping_wastes_init_app
+from Back.QC.api.PlasticWastes_api import init_app as qc_plastic_wastes_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -111,6 +113,8 @@ qc_defects_movement_init_app(app)
 qc_production_vs_defects_init_app(app)
 qc_lqc_journal_init_app(app)
 qc_lqc_summary_init_app(app)
+qc_stamping_wastes_init_app(app)
+qc_plastic_wastes_init_app(app)
 
 # ----- Раздача собранного фронтенда (SPA) -----
 

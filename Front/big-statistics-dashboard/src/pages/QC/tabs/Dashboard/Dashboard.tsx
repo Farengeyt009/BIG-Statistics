@@ -4,13 +4,14 @@ import { DateRangePickerPro } from '../../../../components/DatePicker';
 import DefectCardsDashboard from '../DefectCards/tabs/DefectCardsDashboard/DefectCardsDashboard';
 
 const today = new Date();
-const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const thirtyDaysAgo = new Date(today);
+thirtyDaysAgo.setDate(today.getDate() - 30);
 
 const Dashboard: React.FC = () => {
   const { i18n } = useTranslation('qc');
   const currentLanguage = i18n.language as 'en' | 'zh' | 'ru';
 
-  const [startDate, setStartDate] = useState<Date | null>(firstDayOfMonth);
+  const [startDate, setStartDate] = useState<Date | null>(thirtyDaysAgo);
   const [endDate, setEndDate]     = useState<Date | null>(today);
 
   const handleDateRangeApply = (from: Date, to?: Date) => {

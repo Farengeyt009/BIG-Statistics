@@ -25,8 +25,9 @@ export default function OrderData() {
             }`}
             onClick={() => setActiveSubtab('statistics')}
           >
-            Uncompleted Orders
+            {t('orderData.uncompletedOrders')}
           </button>
+
           <button
             className={`px-4 py-1 rounded-md text-sm font-medium border transition-colors ${
               activeSubtab === 'log'

@@ -76,6 +76,7 @@
     "shipmentTab": "Shipment",
     "orderData": {
       "statistics": "Statistics",
+      "uncompletedOrders": "Uncompleted Orders",
       "orderLog": "Order Log"
     },
     "warningModal": {
@@ -97,11 +98,16 @@
       },
       "addRule": "+ Add rule",
       "reset": "Reset",
+      "copyFromAllOrders": "Copy from «All Orders»",
       "matchTypes": {
         "StartsWith": "Starts With",
+        "NotStartsWith": "Not Starts With",
         "Contains": "Contains",
+        "NotContains": "Not Contains",
         "Equals": "Equals",
+        "NotEquals": "Not Equals",
         "EndsWith": "Ends With",
+        "NotEndsWith": "Not Ends With",
         "NullOrEmpty": "Null Or Empty",
         "IsNull": "Is Null"
       }
@@ -151,6 +157,24 @@
       "ShipmentDate_Fact": "Spending Order Ship Date",
       "SpendingOrder_Date": "Spending Order Date",
       "SpendingOrder_No": "Spending Order No."
+    },
+    "filtersOutdated": {
+      "badge": "Filters differ from «All Orders»",
+      "tooltip": "This report's filters don't match «All Orders». Update them via Report Manager → Copy from «All Orders»."
+    },
+    "reportManager": {
+      "errors": {
+        "enterName": "Please enter a report name",
+        "selectField": "Please select at least one field",
+        "saveFailed": "Error saving report",
+        "deleteFailed": "Error deleting report",
+        "connectionError": "Connection error"
+      },
+      "confirmDelete": "Are you sure you want to delete the report \"{{name}}\"?",
+      "newReport": "New Report",
+      "fillParams": "Fill in the parameters on the right",
+      "fields": "fields",
+      "filtersCount": "filters"
     }
   },
   "zh": {
@@ -230,6 +254,7 @@
     "shipmentTab": "发货",
     "orderData": {
       "statistics": "统计",
+      "uncompletedOrders": "未完成订单",
       "orderLog": "订单记录"
     },
     "warningModal": {
@@ -274,11 +299,16 @@
       },
       "addRule": "+ 添加规则",
       "reset": "重置",
+      "copyFromAllOrders": "从《All Orders》复制",
       "matchTypes": {
         "StartsWith": "以…开头",
+        "NotStartsWith": "不以…开头",
         "Contains": "包含",
+        "NotContains": "不包含",
         "Equals": "等于",
+        "NotEquals": "不等于",
         "EndsWith": "以…结尾",
+        "NotEndsWith": "不以…结尾",
         "NullOrEmpty": "空/NULL",
         "IsNull": "为NULL"
       }
@@ -304,6 +334,24 @@
       "ShipmentDate_Fact": "出库发货日期",
       "SpendingOrder_Date": "出库单日期",
       "SpendingOrder_No": "出库单号"
+    },
+    "filtersOutdated": {
+      "badge": "筛选条件与《All Orders》不符",
+      "tooltip": "此报表的筛选条件与《All Orders》不一致，请在报表管理器中点击「从《All Orders》复制」进行更新。"
+    },
+    "reportManager": {
+      "errors": {
+        "enterName": "请输入报表名称",
+        "selectField": "请至少选择一个字段",
+        "saveFailed": "保存报表时出错",
+        "deleteFailed": "删除报表时出错",
+        "connectionError": "连接服务器失败"
+      },
+      "confirmDelete": "确定要删除报表「{{name}}」吗？",
+      "newReport": "新建报表",
+      "fillParams": "请在右侧填写参数",
+      "fields": "个字段",
+      "filtersCount": "个筛选条件"
     }
   },
   "ru": {
@@ -317,12 +365,31 @@
     "shipmentTab": "Отгрузки",
     "orderData": {
       "statistics": "Статистика",
+      "uncompletedOrders": "Незавершённые заказы",
       "orderLog": "Журнал заказов"
     },
     "warningModal": {
       "title": "Уведомление о разработке",
       "message": "Этот блок еще не готов. Вы можете посмотреть эту страницу, но за корректность данных разработчик ответственности не несет.",
       "understood": "Понятно"
+    },
+    "filtersOutdated": {
+      "badge": "Фильтры не совпадают с «All Orders»",
+      "tooltip": "Фильтры этого отчёта отличаются от «All Orders». Обновите их в менеджере отчётов → «Copy from «All Orders»»."
+    },
+    "reportManager": {
+      "errors": {
+        "enterName": "Введите название отчета",
+        "selectField": "Выберите хотя бы одно поле",
+        "saveFailed": "Ошибка сохранения отчета",
+        "deleteFailed": "Ошибка удаления отчета",
+        "connectionError": "Ошибка соединения с сервером"
+      },
+      "confirmDelete": "Вы уверены что хотите удалить отчет «{{name}}»?",
+      "newReport": "Новый отчет",
+      "fillParams": "Заполните параметры справа",
+      "fields": "полей",
+      "filtersCount": "фильтров"
     }
   }
 } 

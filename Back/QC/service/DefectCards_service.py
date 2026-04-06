@@ -139,3 +139,48 @@ def fetch_defect_cards_by_type(
 
     with get_connection() as conn:
         return _fetch_query(conn, sql, tuple(params))
+
+
+def fetch_defect_cards_by_dept(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    conditions = [
+        "Delete_Mark = ?",
+        "(VinovnikDep_ID = 0xB5BC00505601355E11EDF92E2C3BF49A OR VinovnikDep_ID = 0xB5BC00505601355E11EDF0AED639127E)",
+    ]
+    params: list = [b'\x00']
+
+    if date_from:
+        conditions.append("Create_Date >= ?")
+        params.append(date_from)
+    if date_to:
+        conditions.append("Create_Date <= ?")
+        params.append(date_to)
+
+    where_clause = "WHERE " + " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            CASE
+                WHEN VinovnikDep_ID = 0xB5BC00505601355E11EDF92E2C3BF49A THEN 'injection'
+                ELSE 'stamping'
+            END                              AS dept_type,
+            VinovnikDep_Ru,
+            VinovnikDep_Zh,
+            Defect_TypeRu,
+            Defect_TypeZh,
+            SUM(QCCard_QTY * Labor_Cost)     AS Defect_Cost
+        FROM QC.QC_Cards_Summary
+        {where_clause}
+        GROUP BY
+            VinovnikDep_ID,
+            VinovnikDep_Ru,
+            VinovnikDep_Zh,
+            Defect_TypeRu,
+            Defect_TypeZh
+        ORDER BY dept_type, Defect_Cost DESC
+    """
+
+    with get_connection() as conn:
+        return _fetch_query(conn, sql, tuple(params))

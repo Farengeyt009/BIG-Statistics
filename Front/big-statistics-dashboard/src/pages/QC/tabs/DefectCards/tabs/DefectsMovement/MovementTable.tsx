@@ -217,6 +217,7 @@ const MovementTable: React.FC<MovementTableProps> = ({ data, loading, error, onT
         field: 'Doc_Date',
         headerName: t('mvColumns.date'),
         minWidth: 110, width: 110,
+        cellDataType: 'date',
         cellClass: 'text-center',
         filter: 'agSetColumnFilter',
         filterValueGetter: (p: any) => String(p?.data?.Doc_Date ?? ''),

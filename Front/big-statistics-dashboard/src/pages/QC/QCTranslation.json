@@ -5,11 +5,47 @@
     "tabs": {
       "defectCards": "Defect Cards",
       "lqc": "LQC",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "wastes": "Wastes"
+    },
+    "wastes": {
+      "tabs": {
+        "stamping":  "Stamping",
+        "injection": "Injection",
+        "summary":   "Wastes Summary"
+      },
+      "summary": {
+        "others":      "Defect (Others)",
+        "debugging":   "Defect (Debugging)",
+        "sprue":       "Sprue Wastes",
+        "defectCost":  "Defect Cost",
+        "sprueCost":   "Sprue Cost",
+        "defectWeight": "Weight (Defect)",
+        "titleByWorkshop": "By Workshop Group",
+        "chartOthers": "Others",
+        "titleByDept": "By Guilty Department"
+      },
+      "columns": {
+        "gpWeight":         "GP Weight",
+        "price":            "Price",
+        "factQty":          "Fact QTY",
+        "weightFact":       "Weight (Fact)",
+        "costFact":         "Cost (Fact)",
+        "debuggingQty":     "Debugging QTY",
+        "weightDebugging":  "Weight (Debug)",
+        "costDebugging":    "Cost (Debug)",
+        "othersQty":        "Others QTY",
+        "weightOthers":     "Weight (Others)",
+        "costOthers":       "Cost (Others)",
+        "weightWastesFact": "Weight Wastes (Fact)",
+        "costWastesFact":   "Cost Wastes (Fact)",
+        "weightTotal":      "Weight Total",
+        "weightWastes":     "Weight Wastes"
+      }
     },
     "lqc": {
       "tabs": { "log": "LQC Log", "summary": "LQC Summary" },
-      "summary": { "group": "Group", "defectPct": "Defect %", "titleByGroup": "By Product Group", "titleByDefect": "By Defect Type", "total": "Total", "qty": "QTY" },
+      "summary": { "group": "Group", "defectPct": "Defect %", "titleByGroup": "By Product Group", "titleByDefect": "By Defect Type", "total": "Total", "qty": "QTY", "defectByDate": "Defect QTY by Date", "defectPctByDate": "Defect % by Date" },
       "docNo":        "Doc No",
       "controlPoint": "Control Point",
       "largeGroup":   "Large Group",
@@ -27,7 +63,8 @@
       "tabs": {
         "log": "Defect Cards Log",
         "movement": "Defects Movement",
-        "dashboard": "Dashboard"
+        "dashboard": "Dashboard",
+        "summary": "Defect Cards Summary"
       }
     },
     "conclusion": {
@@ -102,7 +139,8 @@
       "cardsCost":         "Cards Cost",
       "group":             "Group",
       "planLabel":         "Total",
-      "factLabel":         "Posted"
+      "factLabel":         "Posted",
+      "lqcTitle":          "LQC — Defect %"
     }
   },
   "zh": {
@@ -111,11 +149,47 @@
     "tabs": {
       "defectCards": "不良卡",
       "lqc": "LQC",
-      "dashboard": "仪表板"
+      "dashboard": "仪表板",
+      "wastes": "废料"
+    },
+    "wastes": {
+      "tabs": {
+        "stamping":  "冲压",
+        "injection": "注塑",
+        "summary":   "废料汇总"
+      },
+      "summary": {
+        "others":      "其他报废",
+        "debugging":   "调试报废",
+        "sprue":       "水口料",
+        "defectCost":  "报废成本",
+        "sprueCost":   "水口成本",
+        "defectWeight": "报废重量",
+        "titleByWorkshop": "按车间分组",
+        "chartOthers": "其他",
+        "titleByDept": "按责任部门"
+      },
+      "columns": {
+        "gpWeight":         "净重",
+        "price":            "单价",
+        "factQty":          "实际数量",
+        "weightFact":       "重量（实际）",
+        "costFact":         "成本（实际）",
+        "debuggingQty":     "调试报废数",
+        "weightDebugging":  "重量（调试）",
+        "costDebugging":    "成本（调试）",
+        "othersQty":        "其他报废数",
+        "weightOthers":     "重量（其他）",
+        "costOthers":       "成本（其他）",
+        "weightWastesFact": "废料重量（实际）",
+        "costWastesFact":   "废料成本（实际）",
+        "weightTotal":      "总重量",
+        "weightWastes":     "废料重量"
+      }
     },
     "lqc": {
       "tabs": { "log": "LQC记录", "summary": "LQC汇总" },
-      "summary": { "group": "分组", "defectPct": "不良率", "titleByGroup": "按产品组", "titleByDefect": "按不良类型", "total": "合计", "qty": "数量" },
+      "summary": { "group": "分组", "defectPct": "不良率", "titleByGroup": "按产品组", "titleByDefect": "按不良类型", "total": "合计", "qty": "数量", "defectByDate": "每日不良数量", "defectPctByDate": "每日不良率" },
       "docNo":        "单据编号",
       "controlPoint": "控制点",
       "largeGroup":   "大类",
@@ -133,7 +207,8 @@
       "tabs": {
         "log": "不良卡记录",
         "movement": "不良品移动",
-        "dashboard": "数据看板"
+        "dashboard": "数据看板",
+        "summary": "不良卡汇总"
       }
     },
     "conclusion": {
@@ -208,7 +283,8 @@
       "cardsCost":         "不良卡成本",
       "group":             "分组",
       "planLabel":         "合计",
-      "factLabel":         "已过账"
+      "factLabel":         "已过账",
+      "lqcTitle":          "LQC — 不良率"
     }
   },
   "ru": {
@@ -217,11 +293,47 @@
     "tabs": {
       "defectCards": "Defect Cards",
       "lqc": "LQC",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "wastes": "Отходы"
+    },
+    "wastes": {
+      "tabs": {
+        "stamping":  "Штамповка",
+        "injection": "ТПА",
+        "summary":   "Сводная по отходам"
+      },
+      "summary": {
+        "others":      "Прочий брак",
+        "debugging":   "Отладочный брак",
+        "sprue":       "Отходы литника",
+        "defectCost":  "Стоимость брака",
+        "sprueCost":   "Стоимость литника",
+        "defectWeight": "Вес брака",
+        "titleByWorkshop": "По цехам",
+        "chartOthers": "Прочие",
+        "titleByDept": "По виновным цехам"
+      },
+      "columns": {
+        "gpWeight":         "Вес GP",
+        "price":            "Цена",
+        "factQty":          "Выпуск шт",
+        "weightFact":       "Вес выпуска",
+        "costFact":         "Стоимость выпуска",
+        "debuggingQty":     "Брак отладочный шт",
+        "weightDebugging":  "Вес (отладочный)",
+        "costDebugging":    "Стоимость (отладочный)",
+        "othersQty":        "Брак прочий шт",
+        "weightOthers":     "Вес (прочий)",
+        "costOthers":       "Стоимость (прочий)",
+        "weightWastesFact": "Вес литника (выпуск)",
+        "costWastesFact":   "Стоимость литника",
+        "weightTotal":      "Вес общий",
+        "weightWastes":     "Вес литника"
+      }
     },
     "lqc": {
       "tabs": { "log": "LQC Журнал", "summary": "LQC Сводная" },
-      "summary": { "group": "Группа", "defectPct": "% брака", "titleByGroup": "По группе продукта", "titleByDefect": "По типу дефекта", "total": "Итого", "qty": "Кол-во" },
+      "summary": { "group": "Группа", "defectPct": "% брака", "titleByGroup": "По группе продукта", "titleByDefect": "По типу дефекта", "total": "Итого", "qty": "Кол-во", "defectByDate": "Брак по датам", "defectPctByDate": "% брака по датам" },
       "docNo":        "Номер документа",
       "controlPoint": "Контрольная точка",
       "largeGroup":   "Большая группа",
@@ -239,7 +351,8 @@
       "tabs": {
         "log": "Defect Cards Log",
         "movement": "Defects Movement",
-        "dashboard": "Dashboard"
+        "dashboard": "Dashboard",
+        "summary": "Сводная по картам"
       }
     },
     "conclusion": {
@@ -314,7 +427,8 @@
       "cardsCost":         "Стоимость карт",
       "group":             "Группа",
       "planLabel":         "Всего",
-      "factLabel":         "Проведено"
+      "factLabel":         "Проведено",
+      "lqcTitle":          "LQC — % брака"
     }
   }
 }

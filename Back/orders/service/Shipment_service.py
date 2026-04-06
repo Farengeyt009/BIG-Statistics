@@ -20,16 +20,37 @@ def _fetch_query(conn, sql: str, params: Tuple = ()) -> List[Dict[str, Any]]:
     return [dict(zip(cols, row)) for row in cur.fetchall()]
 
 
+def _table_has_column(conn, schema: str, table: str, column: str) -> bool:
+    """Проверяет наличие колонки в таблице через sys.columns — без риска ошибки соединения."""
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT 1 FROM sys.columns
+            WHERE object_id = OBJECT_ID(?) AND name = ?
+            """,
+            (f"{schema}.{table}", column)
+        )
+        return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
 def load_published_rules(conn) -> List[Dict[str, Any]]:
-    sql = (
+    has_field_name = _table_has_column(conn, "Orders", "ShipmentsOrderFilter_Rules", "FieldName")
+    if has_field_name:
+        sql = """
+            SELECT RuleID, FieldName, MatchType, Pattern, IsExclude, IsActive, Priority, Comment
+            FROM Orders.ShipmentsOrderFilter_Rules
+            ORDER BY IsActive DESC, IsExclude DESC, Priority ASC, Pattern
         """
-        SELECT RuleID, MatchType, Pattern, IsExclude, IsActive, Priority, Comment
-        FROM Orders.ShipmentsOrderFilter_Rules
-        ORDER BY IsActive DESC, IsExclude DESC, Priority ASC, Pattern
+    else:
+        sql = """
+            SELECT RuleID, MatchType, Pattern, IsExclude, IsActive, Priority, Comment
+            FROM Orders.ShipmentsOrderFilter_Rules
+            ORDER BY IsActive DESC, IsExclude DESC, Priority ASC, Pattern
         """
-    )
     rows = _fetch_query(conn, sql)
-    # Map sentinel-stored NullOrEmpty back to logical MatchType
     for r in rows:
         try:
             if str(r.get("MatchType", "")).lower() == "equals" and str(r.get("Pattern", "")) == NULL_EMPTY_SENTINEL:
@@ -37,12 +58,24 @@ def load_published_rules(conn) -> List[Dict[str, Any]]:
                 r["Pattern"] = ""
         except Exception:
             pass
+        if not r.get("FieldName"):
+            r["FieldName"] = "Order_No"
     return rows
+
+
+# Whitelist допустимых полей для фильтрации (защита от SQL injection)
+ALLOWED_FILTER_FIELDS = {
+    'Order_No', 'Article_number', 'Market', 'Security_Scheme', 'ProductTagZh',
+    'LargeGroup', 'GroupName', 'Name_CN', 'Recipient_Name', 'Partner_Name',
+    'ContainerNO_Realization', 'CI_No', 'RealizationDoc', 'SpendingOrder_No',
+}
 
 
 def _build_predicates_from_rules(rules: List[Dict[str, Any]], field: str = "Order_No") -> Tuple[str, List[Any]]:
     """
     Собирает SQL-предикат и параметры для правил.
+    Каждое правило может содержать FieldName — поле для фильтрации.
+    Если FieldName не задан или не из whitelist — используется дефолтный field.
     Логика: keep = (include_match) OR NOT (exclude_match)
     Возвращает кортеж: (" AND <extra>", [params]) либо ("", []).
     """
@@ -52,11 +85,15 @@ def _build_predicates_from_rules(rules: List[Dict[str, Any]], field: str = "Orde
     exclude_params: List[Any] = []
 
     def add_clause(rule: Dict[str, Any], target: str):
+        # Определяем поле: из правила или дефолт
+        rule_field = (rule.get("FieldName") or "").strip()
+        effective_field = rule_field if rule_field in ALLOWED_FILTER_FIELDS else field
+
         match_type = (rule.get("MatchType") or "").strip().lower()
         pattern_raw = (rule.get("Pattern") or "").strip()
         # Спец-тип: NullOrEmpty / IsNullOrEmpty / Null / IsNull
         if match_type in ("nullorempty", "isnullorempty", "null", "isnull"):
-            expr = f"({field} IS NULL OR {field} = N'')" if match_type in ("nullorempty", "isnullorempty") else f"({field} IS NULL)"
+            expr = f"({effective_field} IS NULL OR {effective_field} = N'')" if match_type in ("nullorempty", "isnullorempty") else f"({effective_field} IS NULL)"
             if target == "include":
                 include_clauses.append(expr)
             else:
@@ -65,20 +102,22 @@ def _build_predicates_from_rules(rules: List[Dict[str, Any]], field: str = "Orde
         if not pattern_raw or not match_type:
             return
         if match_type == "startswith":
-            expr, param = f"{field} LIKE ?", f"{pattern_raw}%"
+            base_expr, param = f"{effective_field} LIKE ?", f"{pattern_raw}%"
         elif match_type == "contains":
-            expr, param = f"{field} LIKE ?", f"%{pattern_raw}%"
+            base_expr, param = f"{effective_field} LIKE ?", f"%{pattern_raw}%"
         elif match_type == "equals":
-            expr, param = f"{field} = ?", pattern_raw
+            base_expr, param = f"{effective_field} = ?", pattern_raw
         elif match_type == "endswith":
-            expr, param = f"{field} LIKE ?", f"%{pattern_raw}"
+            base_expr, param = f"{effective_field} LIKE ?", f"%{pattern_raw}"
         else:
             return
         if target == "include":
-            include_clauses.append(expr)
+            include_clauses.append(base_expr)
             include_params.append(param)
         else:
-            exclude_clauses.append(expr)
+            # Wrap with IS NOT NULL so rows where field IS NULL are NOT excluded.
+            # Without this: NOT (NULL LIKE '...') = NOT NULL = NULL → row dropped.
+            exclude_clauses.append(f"({effective_field} IS NOT NULL AND {base_expr})")
             exclude_params.append(param)
 
     for r in rules or []:
@@ -114,27 +153,35 @@ def _normalize_dates_in_rows(rows: List[Dict[str, Any]]) -> None:
                     row[key] = val.strftime("%d.%m.%Y")
                 elif isinstance(val, str):
                     try:
-                        # попытка привести YYYY-MM-DD или ISO к DD.MM.YYYY
                         row[key] = datetime.fromisoformat(val.split('T')[0]).strftime('%d.%m.%Y')
                     except Exception:
                         pass
+        # Convert binary fields (varbinary/uniqueidentifier from 1C) to hex strings for JSON
+        for key, val in list(row.items()):
+            if isinstance(val, (bytes, bytearray)):
+                row[key] = val.hex().upper()
 
 
 def get_shipment_data(start_date: date, end_date: date) -> Dict[str, Any]:
     """Возвращает отгрузки за период с применением опубликованных правил."""
     base_sql = (
         """
-        SELECT *
+        SELECT
+            RealizationDoc, SpendingOrder_No, RealizationDate, SpendingOrder_Date,
+            ShipmentDate_Fact, Recipient_Name, Partner_Name, ShipmentDate_Fact_Svod,
+            LargeGroup, Order_No, Article_number, GroupName, Name_CN,
+            SpendingOrder_QTY, CBM, CBM_Total, CI_No, ContainerNO_Realization, Comment,
+            Market, Security_Scheme, ProductTagZh
         FROM Orders.ShipmentData_Table
         WHERE ShipmentDate_Fact_Svod BETWEEN ? AND ?
         {extra}
         ORDER BY ShipmentDate_Fact_Svod DESC
         """
     )
+    import traceback as _tb
     try:
         with get_connection() as conn:
             rules = load_published_rules(conn)
-            # Map sentinel-stored Equals/__NULL_EMPTY__ back to logical NullOrEmpty for filtering
             mapped_rules: List[Dict[str, Any]] = []
             for r in rules:
                 if str(r.get("MatchType", "")).lower() == "equals" and str(r.get("Pattern", "")) == NULL_EMPTY_SENTINEL:
@@ -143,8 +190,11 @@ def get_shipment_data(start_date: date, end_date: date) -> Dict[str, Any]:
                     mapped_rules.append(r)
 
             extra_sql, extra_params = _build_predicates_from_rules(mapped_rules)
+            final_sql = base_sql.format(extra=extra_sql)
             params: Tuple = (start_date, end_date, *extra_params)
-            rows = _fetch_query(conn, base_sql.format(extra=extra_sql), params)
+            print(f"[Shipment] SQL:\n{final_sql}")
+            print(f"[Shipment] params: {params}")
+            rows = _fetch_query(conn, final_sql, params)
             _normalize_dates_in_rows(rows)
             return {
                 "data": rows,
@@ -153,7 +203,9 @@ def get_shipment_data(start_date: date, end_date: date) -> Dict[str, Any]:
                 "total_records": len(rows),
             }
     except Exception as e:
-        raise Exception(f"Ошибка при получении данных об отгрузках: {str(e)}")
+        detail = _tb.format_exc()
+        print(f"[Shipment] ERROR:\n{detail}")
+        raise Exception(f"Ошибка при получении данных об отгрузках: {str(e)}\n---\n{detail}")
 
 
 def preview_shipment_data(start_date: date, end_date: date,
@@ -162,7 +214,12 @@ def preview_shipment_data(start_date: date, end_date: date,
     """Возвращает данные с временными правилами: mode='override' или 'merge'."""
     base_sql = (
         """
-        SELECT *
+        SELECT
+            RealizationDoc, SpendingOrder_No, RealizationDate, SpendingOrder_Date,
+            ShipmentDate_Fact, Recipient_Name, Partner_Name, ShipmentDate_Fact_Svod,
+            LargeGroup, Order_No, Article_number, GroupName, Name_CN,
+            SpendingOrder_QTY, CBM, CBM_Total, CI_No, ContainerNO_Realization, Comment,
+            Market, Security_Scheme, ProductTagZh
         FROM Orders.ShipmentData_Table
         WHERE ShipmentDate_Fact_Svod BETWEEN ? AND ?
         {extra}
@@ -221,6 +278,9 @@ def publish_rules(new_rules: List[Dict[str, Any]]) -> int:
             canonical_mt = "Equals"
         else:  # endswith
             canonical_mt = "EndsWith"
+        field_name = (r.get("FieldName") or "Order_No").strip()
+        if field_name not in ALLOWED_FILTER_FIELDS:
+            field_name = "Order_No"
         normalized.append({
             "MatchType": canonical_mt,
             "Pattern": pattern,
@@ -228,6 +288,7 @@ def publish_rules(new_rules: List[Dict[str, Any]]) -> int:
             "IsActive": 1 if r.get("IsActive", 1) else 0,
             "Priority": int(r.get("Priority", 100)),
             "Comment": (r.get("Comment") or "").strip() or None,
+            "FieldName": field_name,
         })
 
     with get_connection() as conn:
@@ -237,19 +298,35 @@ def publish_rules(new_rules: List[Dict[str, Any]]) -> int:
             cur.execute("DELETE FROM Orders.ShipmentsOrderFilter_Rules")
             if normalized:
                 cur.fast_executemany = True
-                cur.executemany(
-                    (
-                        """
-                        INSERT INTO Orders.ShipmentsOrderFilter_Rules
-                          (MatchType, Pattern, IsExclude, IsActive, Priority, Comment)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """
-                    ),
-                    [(
-                        r["MatchType"], r["Pattern"], r["IsExclude"],
-                        r["IsActive"], r["Priority"], r["Comment"]
-                    ) for r in normalized]
-                )
+                # Try with FieldName; fall back if column doesn't exist yet
+                try:
+                    cur.executemany(
+                        (
+                            """
+                            INSERT INTO Orders.ShipmentsOrderFilter_Rules
+                              (MatchType, Pattern, IsExclude, IsActive, Priority, Comment, FieldName)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """
+                        ),
+                        [(
+                            r["MatchType"], r["Pattern"], r["IsExclude"],
+                            r["IsActive"], r["Priority"], r["Comment"], r["FieldName"]
+                        ) for r in normalized]
+                    )
+                except Exception:
+                    cur.executemany(
+                        (
+                            """
+                            INSERT INTO Orders.ShipmentsOrderFilter_Rules
+                              (MatchType, Pattern, IsExclude, IsActive, Priority, Comment)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """
+                        ),
+                        [(
+                            r["MatchType"], r["Pattern"], r["IsExclude"],
+                            r["IsActive"], r["Priority"], r["Comment"]
+                        ) for r in normalized]
+                    )
             cur.execute("COMMIT")
             return len(normalized)
         except Exception:

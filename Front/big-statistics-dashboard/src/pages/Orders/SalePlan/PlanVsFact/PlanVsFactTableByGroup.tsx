@@ -7,6 +7,7 @@ import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 import { FlagIcon } from '../../../../components/FlagIcon';
 import { useAuth } from '../../../../context/AuthContext';
+import AgGridGroupedExportButton from '../../../../components/AgGrid/GroupedExportButton';
 
 interface RawData {
   YearNum: number;
@@ -437,6 +438,7 @@ const PlanVsFactTableByGroup: React.FC<Props> = ({ selectedYear, leadTimeMonths 
   const autoGroupColumnDef = useMemo<ColDef>(() => ({
     headerName: 'Group',
     minWidth: 250,
+    pinned: 'left' as const,
     cellRenderer: 'agGroupCellRenderer',
     cellRendererParams: {
       suppressCount: true,
@@ -503,9 +505,12 @@ const PlanVsFactTableByGroup: React.FC<Props> = ({ selectedYear, leadTimeMonths 
     <div ref={containerRef} className="flex flex-col">
       {/* Заголовок */}
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-[#0d1c3d] mb-2">
-          Sale Plan vs Actual Orders by Group
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-[#0d1c3d]">
+            Sale Plan vs Actual Orders by Group
+          </h3>
+          <AgGridGroupedExportButton api={gridApi} fileName="sale_plan_vs_actual_orders_by_group" variant="icon" leafNameField="Market" multiLevelHeader={true} />
+        </div>
         <div style={{ color: '#6b7280', fontSize: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           Can be ungrouped: Group
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ display: 'inline-block' }}>

@@ -151,7 +151,7 @@ const DailyStaffing: React.FC<Props> = ({ startDate, endDate, suppressLocalLoade
   );
 
   const columnDefs: ColDef[] = useMemo(() => [
-    { field: 'OnlyDate', headerName: t('timeLossDailyStaffing.date') as string, minWidth: 90, maxWidth: 200, cellClass: 'text-center',
+    { field: 'OnlyDate', headerName: t('timeLossDailyStaffing.date') as string, minWidth: 90, maxWidth: 200, cellClass: 'text-center', cellDataType: 'date',
       valueFormatter: (p: any) => { const s = String(p?.data?.OnlyDateISO || p.value || ''); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}.${m[2]}.${m[1]}` : (p.value || ''); },
       filter: 'agSetColumnFilter',
       filterValueGetter: (p: any) => String(p?.data?.OnlyDateISO ?? ''),

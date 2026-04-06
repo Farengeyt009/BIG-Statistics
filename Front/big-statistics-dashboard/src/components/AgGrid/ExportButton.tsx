@@ -35,9 +35,10 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
     });
 
     // 3) Данные: проходимся по узлам после фильтра и сортировки
+    const dateColIndices = new Set<number>();
     const body: any[][] = [];
     api.forEachNodeAfterFilterAndSort?.((node: any) => {
-      const row = columns.map((col: any) => {
+      const row = columns.map((col: any, colIdx: number) => {
         const def = col.getColDef?.() || {};
         const field = (def.field || '').toString();
         const raw = api.getValue ? api.getValue(col, node) : node?.data?.[field];
@@ -59,6 +60,7 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
         // Если колонка дата — возвращаем excel-дату (Date)
         const isDateCol = String((def as any)?.cellDataType || '').toLowerCase() === 'date';
         if (isDateCol) {
+          dateColIndices.add(colIdx);
           const s = String(raw ?? '');
           // Пробуем DD.MM.YYYY, затем YYYY-MM-DD, затем Date.parse
           const m1 = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
@@ -114,6 +116,18 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
 
     // 5) Собираем лист и сохраняем
     const ws = XLSX.utils.aoa_to_sheet([headerRow, ...body]);
+
+    // Применяем формат даты ко всем ячейкам дат
+    dateColIndices.forEach(colIdx => {
+      const colLetter = XLSX.utils.encode_col(colIdx);
+      for (let rowIdx = 0; rowIdx < body.length; rowIdx++) {
+        const cellAddr = `${colLetter}${rowIdx + 2}`; // +2: строка 1 — заголовок
+        const cell = ws[cellAddr];
+        if (cell && cell.v instanceof Date) {
+          cell.z = 'DD.MM.YYYY';
+        }
+      }
+    });
     (ws as any)['!cols'] = cols;
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');

@@ -12,12 +12,19 @@ import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import { applyStandardFilters, getMonthLabel, toIsoDate, BLANK_VALUE } from '../../../../components/AgGrid/filterUtils';
 
+interface FilterItem {
+  field: string;
+  operator: string;
+  value: any;
+}
+
 interface Report {
   report_id: number;
   report_name: string;
   is_template: boolean;
   can_edit: boolean;
   report_type: string;
+  filters?: FilterItem[];
 }
 
 interface OrdersLogTableProps {
@@ -34,7 +41,7 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
   setIsManagerOpen 
 }) => {
   const { token } = useAuth();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation('ordersTranslation');
   const gridRef = useRef<AgGridReact>(null);
   const gridWrapperRef = useRef<HTMLDivElement | null>(null);
   
@@ -224,6 +231,7 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
                 }),
                 // Иерархический фильтр дат с группировкой по годам, месяцам, дням
                 ...(isDate && {
+                  cellDataType: 'date',
                   cellClass: 'text-center',
                   filter: 'agSetColumnFilter', // Используем Set фильтр с treeList для иерархии
                   filterParams: {
@@ -292,6 +300,18 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
   const standardReports = useMemo(() => reports.filter(r => r.is_template), [reports]);
   const myReports = useMemo(() => reports.filter(r => !r.is_template), [reports]);
 
+  // Предупреждение об устаревших фильтрах в кастомном отчёте
+  const filtersOutdated = useMemo(() => {
+    if (!selectedReportId) return false;
+    const selected = reports.find(r => r.report_id === selectedReportId);
+    if (!selected || selected.is_template) return false;
+    const stdReport = reports.find(r => r.is_template);
+    if (!stdReport) return false;
+    const normalize = (f: FilterItem[] | undefined) =>
+      JSON.stringify((f ?? []).map(x => ({ field: x.field, operator: x.operator, value: x.value })));
+    return normalize(selected.filters) !== normalize(stdReport.filters);
+  }, [reports, selectedReportId]);
+
   const defaultColDef = useMemo<ColDef>(() => ({
     minWidth: 100,
     filter: true,
@@ -346,6 +366,17 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
           {!loading && rowData.length > 0 && (
             <div className="text-xs text-gray-600">
               Records: <span className="font-semibold">{rowData.length.toLocaleString('ru-RU')}</span>
+            </div>
+          )}
+          {!loading && filtersOutdated && (
+            <div
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-amber-400 bg-amber-50 text-amber-700 font-medium"
+              title={t('filtersOutdated.tooltip')}
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              {t('filtersOutdated.badge')}
             </div>
           )}
         </>,

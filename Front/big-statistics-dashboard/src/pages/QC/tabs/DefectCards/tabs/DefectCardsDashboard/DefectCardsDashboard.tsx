@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, BarChart2, Package, Circle } from 'lucide-react';
+import LQCDefectChart from '../../../../tabs/LQC/tabs/LQCSummary/LQCDefectChart';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface DeptRow {
@@ -115,6 +117,7 @@ const DEPT_COLORS = [
 const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, endDate }) => {
   const { t, i18n } = useTranslation('qc');
   const lang = i18n.language as 'en' | 'zh' | 'ru';
+  const navigate = useNavigate();
 
   const toLocalDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -210,7 +213,10 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
   const totalDefPct = defPct(totalDetectionCost, totalProdCost);
 
   const summaryCard = (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[180px]">
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[180px] cursor-pointer self-start"
+      onClick={() => navigate('/qc?tab=defectCards&subtab=summary')}
+    >
       {/* Header */}
       <div className="bg-gray-50 px-6 py-3 rounded-t-xl border-b border-gray-200">
         <div className="flex items-center gap-4">
@@ -321,7 +327,10 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
   ];
 
   const donutCard = (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => navigate('/qc?tab=defectCards&subtab=log')}
+    >
       {/* Header */}
       <div className="bg-gray-50 px-6 py-3 rounded-t-xl border-b border-gray-200">
         <h3 className="text-base font-semibold text-gray-800 leading-none">{t('dashboard.defectCardsTitle')}</h3>
@@ -402,26 +411,52 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
     </div>
   );
 
-  // ── LQC Summary data ─────────────────────────────────────────────────────
-  const { data: lqcSummary, isLoading: lqcLoading } = useQuery<{
-    total_prod_qty: number;
-    total_defect_qty: number;
-    defect_types: { Defect_Type_Ru: string; Defect_Type_Zh: string; Defect_QTY: number }[];
-  }>({
-    queryKey: ['lqc-summary', dateFrom, dateTo],
+  // ── Wastes data ───────────────────────────────────────────────────────────
+  const { data: stampingWastes = [] } = useQuery<any[]>({
+    queryKey: ['stamping-wastes-dashboard', dateFrom, dateTo],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo)   params.append('date_to',   dateTo);
-      const res = await fetch(`/api/qc/lqc-summary?${params.toString()}`);
+      const res = await fetch(`/api/qc/stamping-wastes?${params.toString()}`);
       if (!res.ok) throw new Error('Network error');
       const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? 'API error');
-      return json.data;
+      return json?.data ?? [];
     },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // ── Card: Defect Type ─────────────────────────────────────────────────────
+  const { data: injectionWastes = [] } = useQuery<any[]>({
+    queryKey: ['injection-wastes-dashboard', dateFrom, dateTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('date_from', dateFrom);
+      if (dateTo)   params.append('date_to',   dateTo);
+      const res = await fetch(`/api/qc/plastic-wastes?${params.toString()}`);
+      if (!res.ok) throw new Error('Network error');
+      const json = await res.json();
+      return json?.data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // ── LQC Journal data (for Defect % chart) ────────────────────────────────
+  const { data: lqcJournal = [] } = useQuery<any[]>({
+    queryKey: ['lqc-journal-dashboard', dateFrom, dateTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('date_from', dateFrom);
+      if (dateTo)   params.append('date_to',   dateTo);
+      const res = await fetch(`/api/qc/lqc-journal?${params.toString()}`);
+      if (!res.ok) throw new Error('Network error');
+      const json = await res.json();
+      return json?.data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
   const { data: defectTypeData, isLoading: defectTypeLoading } = useQuery<{ Defect_TypeRu: string; Defect_TypeZh: string; Cost_Total: number }[]>({
     queryKey: ['defect-cards-by-type', dateFrom, dateTo],
     queryFn: async () => {
@@ -446,7 +481,10 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
   };
 
   const detectionQtyCard = (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[180px]">
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[180px] cursor-pointer"
+      onClick={() => navigate('/qc?tab=defectCards&subtab=summary')}
+    >
       {/* Header */}
       <div className="bg-gray-50 px-6 py-3 rounded-t-xl border-b border-gray-200">
         <div className="flex items-center gap-4">
@@ -512,93 +550,171 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
 
 
   // ── Card: LQC ─────────────────────────────────────────────────────────────
-  const lqcProdQty   = lqcSummary?.total_prod_qty   ?? 0;
-  const lqcDefectQty = lqcSummary?.total_defect_qty ?? 0;
-  const lqcDefectPct = lqcProdQty > 0 ? (lqcDefectQty / lqcProdQty) * 100 : 0;
-  const lqcPctLabel  = lqcDefectPct === 0 ? '0%' : lqcDefectPct < 0.1 ? '<0.1%' : `${lqcDefectPct.toFixed(1)}%`;
-  const lqcGoodPct   = Math.max(0, 100 - lqcDefectPct);
 
-  const lqcDonutSegments = lqcProdQty > 0
-    ? [
-        { color: lqcDefectPct < 1 ? '#86efac' : lqcDefectPct < 2 ? '#fdba74' : '#fca5a5', pct: Math.min(lqcDefectPct, 100) },
-        { color: '#e5e7eb', pct: lqcGoodPct },
-      ]
-    : [{ color: '#e5e7eb', pct: 100 }];
+  // Итоговый % брака из lqcJournal (с дедупликацией Prod_Fact_QTY)
+  const lqcTotalPct = useMemo(() => {
+    if (!lqcJournal.length) return null;
+    let totalDefect = 0;
+    const pfSeen = new Map<string, number>();
+    for (const r of lqcJournal) {
+      const dateStr = r.Date ? String(r.Date).slice(0, 10) : null;
+      if (!dateStr) continue;
+      const dk = `${dateStr}|${r.Control_Tochka_Ru || ''}|${r.Prod_Order_No || ''}`;
+      totalDefect += Number(r.Defect_QTY) || 0;
+      if (!pfSeen.has(dk)) pfSeen.set(dk, Number(r.Prod_Fact_QTY) || 0);
+    }
+    const totalProd = Array.from(pfSeen.values()).reduce((s, v) => s + v, 0);
+    if (totalProd === 0) return null;
+    return (totalDefect / totalProd) * 100;
+  }, [lqcJournal]);
 
-  const lqcTypes = lqcSummary?.defect_types ?? [];
-  const lqcTypesTotal = lqcTypes.reduce((s, r) => s + (r.Defect_QTY || 0), 0);
+  const lqcTotalPctLabel = lqcTotalPct === null
+    ? null
+    : lqcTotalPct < 0.1
+      ? '<0.1%'
+      : `${lqcTotalPct.toFixed(1)}%`;
 
-  // Топ 3
-  const lqcTypeRows = lqcTypes.slice(0, 3).map(r => ({
-    name: lang === 'zh' ? (r.Defect_Type_Zh || r.Defect_Type_Ru) : (r.Defect_Type_Ru || r.Defect_Type_Zh) || '—',
-    qty: r.Defect_QTY,
-  }));
+  // ── Wastes flat rows ──────────────────────────────────────────────────────
+  interface WastesFlatRow {
+    label: string;
+    isHeader: boolean;
+    weightFact: number;
+    weightDefect: number;
+  }
 
-  const lqcCard = (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+  const wastesRows = useMemo((): WastesFlatRow[] => {
+    const stWF  = stampingWastes.reduce((s, r) => s + (Number(r.Weight_FACT)      || 0), 0);
+    const stWO  = stampingWastes.reduce((s, r) => s + (Number(r.Weight_Others)    || 0), 0);
+    const stWD  = stampingWastes.reduce((s, r) => s + (Number(r.Weight_Debugging) || 0), 0);
+
+    const injWF  = injectionWastes.reduce((s, r) => s + (Number(r.WeightTotal_FACT)  || 0), 0);
+    const injWO  = injectionWastes.reduce((s, r) => s + (Number(r.WeightOthers)      || 0), 0);
+    const injWD  = injectionWastes.reduce((s, r) => s + (Number(r.WeightDebugging)   || 0), 0);
+    const injWS  = injectionWastes.reduce((s, r) => s + (Number(r.WeightWastes_FACT) || 0), 0);
+
+    return [
+      { label: t('wastes.tabs.stamping'),      isHeader: true,  weightFact: stWF,  weightDefect: stWO + stWD },
+      { label: t('wastes.summary.others'),      isHeader: false, weightFact: stWF,  weightDefect: stWO },
+      { label: t('wastes.summary.debugging'),   isHeader: false, weightFact: stWF,  weightDefect: stWD },
+      { label: t('wastes.tabs.injection'),      isHeader: true,  weightFact: injWF, weightDefect: injWO + injWD + injWS },
+      { label: t('wastes.summary.sprue'),       isHeader: false, weightFact: injWF, weightDefect: injWS },
+      { label: t('wastes.summary.others'),      isHeader: false, weightFact: injWF, weightDefect: injWO },
+      { label: t('wastes.summary.debugging'),   isHeader: false, weightFact: injWF, weightDefect: injWD },
+    ];
+  }, [stampingWastes, injectionWastes, t]);
+
+  const wastesGrandFact   = wastesRows.filter(r => r.isHeader).reduce((s, r) => s + r.weightFact,   0);
+  const wastesGrandDefect = wastesRows.filter(r => r.isHeader).reduce((s, r) => s + r.weightDefect, 0);
+
+  const wastesPctBadge = (fact: number, defect: number): string => {
+    if (fact === 0) return 'bg-gray-100 text-gray-500';
+    const pct = (defect / fact) * 100;
+    if (pct < 1)  return 'bg-green-100 text-green-700';
+    if (pct < 5)  return 'bg-orange-100 text-orange-600';
+    return 'bg-red-100 text-red-700';
+  };
+
+  const fmtW = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  const fmtWNum = (v: number) => v === 0 ? '' : fmtW.format(v);
+  const fmtPct  = (fact: number, defect: number) => {
+    if (fact === 0) return '';
+    const p = (defect / fact) * 100;
+    return p < 0.1 ? '<0.1%' : `${p.toFixed(1)}%`;
+  };
+
+  const COL_W = { name: 'flex-1 min-w-0', wf: 'w-24 text-right flex-shrink-0', wd: 'w-24 text-right flex-shrink-0', pct: 'w-16 text-right flex-shrink-0' };
+
+  const wastesCard = (
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => navigate('/qc?tab=wastes&subtab=summary')}
+    >
       <div className="bg-gray-50 px-6 py-3 rounded-t-xl border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <span className="text-gray-400"><Package size={16} /></span>
-          <h3 className="text-base font-semibold text-gray-800 leading-none">LQC</h3>
+          <h3 className="text-base font-semibold text-gray-800 leading-none flex-1">Wastes</h3>
+          <div className={`${COL_W.wf}  text-[11px] font-semibold text-gray-500 uppercase tracking-wider`}>{t('wastes.columns.weightFact')}</div>
+          <div className={`${COL_W.wd}  text-[11px] font-semibold text-gray-500 uppercase tracking-wider`}>{t('wastes.summary.defectWeight')}</div>
+          <div className={`${COL_W.pct} text-[11px] font-semibold text-gray-500 uppercase tracking-wider`}>%</div>
+        </div>
+      </div>
+      <div className="px-6 divide-y divide-gray-200">
+        {wastesRows.map((row, idx) => (
+          <div key={idx} className="flex items-center gap-2 py-2.5 hover:bg-gray-50">
+            <div className={`${COL_W.name} text-[13px] truncate ${row.isHeader ? 'font-semibold text-gray-800' : 'text-gray-500 pl-3'}`}>
+              {row.label}
+            </div>
+            <div className={`${COL_W.wf} text-[13px] tabular-nums ${row.isHeader ? 'font-semibold text-[#0d1c3d]' : 'text-gray-500'}`}>
+              {fmtWNum(row.weightFact)}
+            </div>
+            <div className={`${COL_W.wd} text-[13px] tabular-nums ${row.isHeader ? 'font-semibold text-[#0d1c3d]' : 'text-gray-500'}`}>
+              {fmtWNum(row.weightDefect)}
+            </div>
+            <div className={`${COL_W.pct} text-right`}>
+              {row.weightFact > 0 && (
+                <span className={`inline-block text-[12px] font-semibold py-0.5 px-2 rounded tabular-nums ${wastesPctBadge(row.weightFact, row.weightDefect)}`}>
+                  {fmtPct(row.weightFact, row.weightDefect)}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+        {/* Total */}
+        <div className="flex items-center gap-2 py-2.5 border-t border-gray-300">
+          <div className={`${COL_W.name} text-[13px] font-semibold text-gray-800`}>Total</div>
+          <div className={`${COL_W.wf} text-[13px] font-semibold tabular-nums text-[#0d1c3d]`}>{fmtWNum(wastesGrandFact)}</div>
+          <div className={`${COL_W.wd} text-[13px] font-semibold tabular-nums text-[#0d1c3d]`}>{fmtWNum(wastesGrandDefect)}</div>
+          <div className={`${COL_W.pct} text-right`}>
+            {wastesGrandFact > 0 && (
+              <span className={`inline-block text-[12px] font-semibold py-0.5 px-2 rounded tabular-nums ${wastesPctBadge(wastesGrandFact, wastesGrandDefect)}`}>
+                {fmtPct(wastesGrandFact, wastesGrandDefect)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const getLqcPctBadge = (pct: number | null): string => {
+    if (pct === null) return 'bg-gray-100 text-gray-500';
+    if (pct < 1)  return 'bg-green-100 text-green-700';
+    if (pct < 2)  return 'bg-orange-100 text-orange-600';
+    return 'bg-red-100 text-red-700';
+  };
+
+  const lqcCard = (
+    <div
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => navigate('/qc?tab=lqc&subtab=summary')}
+    >
+      <div className="bg-gray-50 px-6 py-1.5 rounded-t-xl border-b border-gray-200">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400"><Package size={16} /></span>
+            <h3 className="text-base font-semibold text-gray-800 leading-none">{t('dashboard.lqcTitle')}</h3>
+          </div>
+          <div
+            className="p-1 rounded-md border border-gray-300 flex items-center justify-center flex-shrink-0"
+            style={{
+              background: '#f0f1f3',
+              boxShadow: 'inset 1px 1px 2px rgba(0,0,0,0.08), inset -1px -1px 2px rgba(255,255,255,0.6)',
+            }}
+          >
+            <span className={`inline-block text-[12px] font-semibold py-0.5 px-2 rounded tabular-nums ${getLqcPctBadge(lqcTotalPct)}`}>
+              {lqcTotalPctLabel ?? '—'}
+            </span>
+          </div>
         </div>
       </div>
       <div className="px-5 py-4">
-        {lqcLoading ? (
-          <div className="flex gap-4">
-            <div className="h-20 bg-gray-200 rounded-full w-20 animate-pulse flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </div>
-        ) : (
-          /* Двухколоночный layout через grid */
-          <div className="grid gap-0" style={{ gridTemplateColumns: '3fr 1px 2fr' }}>
-
-            {/* Левая часть — диаграмма + итоги */}
-            <div className="flex flex-col items-center justify-center gap-2 pr-3">
-              <Donut segments={lqcDonutSegments} center={lqcPctLabel} sizePx={120} stroke={10} centerSize={14} />
-              <div className="text-center tabular-nums space-y-0.5">
-                <div className="text-[11px] text-gray-400">
-                  {t('dashboard.prodQTY')}:{' '}
-                  <span className="font-semibold text-[#0d1c3d]">{fmt(lqcProdQty)}</span>
-                </div>
-                <div className="text-[11px] text-gray-400">
-                  {t('dashboard.detectionQTY')}:{' '}
-                  <span className="font-semibold text-[#0d1c3d]">{fmt(lqcDefectQty)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Разделитель */}
-            <div className="bg-gray-200 self-stretch" />
-
-            {/* Правая часть — топ 3 причины */}
-            <div className="flex flex-col gap-2.5 pl-3 min-w-0 overflow-hidden">
-              {lqcTypeRows.map((row, i) => {
-                const pctVal = lqcTypesTotal > 0 ? (row.qty / lqcTypesTotal) * 100 : 0;
-                const pctStr = pctVal < 0.1 ? '<0.1%' : `${pctVal.toFixed(1)}%`;
-                return (
-                  <div key={i} className="text-right">
-                    <div className="text-[13px] text-gray-700 font-medium leading-tight truncate" title={row.name}>
-                      {row.name}
-                    </div>
-                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                      <span className="text-[13px] font-semibold tabular-nums text-[#0d1c3d]">
-                        {fmt(row.qty)}
-                      </span>
-                      <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded tabular-nums ${defPctBadge(row.qty, lqcTypesTotal)}`}>
-                        {pctStr}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        )}
+        <div style={{ height: 200 }}>
+          <LQCDefectChart
+            data={lqcJournal}
+            startDate={startDate}
+            endDate={endDate}
+            metric="pct"
+          />
+        </div>
       </div>
     </div>
   );
@@ -612,7 +728,10 @@ const DefectCardsDashboard: React.FC<DefectCardsDashboardProps> = ({ startDate, 
           {donutCard}
           {lqcCard}
         </div>
-        {detectionQtyCard}
+        <div className="flex flex-col gap-6">
+          {detectionQtyCard}
+          {wastesCard}
+        </div>
       </div>
     </div>
   );
