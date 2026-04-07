@@ -457,7 +457,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       minWidth: 90,
       maxWidth: 150,
       cellClass: 'text-center',
-      cellDataType: 'date',
+      exportAsDate: true,
       filter: 'agSetColumnFilter',
       // как в Loss Table: значение фильтра берём в ISO-формате
       filterValueGetter: (p: any) => String(p?.data?.OnlyDateISO ?? ''),

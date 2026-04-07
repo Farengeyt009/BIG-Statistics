@@ -57,7 +57,7 @@ Get-ChildItem -Path $projectRoot -Recurse | ForEach-Object {
     
     # Проверка на исключаемые папки
     foreach ($excludeFolder in $excludeFolders) {
-        if ($relativePath -like "$excludeFolder*") {
+        if ($relativePath -like "$excludeFolder*" -or $relativePath -like "*\$excludeFolder\*" -or $relativePath -like "*\$excludeFolder") {
             $shouldExclude = $true
             break
         }
