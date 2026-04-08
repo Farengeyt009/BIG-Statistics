@@ -83,6 +83,27 @@ Write-Host ""
 # Добавляем текущую директорию в PYTHONPATH
 $env:PYTHONPATH = $projectRoot
 
+# ── Запускаем Migration Runner (continuous scripts) в отдельном окне ──
+$migrationRoot = Join-Path $projectRoot "Migration"
+if (Test-Path (Join-Path $migrationRoot "runner.py")) {
+    Write-Host "Starting Migration Runner..." -ForegroundColor Green
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", `
+        "Set-Location '$migrationRoot'; `$env:PYTHONPATH='$projectRoot'; python runner.py"
+    Start-Sleep -Seconds 2
+    Write-Host "[OK] Migration Runner started" -ForegroundColor Green
+}
+
+# ── Запускаем Migration Scheduler (scheduled scripts) в отдельном окне ──
+if (Test-Path (Join-Path $migrationRoot "scheduler.py")) {
+    Write-Host "Starting Migration Scheduler..." -ForegroundColor Green
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", `
+        "Set-Location '$migrationRoot'; `$env:PYTHONPATH='$projectRoot'; python scheduler.py"
+    Start-Sleep -Seconds 1
+    Write-Host "[OK] Migration Scheduler started" -ForegroundColor Green
+}
+
+Write-Host ""
+
 # Запускаем production сервер
 $env:FLASK_ENV = "production"
 python .\Back\Run_Server.py

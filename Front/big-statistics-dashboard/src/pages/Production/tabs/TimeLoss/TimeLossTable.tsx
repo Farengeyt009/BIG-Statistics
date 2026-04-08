@@ -178,26 +178,20 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
   const lang = i18n.language || 'zh';
   
   // Локализация AG-Grid (включая date picker)
-  const localeText = useMemo(() => {
+  const localeText = useMemo<Record<string, string>>(() => {
     if (lang === 'zh') {
       return {
-        // Date Picker
         dateFormatOoo: 'yyyy-MM-dd',
-        // Месяцы для календаря
         january: '一月', february: '二月', march: '三月', april: '四月',
         may: '五月', june: '六月', july: '七月', august: '八月',
         september: '九月', october: '十月', november: '十一月', december: '十二月',
-        // Дни недели
         sunday: '日', monday: '一', tuesday: '二', wednesday: '三',
         thursday: '四', friday: '五', saturday: '六',
-      };
+      } as Record<string, string>;
     } else if (lang === 'en') {
-      return {
-        dateFormatOoo: 'yyyy-MM-dd',
-        // Английский используется по умолчанию в AG-Grid
-      };
+      return { dateFormatOoo: 'yyyy-MM-dd' } as Record<string, string>;
     }
-    return {}; // Русский
+    return {} as Record<string, string>;
   }, [lang]);
 
   const gridApiRef = useRef<any>(null);
@@ -777,7 +771,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
   }, [getFilterKey, filteredRows, rows]);
 
   const columns = useMemo<ColDef<LocalRow>[]>(() => [
-    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', cellDataType: 'date', width: 160,
+    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', exportAsDate: true, width: 160,
       cellEditorParams: {
         maxDate: getMaxAllowedDate(),
       },
@@ -936,7 +930,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'Responsible', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
     },
-    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', cellDataType: 'date', width: 160,
+    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', exportAsDate: true, width: 160,
       filter: 'agSetColumnFilter',
       filterValueGetter: (p: any) => String(normalizeDate(p?.data?.CompletedDate) ?? ''),
       filterParams: {

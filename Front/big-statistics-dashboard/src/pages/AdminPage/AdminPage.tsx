@@ -56,7 +56,18 @@ const AdminPage: React.FC = () => {
   const [selectedUserStats, setSelectedUserStats] = useState<any>(null);
   
   // State для вкладок
-  const [activeTab, setActiveTab] = useState<'users' | 'statistics'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'statistics' | 'migration'>('users');
+
+  // State для вкладки Migration
+  const [migrationScripts, setMigrationScripts] = useState<any[]>([]);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [logModal, setLogModal] = useState<{ scriptId: string; lines: string[] } | null>(null);
+  const [logLoading, setLogLoading] = useState(false);
+  const [restartingId, setRestartingId] = useState<string | null>(null);
+  const [stoppingId, setStoppingId] = useState<string | null>(null);
+  const [runNowId, setRunNowId] = useState<string | null>(null);
+  const [expandedMigGroups, setExpandedMigGroups] = useState<Set<string>>(new Set());
   
   // State для модального окна удаления
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -104,6 +115,113 @@ const AdminPage: React.FC = () => {
 
     loadData();
   }, [token]);
+
+  // ── Migration helpers ────────────────────────────────────────────────────
+
+  const fetchMigrationStatus = React.useCallback(async () => {
+    if (!token) return;
+    setMigrationLoading(true);
+    setMigrationError(null);
+    try {
+      const res = await fetch('/api/migration/status', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setMigrationScripts(data);
+      } else {
+        setMigrationError(data.error || 'Failed to load migration status');
+      }
+    } catch (e: any) {
+      setMigrationError(e.message);
+    } finally {
+      setMigrationLoading(false);
+    }
+  }, [token]);
+
+  // Auto-refresh migration status every 30 s when tab is active
+  useEffect(() => {
+    if (activeTab !== 'migration') return;
+    fetchMigrationStatus();
+    const interval = setInterval(fetchMigrationStatus, 30000);
+    return () => clearInterval(interval);
+  }, [activeTab, fetchMigrationStatus]);
+
+  const handleShowLogs = async (scriptId: string) => {
+    setLogLoading(true);
+    setLogModal({ scriptId, lines: [] });
+    try {
+      const res = await fetch(`/api/migration/logs/${scriptId}?lines=150`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setLogModal({ scriptId, lines: data.lines ?? [] });
+    } catch (e: any) {
+      setLogModal({ scriptId, lines: [`Error: ${e.message}`] });
+    } finally {
+      setLogLoading(false);
+    }
+  };
+
+  const handleRestartScript = async (scriptId: string) => {
+    setRestartingId(scriptId);
+    try {
+      await fetch(`/api/migration/restart/${scriptId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      setTimeout(fetchMigrationStatus, 2000);
+    } finally {
+      setRestartingId(null);
+    }
+  };
+
+  const handleStopScript = async (scriptId: string) => {
+    setStoppingId(scriptId);
+    try {
+      await fetch(`/api/migration/stop/${scriptId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      setTimeout(fetchMigrationStatus, 2000);
+    } finally {
+      setStoppingId(null);
+    }
+  };
+
+  const handleRunNow = async (scriptId: string) => {
+    setRunNowId(scriptId);
+    try {
+      await fetch(`/api/migration/run-now/${scriptId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      setTimeout(fetchMigrationStatus, 2000);
+    } finally {
+      setRunNowId(null);
+    }
+  };
+
+  const getMigSource = (scriptId: string) => {
+    if (scriptId.startsWith('1c_')) return '1C';
+    if (scriptId.startsWith('skud_')) return 'SKUD';
+    if (scriptId.startsWith('mes_')) return 'MES';
+    return 'Other';
+  };
+
+  const getMigType = (script: any) => {
+    if (script.category === 'continuous') return 'Continuous';
+    if (script.script_id.endsWith('_full')) return 'Full Sync';
+    return 'Scheduled';
+  };
+
+  const toggleMigGroup = (key: string) => {
+    setExpandedMigGroups(prev => {
+      const s = new Set(prev);
+      s.has(key) ? s.delete(key) : s.add(key);
+      return s;
+    });
+  };
 
   // Загрузка прав пользователя при выборе
   const handleSelectUser = async (user: User) => {
@@ -412,6 +530,21 @@ const AdminPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               <span>Statistics</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('migration')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'migration'
+                ? 'border-[#142143] text-[#142143]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Migration</span>
             </div>
           </button>
         </div>
@@ -932,6 +1065,264 @@ const AdminPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Вкладка Migration */}
+      {activeTab === 'migration' && (
+        <div className="space-y-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800">Migration Scripts</h2>
+            <button
+              onClick={fetchMigrationStatus}
+              disabled={migrationLoading}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#142143] text-white rounded-lg hover:bg-[#1d2f5c] disabled:opacity-50 transition"
+            >
+              <svg className={`w-4 h-4 ${migrationLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+
+          {migrationError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{migrationError}</div>
+          )}
+
+          {migrationScripts.length === 0 && !migrationLoading && (
+            <div className="p-8 text-center text-gray-400 bg-white rounded-lg shadow">
+              No scripts found. Make sure Migration.ScriptStatus table exists and runner is active.
+            </div>
+          )}
+
+          {/* Grouped sections */}
+          {(() => {
+            const statusColor: Record<string, string> = {
+              running:             'bg-green-100 text-green-700',
+              idle:                'bg-blue-100 text-blue-700',
+              error:               'bg-red-100 text-red-700',
+              starting:            'bg-yellow-100 text-yellow-700',
+              restart_requested:   'bg-orange-100 text-orange-700',
+              stop_requested:      'bg-gray-100 text-gray-600',
+              run_now_requested:   'bg-purple-100 text-purple-700',
+              stopped:             'bg-gray-100 text-gray-400',
+              never_run:           'bg-gray-100 text-gray-400',
+              unknown:             'bg-gray-100 text-gray-400',
+            };
+
+            // Build group map: source → type → scripts[]
+            const groupMap: Record<string, Record<string, any[]>> = {};
+            const SOURCE_ORDER = ['1C', 'SKUD', 'MES', 'Other'];
+            const TYPE_ORDER   = ['Continuous', 'Full Sync', 'Scheduled'];
+
+            for (const script of migrationScripts) {
+              const src  = getMigSource(script.script_id);
+              const type = getMigType(script);
+              if (!groupMap[src])         groupMap[src] = {};
+              if (!groupMap[src][type])   groupMap[src][type] = [];
+              groupMap[src][type].push(script);
+            }
+
+            const SOURCE_COLORS: Record<string, string> = {
+              '1C':   'border-blue-500',
+              'SKUD': 'border-green-500',
+              'MES':  'border-purple-500',
+              'Other':'border-gray-400',
+            };
+            const TYPE_BADGE: Record<string, string> = {
+              'Continuous': 'bg-blue-50 text-blue-700',
+              'Full Sync':  'bg-amber-50 text-amber-700',
+              'Scheduled':  'bg-purple-50 text-purple-700',
+            };
+
+            return SOURCE_ORDER.filter(src => groupMap[src]).map(src => (
+              <div key={src} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Source header */}
+                <div className={`px-4 py-2.5 bg-gray-50 border-l-4 ${SOURCE_COLORS[src]} flex items-center gap-3`}>
+                  <span className="font-bold text-gray-800 text-sm">{src}</span>
+                  <span className="text-xs text-gray-500">
+                    {Object.values(groupMap[src]).flat().length} script(s)
+                  </span>
+                </div>
+
+                {/* Type subgroups */}
+                {TYPE_ORDER.filter(type => groupMap[src][type]).map(type => {
+                  const groupKey = `${src}-${type}`;
+                  const scripts  = groupMap[src][type];
+                  const isOpen   = expandedMigGroups.has(groupKey);
+
+                  return (
+                    <div key={type} className="border-t border-gray-100">
+                      {/* Subgroup header */}
+                      <button
+                        onClick={() => toggleMigGroup(groupKey)}
+                        className="w-full flex items-center gap-3 px-4 py-2 bg-white hover:bg-gray-50 transition text-left"
+                      >
+                        <svg
+                          className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-90' : ''}`}
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_BADGE[type] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {type}
+                        </span>
+                        <span className="text-xs text-gray-400">{scripts.length} script(s)</span>
+                        {/* Error / stopped indicators */}
+                        {scripts.some((s: any) => s.status === 'error') && (
+                          <span className="ml-auto flex items-center gap-1 text-xs text-red-600 font-medium">
+                            <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                            {scripts.filter((s: any) => s.status === 'error').length} error
+                          </span>
+                        )}
+                        {scripts.some((s: any) => s.status === 'stopped') && (
+                          <span className="ml-auto flex items-center gap-1 text-xs text-gray-500">
+                            <span className="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+                            {scripts.filter((s: any) => s.status === 'stopped').length} stopped
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Scripts table */}
+                      {isOpen && (
+                        <table className="min-w-full text-sm border-t border-gray-100">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PID</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Success</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Error</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cycles</th>
+                              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-100">
+                            {scripts.map((script: any) => {
+                              const badgeClass = statusColor[script.status] ?? 'bg-gray-100 text-gray-500';
+                              const isContinuous = script.category === 'continuous';
+                              return (
+                                <tr key={script.script_id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2.5">
+                                    <div className="font-medium text-gray-900">{script.script_name}</div>
+                                    <div className="text-xs text-gray-400">{script.script_id}</div>
+                                  </td>
+                                  <td className="px-4 py-2.5">
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
+                                      {script.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2.5 text-gray-500 font-mono text-xs">{script.pid ?? '—'}</td>
+                                  <td className="px-4 py-2.5 text-gray-500 text-xs">{script.last_success ?? '—'}</td>
+                                  <td className="px-4 py-2.5 text-xs max-w-[180px]">
+                                    {script.last_error ? (
+                                      <div>
+                                        <div className="text-red-500 text-xs">{script.last_error}</div>
+                                        {script.error_message && (
+                                          <div
+                                            className="text-red-400 text-xs mt-0.5 truncate cursor-help"
+                                            title={script.error_message}
+                                          >
+                                            {script.error_message}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-gray-600">{script.records_processed ?? '—'}</td>
+                                  <td className="px-4 py-2.5 text-gray-600">{script.cycle_count ?? '—'}</td>
+                                  <td className="px-4 py-2.5">
+                                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                      {/* Logs — always visible */}
+                                      <button
+                                        onClick={() => handleShowLogs(script.script_id)}
+                                        className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                                      >
+                                        Logs
+                                      </button>
+
+                                      {/* Continuous scripts: Start (if stopped) or Restart + Stop */}
+                                      {isContinuous && script.status === 'stopped' && (
+                                        <button
+                                          onClick={() => handleRestartScript(script.script_id)}
+                                          disabled={restartingId === script.script_id}
+                                          className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 transition"
+                                        >
+                                          {restartingId === script.script_id ? '…' : 'Start'}
+                                        </button>
+                                      )}
+                                      {isContinuous && script.status !== 'stopped' && (
+                                        <>
+                                          <button
+                                            onClick={() => handleRestartScript(script.script_id)}
+                                            disabled={restartingId === script.script_id}
+                                            className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 disabled:opacity-50 transition"
+                                          >
+                                            {restartingId === script.script_id ? '…' : 'Restart'}
+                                          </button>
+                                          <button
+                                            onClick={() => handleStopScript(script.script_id)}
+                                            disabled={stoppingId === script.script_id}
+                                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50 transition"
+                                          >
+                                            {stoppingId === script.script_id ? '…' : 'Stop'}
+                                          </button>
+                                        </>
+                                      )}
+
+                                      {/* Scheduled / Full Sync: Run Now */}
+                                      {!isContinuous && (
+                                        <button
+                                          onClick={() => handleRunNow(script.script_id)}
+                                          disabled={runNowId === script.script_id || script.status === 'running'}
+                                          className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 transition"
+                                        >
+                                          {runNowId === script.script_id ? '…' : 'Run Now'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ));
+          })()}
+        </div>
+      )}
+
+      {/* Log modal */}
+      {logModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-800">Logs: {logModal.scriptId}</h2>
+              <button onClick={() => setLogModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 bg-gray-900 rounded-b-lg">
+              {logLoading ? (
+                <p className="text-gray-400 text-sm">Loading...</p>
+              ) : (
+                <pre className="text-xs text-green-300 whitespace-pre-wrap font-mono leading-relaxed">
+                  {logModal.lines.join('\n') || 'No log lines found.'}
+                </pre>
+              )}
             </div>
           </div>
         </div>

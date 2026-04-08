@@ -50,6 +50,7 @@ from Back.QC.api.LQCJournal_api import init_app as qc_lqc_journal_init_app
 from Back.QC.api.LQCSummary_api import init_app as qc_lqc_summary_init_app
 from Back.QC.api.StampingWastes_api import init_app as qc_stamping_wastes_init_app
 from Back.QC.api.PlasticWastes_api import init_app as qc_plastic_wastes_init_app
+from Back.Migration.api.migration_api import init_app as migration_init_app
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -65,6 +66,7 @@ CORS(app)  # Разрешаем кросс-доменные запросы (CORS
 auth_init_app(app)
 users_init_app(app)
 admin_init_app(app)
+migration_init_app(app)
 
 # Task Manager API
 task_manager_projects_init_app(app)
