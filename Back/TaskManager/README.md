@@ -6,8 +6,6 @@
 
 ```
 TaskManager/
-├── sql/
-│   └── create_tables.sql          # SQL скрипт для создания таблиц
 ├── api/
 │   ├── projects_api.py            # API проектов и категорий
 │   ├── tasks_api.py               # API задач
@@ -26,29 +24,10 @@ TaskManager/
 
 ## Установка
 
-### 1. Создание таблиц в MSSQL
+### 1. База данных
 
-Выполните SQL скрипт из файла `sql/create_tables.sql` в вашей базе данных MSSQL:
-
-```sql
--- Откройте SSMS (SQL Server Management Studio)
--- Подключитесь к вашей базе данных
--- Откройте файл Back/TaskManager/sql/create_tables.sql
--- Нажмите F5 для выполнения
-```
-
-Скрипт создаст следующие таблицы:
-- `project_categories` - категории проектов
-- `projects` - проекты
-- `project_members` - участники проектов
-- `workflow_statuses` - статусы воркфлоу
-- `workflow_transitions` - переходы между статусами
-- `tags` - теги
-- `tasks` - задачи
-- `task_tags` - связь задач с тегами
-- `task_attachments` - вложения
-- `task_comments` - комментарии
-- `task_history` - история изменений
+Task Manager работает с уже существующей схемой `Task_Manager` в MSSQL.
+SQL-скрипты и миграции в этом модуле удалены из репозитория и больше не используются в текущем процессе.
 
 ### 2. Регистрация API (уже выполнено)
 

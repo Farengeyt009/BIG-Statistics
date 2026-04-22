@@ -5,8 +5,8 @@
 ### Backend (Python/Flask + MSSQL)
 
 #### 1. **База данных** 
-- ✅ SQL скрипт для создания 10 таблиц в MSSQL
-- ✅ Полная схема с индексами и foreign keys
+- ✅ Используется существующая схема `Task_Manager` в MSSQL
+- ✅ Полная схема с индексами и foreign keys уже применяется
 - ✅ Поддержка иерархии: проекты → задачи → подзадачи
 
 #### 2. **API Endpoints** (6 модулей)
@@ -81,7 +81,6 @@
 ```
 Back/
   TaskManager/
-    ├── sql/create_tables.sql          ✅ SQL скрипт
     ├── api/
     │   ├── projects_api.py            ✅ API проектов
     │   ├── tasks_api.py               ✅ API задач
@@ -106,11 +105,8 @@ Front/big-statistics-dashboard/
 
 ### 1. Создание таблиц в БД
 
-```sql
--- Откройте SSMS
--- Подключитесь к вашей БД
--- Выполните: Back/TaskManager/sql/create_tables.sql
-```
+В текущем процессе создание таблиц из репозитория не используется.
+Нужна существующая БД со схемой `Task_Manager`.
 
 ### 2. Запуск Backend
 
@@ -168,7 +164,7 @@ npm run dev
 
 ## 🎯 Следующие шаги
 
-1. ✅ **Создайте таблицы** - выполните SQL скрипт
+1. ✅ **Проверьте схему** - убедитесь, что `Task_Manager` уже существует в БД
 2. ✅ **Протестируйте API** - через Postman/curl
 3. 🔄 **Установите Frontend библиотеки**
 4. 🔄 **Создайте базовые компоненты**
@@ -180,7 +176,6 @@ npm run dev
 
 - **Backend API**: `Back/TaskManager/README.md`
 - **Frontend Setup**: `Front/big-statistics-dashboard/TASK_MANAGER_SETUP.md`
-- **SQL Schema**: `Back/TaskManager/sql/create_tables.sql`
 
 ## ❓ Вопросы?
 
