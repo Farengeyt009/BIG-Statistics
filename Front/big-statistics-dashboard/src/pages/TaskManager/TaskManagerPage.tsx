@@ -1,43 +1,103 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ProjectsTableView } from './ProjectsTableView';
 import { KanbanView } from './KanbanView';
 import { ListView } from './ListView';
+import { TableView } from './TableView';
 import { AttachmentsView } from './AttachmentsView';
-import { ViewToggle } from './components/ViewToggle';
+import { OverviewView } from './OverviewView';
 import { ProjectSettingsPage } from './ProjectSettingsPage';
+import { ProjectToolbar, ViewType } from './components/ProjectToolbar';
+import { FilterBar } from './components/FilterBar';
+import { SortOption } from './components/SortSelector';
+import { TaskFilters, EMPTY_FILTERS, countActiveFilters } from './types/filters';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { PageLayout } from '../../components/Layout';
-import { WarningModal } from '../../components/WarningModal/WarningModal';
+import { useAuth } from '../../context/AuthContext';
+import { fetchJsonGetDedup } from '../../utils/fetchDedup';
 
 export const TaskManagerPage: React.FC = () => {
+  const { user } = useAuth();
+  const { i18n } = useTranslation();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [viewType, setViewType] = useState<'list' | 'grid' | 'attachments'>('grid');
+  const [viewType, setViewType] = useState<ViewType>('board');
   const [showProjectSettings, setShowProjectSettings] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   const [projectName, setProjectName] = useState<string>('');
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [createTrigger, setCreateTrigger] = useState(0);
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    setShowWarningModal(true);
-  }, []);
-
-  // Функция для обновления данных после изменений в настройках
   const handleSettingsChange = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Загружаем роль и название проекта при выборе проекта
-  React.useEffect(() => {
+  const handleOpenProject = (projectId: number) => {
+    // Always open project on Board view.
+    setViewType('board');
+    setShowProjectSettings(false);
+    setSelectedProjectId(projectId);
+  };
+
+  const handleBackToProjects = () => {
+    setShowProjectSettings(false);
+    setSelectedProjectId(null);
+  };
+
+  const handleExport = async (selectedIds?: number[]) => {
+    if (!selectedProjectId) return;
+    try {
+      const token = localStorage.getItem('authToken');
+      const lang = i18n.language?.slice(0, 2) || 'ru';
+
+      const params = new URLSearchParams({ lang });
+
+      // Если есть выделенные задачи — выгружаем только их (фильтры не нужны)
+      if (selectedIds && selectedIds.length > 0) {
+        params.set('task_ids', selectedIds.join(','));
+      } else {
+        // Иначе применяем активные фильтры
+        if (filters.statuses.length > 0) params.set('status_ids', filters.statuses.join(','));
+        if (filters.priorities.length > 0) params.set('priorities', filters.priorities.join(','));
+        if (filters.assigneeIds.length > 0) {
+          const nums = filters.assigneeIds.filter(id => id !== 'unassigned').join(',');
+          const hasUnassigned = filters.assigneeIds.includes('unassigned');
+          if (nums) params.set('assignee_ids', nums);
+          if (hasUnassigned) params.set('include_unassigned', '1');
+        }
+      }
+
+      const res = await fetch(`/api/task-manager/tasks/project/${selectedProjectId}/export?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tasks_${projectName || selectedProjectId}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Ошибка экспорта:', err);
+    }
+  };
+
+  useEffect(() => {
     if (selectedProjectId) {
       const fetchProjectData = async () => {
         try {
           const token = localStorage.getItem('authToken');
-          const response = await fetch(`/api/task-manager/projects/${selectedProjectId}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          const data = await response.json();
+          const data = await fetchJsonGetDedup<any>(
+            `/api/task-manager/projects/${selectedProjectId}`,
+            token,
+            1000
+          );
           if (data.success && data.data) {
             setCurrentUserRole(data.data.user_role || 'member');
             setProjectName(data.data.name || '');
@@ -56,89 +116,132 @@ export const TaskManagerPage: React.FC = () => {
     return (
       <PageLayout>
         <PageHeader
-          title={projectName ? `BIG Task / ${projectName}` : "BIG Task"}
+          title="BIG Task"
           view=""
           onViewChange={() => {}}
           tabs={[]}
           hideTabs={true}
         />
 
-        {/* Контент */}
-        <div className="h-[calc(100vh-200px)] overflow-hidden">
-          {viewType === 'grid' ? (
-            <KanbanView 
-              projectId={selectedProjectId} 
-              onBackToProjects={() => setSelectedProjectId(null)}
-              onOpenSettings={() => setShowProjectSettings(true)}
-              viewType={viewType}
-              onViewTypeChange={setViewType}
-              refreshKey={refreshKey}
-            />
-          ) : viewType === 'list' ? (
-            <ListView 
-              projectId={selectedProjectId} 
-              onBackToProjects={() => setSelectedProjectId(null)}
-              onOpenSettings={() => setShowProjectSettings(true)}
-              viewType={viewType}
-              onViewTypeChange={setViewType}
-              refreshKey={refreshKey}
-            />
-          ) : (
-            <AttachmentsView 
-              projectId={selectedProjectId} 
-              onBackToProjects={() => setSelectedProjectId(null)}
-              onOpenSettings={() => setShowProjectSettings(true)}
-              viewType={viewType}
-              onViewTypeChange={setViewType}
-              onTaskClick={(taskId) => setSelectedTaskId(taskId)}
+        <div className="h-[calc(100vh-120px)] overflow-hidden flex flex-col">
+          <ProjectToolbar
+            projectName={projectName}
+            viewType={viewType}
+            onViewTypeChange={(v) => { setViewType(v); setShowProjectSettings(false); }}
+            onBackToProjects={handleBackToProjects}
+            onOpenSettings={() => setShowProjectSettings(prev => !prev)}
+            onCreateTask={() => setCreateTrigger(t => t + 1)}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            hideCompleted={hideCompleted}
+            onHideCompletedChange={setHideCompleted}
+            canManage={user?.is_admin || ['owner', 'admin'].includes(currentUserRole)}
+            settingsActive={showProjectSettings}
+            filterCount={countActiveFilters(filters)}
+            filterActive={showFilters}
+            onFilterToggle={() => setShowFilters(p => !p)}
+            onExport={() => handleExport()}
+          />
+
+          {showFilters && !showProjectSettings && viewType !== 'files' && viewType !== 'overview' && (
+            <FilterBar
+              projectId={selectedProjectId}
+              filters={filters}
+              onChange={setFilters}
             />
           )}
+
+          <div className="flex-1 overflow-hidden relative">
+            {showProjectSettings ? (
+              <ProjectSettingsPage
+                projectId={selectedProjectId}
+                userRole={currentUserRole}
+                onClose={() => setShowProjectSettings(false)}
+                onProjectDeleted={() => {
+                  setShowProjectSettings(false);
+                  setSelectedProjectId(null);
+                }}
+                onSettingsChange={handleSettingsChange}
+              />
+            ) : (
+              <>
+                {viewType === 'overview' && (
+                  <OverviewView
+                    projectId={selectedProjectId}
+                    onMemberClick={(memberId) => {
+                      setFilters({
+                        ...EMPTY_FILTERS,
+                        assigneeIds: [memberId],
+                      });
+                      setViewType('table');
+                      setShowFilters(true);
+                    }}
+                  />
+                )}
+                {viewType === 'board' && (
+                  <KanbanView
+                    projectId={selectedProjectId}
+                    refreshKey={refreshKey}
+                    createTrigger={createTrigger}
+                    sortBy={sortBy}
+                    hideCompleted={hideCompleted}
+                    filters={filters}
+                  />
+                )}
+                {viewType === 'list' && (
+                  <ListView
+                    projectId={selectedProjectId}
+                    refreshKey={refreshKey}
+                    createTrigger={createTrigger}
+                    sortBy={sortBy}
+                    hideCompleted={hideCompleted}
+                    userRole={currentUserRole}
+                    filters={filters}
+                    onExport={handleExport}
+                  />
+                )}
+                {viewType === 'table' && (
+                  <TableView
+                    projectId={selectedProjectId}
+                    refreshKey={refreshKey}
+                    createTrigger={createTrigger}
+                    sortBy={sortBy}
+                    hideCompleted={hideCompleted}
+                    userRole={currentUserRole}
+                    filters={filters}
+                    onExport={handleExport}
+                  />
+                )}
+                {viewType === 'files' && (
+                  <AttachmentsView
+                    projectId={selectedProjectId}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Модалка настроек проекта */}
-        {showProjectSettings && (
-          <ProjectSettingsPage
-            projectId={selectedProjectId}
-            userRole={currentUserRole}
-            onClose={() => setShowProjectSettings(false)}
-            onProjectDeleted={() => {
-              setShowProjectSettings(false);
-              setSelectedProjectId(null);
-            }}
-            onSettingsChange={handleSettingsChange}
-          />
-        )}
-
-        <WarningModal
-          isOpen={showWarningModal}
-          onClose={() => setShowWarningModal(false)}
-        />
       </PageLayout>
     );
   }
 
   return (
     <>
-    <PageLayout>
-      <PageHeader
-        title="BIG Task"
-        view="projects"
-        onViewChange={() => {}} // Не нужно переключение на странице проектов
-        tabs={[]} // Пустой массив, так как переключения нет
-        hideTabs={true}
-      />
+      <PageLayout>
+        <PageHeader
+          title="BIG Task"
+          view="projects"
+          onViewChange={() => {}}
+          tabs={[]}
+          hideTabs={true}
+        />
 
-      {/* Контент - только табличный вид */}
-      <div className="h-[calc(100vh-200px)] overflow-hidden">
-        <ProjectsTableView onProjectSelect={setSelectedProjectId} />
-      </div>
-    </PageLayout>
+        <div className="h-[calc(100vh-120px)] overflow-hidden">
+          <ProjectsTableView onProjectSelect={handleOpenProject} />
+        </div>
+      </PageLayout>
 
-    <WarningModal
-      isOpen={showWarningModal}
-      onClose={() => setShowWarningModal(false)}
-    />
     </>
   );
 };
-

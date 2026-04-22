@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_ENDPOINTS } from '../../../../config/api';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../../utils/fetchDedup';
 
 // ✅ УНИФИЦИРОВАННАЯ ЛОГИКА ВАЛИДАЦИИ:
 // - Первая запись всегда должна быть типа WORKSHIFT
@@ -90,6 +91,8 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
   
   // State for error message
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const workScheduleTypesUrl = `${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES.replace('/work-schedules', '/work-schedule-types')}`;
+  const scheduleByIdUrl = (scheduleId: number | string) => `${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES}/${scheduleId}`;
 
   // Initialize with default workshift record when modal opens
   useEffect(() => {
@@ -146,8 +149,7 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
   const loadWorkScheduleTypes = async () => {
     setLoadingTypes(true);
     try {
-      const response = await fetch(`${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES.replace('/work-schedules', '/work-schedule-types')}`);
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(workScheduleTypesUrl, undefined, 60000);
       
       if (data.success) {
         setWorkScheduleTypes(data.data);
@@ -187,8 +189,11 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
   // ✅ НОВАЯ ФУНКЦИЯ: Загрузка данных для редактирования
   const loadScheduleForEdit = async (schedule: any) => {
     try {
-              const response = await fetch(`${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES}/${schedule.scheduleId}`);
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(
+        scheduleByIdUrl(schedule.scheduleId),
+        undefined,
+        3000
+      );
       
       if (data.success) {
         const api = data.data; // НЕ data.data.name!
@@ -524,6 +529,9 @@ const AddWorkingSchedule: React.FC<AddWorkingScheduleProps> = ({
       // ✅ ДОБАВЛЯЕМ ОТЛАДКУ
       
       if (response.ok) {
+        if (editingSchedule?.scheduleId) {
+          invalidateGetDedup(scheduleByIdUrl(editingSchedule.scheduleId));
+        }
         // ✅ Успешное сохранение
         
         // ✅ Вызываем callback для обновления списка

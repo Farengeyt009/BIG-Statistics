@@ -5,11 +5,51 @@ from Back.database.db_connector import get_connection
 from typing import List, Dict, Optional
 import os
 from pathlib import Path
+from PIL import Image
 
 
 class AttachmentsService:
     
     UPLOAD_DIR = Path("uploads/task_attachments")
+    THUMBNAIL_SUFFIX = "__thumb.jpg"
+    THUMBNAIL_MAX_SIZE = (240, 240)
+
+    @staticmethod
+    def _is_image_mime(mime_type: str) -> bool:
+        return bool(mime_type and mime_type.startswith("image/"))
+
+    @staticmethod
+    def get_thumbnail_path(file_path: str) -> Path:
+        source = Path(file_path)
+        return source.with_name(f"{source.stem}{AttachmentsService.THUMBNAIL_SUFFIX}")
+
+    @staticmethod
+    def ensure_thumbnail(file_path: str, mime_type: str) -> Optional[Path]:
+        """
+        Создает миниатюру для изображений (если ещё не создана).
+        Возвращает путь к миниатюре или None, если файл не изображение.
+        """
+        if not AttachmentsService._is_image_mime(mime_type):
+            return None
+
+        source = Path(file_path)
+        if not source.exists():
+            return None
+
+        thumb = AttachmentsService.get_thumbnail_path(file_path)
+        if thumb.exists():
+            return thumb
+
+        try:
+            with Image.open(source) as img:
+                # Нормализуем ориентацию и формат
+                img = img.convert("RGB")
+                img.thumbnail(AttachmentsService.THUMBNAIL_MAX_SIZE, Image.Resampling.LANCZOS)
+                img.save(thumb, format="JPEG", quality=82, optimize=True)
+            return thumb
+        except Exception as e:
+            print(f"Ошибка генерации thumbnail для {source}: {e}")
+            return None
     
     @staticmethod
     def get_project_folder(task_id: int) -> Path:
@@ -283,6 +323,9 @@ class AttachmentsService:
                 file_full_path = Path(file_path)
                 if file_full_path.exists():
                     file_full_path.unlink()
+                thumb_path = AttachmentsService.get_thumbnail_path(str(file_full_path))
+                if thumb_path.exists():
+                    thumb_path.unlink()
             except Exception as e:
                 print(f"Ошибка при удалении файла: {e}")
             

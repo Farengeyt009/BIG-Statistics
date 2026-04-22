@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult, useMutation, useQueryClient, QueryFunctionContext } from '@tanstack/react-query';
 import { API_ENDPOINTS } from '../../../../config/api';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 const fetchJson = async <T>(url: string, signal?: AbortSignal): Promise<T> => {
   const res = await fetch(url, { signal });
@@ -7,10 +8,14 @@ const fetchJson = async <T>(url: string, signal?: AbortSignal): Promise<T> => {
   return res.json();
 };
 
+const fetchJsonDedup = async <T>(url: string, ttlMs: number): Promise<T> => {
+  return fetchJsonGetDedup<T>(url, undefined, ttlMs);
+};
+
 export const useWorkshopsQuery = () => {
   return useQuery({
     queryKey: ['workshops'],
-    queryFn: ({ signal }: QueryFunctionContext) => fetchJson<any>(API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_WORKSHOPS, signal as AbortSignal),
+    queryFn: () => fetchJsonDedup<any>(API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_WORKSHOPS, 5000),
     select: (json: any) => (json?.data ?? []),
   });
 };
@@ -23,12 +28,12 @@ export const useCalendarQuery = (
   const key = ['calendar', year, month, [...selectedWorkShopIds].sort()];
   return useQuery({
     queryKey: key,
-    queryFn: async ({ signal }: QueryFunctionContext) => {
+    queryFn: async () => {
       // Один запрос: без фильтра или с несколькими workShopIds
       const url = selectedWorkShopIds.length > 0
         ? `${API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_DATA}?year=${year}&month=${month}&workShopIds=${encodeURIComponent(selectedWorkShopIds.join(','))}`
         : `${API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_DATA}?year=${year}&month=${month}`;
-      const response = await fetchJson<any>(url, signal as AbortSignal);
+      const response = await fetchJsonDedup<any>(url, 1200);
       return response;
     },
     select: (response: any) => response?.data ?? [],

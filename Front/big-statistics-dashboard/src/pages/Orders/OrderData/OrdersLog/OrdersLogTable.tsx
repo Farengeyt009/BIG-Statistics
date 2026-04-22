@@ -11,6 +11,7 @@ import ReportManager from './ReportManager';
 import AgGridExportButton from '../../../../components/AgGrid/ExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import { applyStandardFilters, getMonthLabel, toIsoDate, BLANK_VALUE } from '../../../../components/AgGrid/filterUtils';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface FilterItem {
   field: string;
@@ -89,12 +90,11 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
   // Функция загрузки списка отчетов
   const loadReports = async () => {
     try {
-      const response = await fetch('/api/orders/reports/list', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(
+        '/api/orders/reports/list',
+        token,
+        1200
+      );
       
       if (data.success) {
         setReports(data.reports);
@@ -429,14 +429,13 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
             onGridReady={(params) => setGridApi(params.api)}
             pagination={false}
             animateRows={false}
-            rowSelection="multiple"
+            rowSelection={{ mode: 'multiRow', copySelectedRows: true, enableClickSelection: false, checkboxes: false, headerCheckbox: false } as any}
             cellSelection={true}
             suppressRowClickSelection={true}
             suppressDragLeaveHidesColumns={true}
             enableRangeSelection={true}
             enableRangeHandle={true}
             copyHeadersToClipboard={false}
-            suppressCopyRowsToClipboard={false}
             processCellForClipboard={(params) => {
               // При копировании возвращаем чистое значение из data (без форматирования)
               const colId = params.column.getColId();
@@ -465,12 +464,11 @@ const OrdersLogTable: React.FC<OrdersLogTableProps> = ({
           
           // Перезагружаем список отчетов
           try {
-            const response = await fetch('/api/orders/reports/list', {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-            });
-            const data = await response.json();
+            const data = await fetchJsonGetDedup<any>(
+              '/api/orders/reports/list',
+              token,
+              1200
+            );
             
             if (data.success) {
               console.log('Reports reloaded, total:', data.reports.length);

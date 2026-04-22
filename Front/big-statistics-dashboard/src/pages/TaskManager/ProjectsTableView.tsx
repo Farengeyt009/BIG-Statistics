@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjects } from './hooks/useProjects';
-import { ProgressBar } from './components/ui/ProgressBar';
 import { AvatarGroup } from './components/ui/Avatar';
 import TaskManagerTranslation from './TaskManagerTranslation.json';
 
@@ -11,7 +10,7 @@ interface ProjectsTableViewProps {
 
 export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectSelect }) => {
   const { t, i18n } = useTranslation('taskManager');
-  const { projects, loading, error, createProject } = useProjects();
+  const { projects, loading, error, createProject, toggleFavorite } = useProjects();
 
   // Загружаем переводы для Task Manager
   React.useEffect(() => {
@@ -23,6 +22,12 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [nameFilter, setNameFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [tasksFilter, setTasksFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
@@ -42,32 +47,100 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
     }
   };
 
-  if (loading && projects.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">{t('loadingProjects')}</div>
-      </div>
-    );
-  }
+  const getRoleLabel = (role: string) => {
+    if (role === 'owner') return t('projectSettingsOwner');
+    if (role === 'admin') return t('projectSettingsAdmin');
+    if (role === 'member') return t('projectSettingsMember');
+    if (role === 'viewer') return t('projectSettingsViewer');
+    return role;
+  };
 
-  // Вычисляем процент выполнения для каждого проекта
-  const projectsWithProgress = projects.map((project) => {
-    // Считаем завершенные задачи (это нужно будет получать из API)
-    // Пока используем task_count как общее количество
-    const completedTasks = 0; // TODO: получить из API
-    const percentage = project.task_count > 0 ? (completedTasks / project.task_count) * 100 : 0;
-    
-    return {
-      ...project,
-      completedTasks,
-      percentage,
-    };
-  });
+  const filteredProjects = useMemo(() => {
+    const nameQ = nameFilter.trim().toLowerCase();
+    const teamQ = teamFilter.trim().toLowerCase();
+    const tasksQ = tasksFilter.trim().toLowerCase();
+    const roleQ = roleFilter.trim().toLowerCase();
+
+    return projects.filter((project) => {
+      if (favoritesOnly && !project.is_favorite) return false;
+
+      if (nameQ) {
+        const nameMatch = (project.name || '').toLowerCase().includes(nameQ);
+        const descMatch = (project.description || '').toLowerCase().includes(nameQ);
+        if (!nameMatch && !descMatch) return false;
+      }
+
+      if (teamQ) {
+        const ownerMatch = (project.owner_name || '').toLowerCase().includes(teamQ);
+        const memberMatch = (project.members || []).some((m) =>
+          ((m.full_name || '') + ' ' + (m.username || '')).toLowerCase().includes(teamQ)
+        );
+        if (!ownerMatch && !memberMatch) return false;
+      }
+
+      if (tasksQ && !String(project.task_count ?? 0).includes(tasksQ)) {
+        return false;
+      }
+
+      if (roleQ) {
+        const roleRaw = (project.user_role || '').toLowerCase();
+        const roleTranslated = getRoleLabel(project.user_role || '').toLowerCase();
+        if (!roleRaw.includes(roleQ) && !roleTranslated.includes(roleQ)) return false;
+      }
+
+      return true;
+    });
+  }, [projects, nameFilter, teamFilter, tasksFilter, roleFilter, favoritesOnly, t]);
+
+  const resetFilters = () => {
+    setNameFilter('');
+    setTeamFilter('');
+    setTasksFilter('');
+    setRoleFilter('');
+    setFavoritesOnly(false);
+  };
+
+  const activeFiltersCount =
+    (nameFilter ? 1 : 0) +
+    (teamFilter ? 1 : 0) +
+    (tasksFilter ? 1 : 0) +
+    (roleFilter ? 1 : 0) +
+    (favoritesOnly ? 1 : 0);
+
+  const handleToggleFavorite = async (projectId: number, nextFavorite: boolean) => {
+    await toggleFavorite(projectId, nextFavorite);
+  };
 
   return (
     <div className="p-6">
+      {loading && projects.length === 0 ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">{t('loadingProjects')}</div>
+        </div>
+      ) : (
+        <>
       {/* Заголовок */}
-      <div className="flex justify-end items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative">
+          <button
+            onClick={() => setShowFilterPanel((v) => !v)}
+            className={`relative inline-flex items-center justify-center p-2 rounded-md border transition-colors ${
+              showFilterPanel || activeFiltersCount > 0
+                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+            title={t('filterButton')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 01.8 1.6L14 13v6a1 1 0 01-1.447.894l-2-1A1 1 0 0110 18v-5L3.2 4.6A1 1 0 013 4z" />
+            </svg>
+            {activeFiltersCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-semibold">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium"
@@ -75,6 +148,66 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
           {t('createProjectButton')}
         </button>
       </div>
+      {showFilterPanel && (
+        <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+          <div className="flex items-end gap-2 flex-wrap">
+            <div className="w-44">
+              <label className="block text-[11px] text-gray-500 mb-1">{t('projectName')}</label>
+              <input
+                type="text"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                placeholder={t('projectsSearchName')}
+                className="w-full h-8 px-2 text-xs border border-gray-200 rounded"
+              />
+            </div>
+            <div className="w-44">
+              <label className="block text-[11px] text-gray-500 mb-1">{t('team')}</label>
+              <input
+                type="text"
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+                placeholder={t('projectsSearchTeam')}
+                className="w-full h-8 px-2 text-xs border border-gray-200 rounded"
+              />
+            </div>
+            <div className="w-24">
+              <label className="block text-[11px] text-gray-500 mb-1">{t('tasks')}</label>
+              <input
+                type="text"
+                value={tasksFilter}
+                onChange={(e) => setTasksFilter(e.target.value)}
+                placeholder={t('projectsSearchTasks')}
+                className="w-full h-8 px-2 text-xs border border-gray-200 rounded"
+              />
+            </div>
+            <div className="w-36">
+              <label className="block text-[11px] text-gray-500 mb-1">{t('role')}</label>
+              <input
+                type="text"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                placeholder={t('projectsSearchRole')}
+                className="w-full h-8 px-2 text-xs border border-gray-200 rounded"
+              />
+            </div>
+            <label className="h-8 inline-flex items-center gap-2 px-2 text-xs text-gray-700 border border-gray-200 rounded">
+              <input
+                type="checkbox"
+                checked={favoritesOnly}
+                onChange={(e) => setFavoritesOnly(e.target.checked)}
+              />
+              {t('favoritesOnly')}
+            </label>
+            <button
+              onClick={resetFilters}
+              className="h-8 px-2 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+            >
+              {t('filterClearAll')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Ошибка */}
       {error && (
@@ -87,18 +220,20 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
       {projects.length > 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {/* Заголовки таблицы */}
-          <div className="bg-gray-50 px-6 py-3 text-sm font-medium text-gray-600 flex items-center border-b sticky top-0 z-10">
-            <div className="w-[35%]">{t('projectName')}</div>
-            <div className="w-[15%]">{t('progress')}</div>
-            <div className="w-[5%]"></div>
-            <div className="w-[20%] text-center">{t('team')}</div>
-            <div className="w-[10%] text-center">{t('tasks')}</div>
-            <div className="w-[15%] text-center">{t('role')}</div>
+          <div className="bg-gray-50 px-6 py-3 text-sm font-medium text-gray-600 border-b sticky top-0 z-10">
+            <div className="flex items-center">
+              <div className="w-[35%]">{t('projectName')}</div>
+              <div className="w-[8%] text-center">{t('favorites')}</div>
+              <div className="w-[22%] text-center">{t('team')}</div>
+              <div className="w-[12%] text-center">{t('tasks')}</div>
+              <div className="w-[13%] text-center">{t('role')}</div>
+              <div className="w-[10%]" />
+            </div>
           </div>
 
           {/* Строки проектов */}
           <div className="divide-y divide-gray-100">
-            {projectsWithProgress.map((project) => (
+            {filteredProjects.map((project) => (
               <div
                 key={project.id}
                 onClick={() => onProjectSelect(project.id)}
@@ -116,22 +251,22 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                   )}
                 </div>
 
-                {/* Прогресс */}
-                <div className="w-[15%]">
-                  <ProgressBar 
-                    value={project.percentage}
-                    height="sm"
-                  />
-                  <span className="text-xs text-gray-500 mt-1 block">
-                    {project.completedTasks} / {project.task_count}
-                  </span>
+                {/* Избранное */}
+                <div className="w-[8%] flex justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite(project.id, !project.is_favorite);
+                    }}
+                    className={`text-lg transition-colors ${project.is_favorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-300'}`}
+                    title={t('favorites')}
+                  >
+                    {project.is_favorite ? '★' : '☆'}
+                  </button>
                 </div>
 
-                {/* Невидимое поле-костыль */}
-                <div className="w-[5%]"></div>
-
                 {/* Команда */}
-                <div className="w-[20%] flex justify-center">
+                <div className="w-[22%] flex justify-center">
                   <AvatarGroup
                     users={project.members?.slice(0, 4).map(m => ({
                       name: m.full_name || m.username,
@@ -143,7 +278,7 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                 </div>
 
                 {/* Задачи */}
-                <div className="w-[10%] text-center">
+                <div className="w-[12%] text-center">
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -153,11 +288,12 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
                 </div>
 
                 {/* Роль */}
-                <div className="w-[15%] flex justify-center">
+                <div className="w-[13%] flex justify-center">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                    {project.user_role}
+                    {getRoleLabel(project.user_role)}
                   </span>
                 </div>
+                <div className="w-[10%]" />
               </div>
             ))}
           </div>
@@ -211,11 +347,11 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
               <textarea
                 value={newProjectDescription}
                 onChange={(e) => setNewProjectDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded"
                 rows={3}
                 placeholder="Краткое описание проекта"
-              />
-            </div>
+                />
+              </div>
 
             <div className="flex gap-3 justify-end">
               <button
@@ -237,6 +373,8 @@ export const ProjectsTableView: React.FC<ProjectsTableViewProps> = ({ onProjectS
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

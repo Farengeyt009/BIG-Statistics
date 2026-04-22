@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import testData from "../../../../Test/MonthPlanTab.json";
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import FilterPopover from "../../../../components/DataTable/FilterPopover";
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 /* ───────── types ───────── */
 interface PlanFactRow {
@@ -104,11 +105,11 @@ const MonthPlanGantt: React.FC<MonthPlanGanttProps> = ({ year, month, ymPanelRef
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/MonthPlanFactGantt?year=${year}&month=${month}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const result = await response.json();
+      const result = await fetchJsonGetDedup<any>(
+        `/api/MonthPlanFactGantt?year=${year}&month=${month}`,
+        undefined,
+        1200
+      );
       setData(result.data || []);
     } catch (err) {
       console.error('Ошибка загрузки данных:', err);

@@ -430,7 +430,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       {/* Одна большая плитка снизу */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-w-0">
         {/* Header */}
         <div className="bg-gray-50 px-6 py-4 rounded-t-xl border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -447,13 +447,13 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="h-64 pt-2">
+        <div className="h-64 min-h-[16rem] min-w-0 pt-2">
           {regionsError ? (
             <div className="flex items-center justify-center h-full text-red-500">
               Error loading data
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
               <BarChart
                 data={regionsMonthlyData.map(item => ({
                   month: item.month_name,

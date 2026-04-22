@@ -6,8 +6,33 @@ from flask import Blueprint, jsonify, request
 from ..service.auth_service import verify_jwt_token
 from ..service.audit_service import get_system_statistics, get_user_statistics, get_user_activity_log
 from ...database.db_connector import get_connection
+from ..service.departments_service import assign_user_department, ensure_departments_schema
+import time
 
 bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+
+_ADMIN_USERS_CACHE_TTL_SEC = 60
+_admin_users_cache = {"ts": 0.0, "users": None}
+
+
+def _get_cached_admin_users():
+    users = _admin_users_cache.get("users")
+    if users is None:
+        return None
+    if time.time() - float(_admin_users_cache.get("ts", 0.0)) > _ADMIN_USERS_CACHE_TTL_SEC:
+        _admin_users_cache["users"] = None
+        return None
+    return users
+
+
+def _set_cached_admin_users(users):
+    _admin_users_cache["users"] = users
+    _admin_users_cache["ts"] = time.time()
+
+
+def _invalidate_admin_users_cache():
+    _admin_users_cache["users"] = None
+    _admin_users_cache["ts"] = 0.0
 
 
 def require_admin(f):
@@ -44,18 +69,30 @@ def get_all_users():
     Returns list of all users
     """
     try:
+        cached_users = _get_cached_admin_users()
+        if cached_users is not None:
+            return jsonify({"success": True, "users": cached_users}), 200
+
+        ensure_departments_schema()
         sql = """
             SELECT 
-                UserID,
-                Username,
-                FullName,
-                Email,
-                IsAdmin,
-                IsActive,
-                CreatedAt,
-                LastLogin
-            FROM Users.Users
-            ORDER BY Username
+                u.UserID,
+                u.Username,
+                u.FullName,
+                u.Email,
+                u.IsAdmin,
+                u.IsActive,
+                u.CreatedAt,
+                u.LastLogin,
+                u.department_id,
+                d.Name AS DepartmentName,
+                COALESCE(d.NameEn, d.Name) AS DepartmentNameEn,
+                d.NameZh AS DepartmentNameZh,
+                sk.isactive AS HrIsActive
+            FROM Users.Users u
+            LEFT JOIN Users.Departments d ON d.DepartmentID = u.department_id
+            LEFT JOIN Import_SKUD.empinfo sk ON sk.empcode = u.empcode
+            ORDER BY u.Username
         """
         
         with get_connection() as conn:
@@ -71,10 +108,15 @@ def get_all_users():
                     'email': row.Email,
                     'is_admin': bool(row.IsAdmin),
                     'is_active': bool(row.IsActive),
+                    'department_id': row.department_id,
+                    'department_name': row.DepartmentName,
+                    'department_name_en': row.DepartmentNameEn,
+                    'department_name_zh': row.DepartmentNameZh,
+                    'hr_is_active': bool(row.HrIsActive) if row.HrIsActive is not None else None,
                     'created_at': row.CreatedAt.isoformat() if row.CreatedAt else None,
                     'last_login': row.LastLogin.isoformat() if row.LastLogin else None
                 })
-            
+            _set_cached_admin_users(users)
             return jsonify({"success": True, "users": users}), 200
         
     except Exception as e:
@@ -210,6 +252,7 @@ def update_user_permissions(user_id: int):
                 """, (user_id, page_key, can_view, can_edit))
             
             conn.commit()
+            _invalidate_admin_users_cache()
             
             return jsonify({"success": True, "message": "Permission updated successfully"}), 200
         
@@ -234,6 +277,7 @@ def delete_user_permission(user_id: int, page_key: str):
             """, (user_id, page_key))
             
             conn.commit()
+            _invalidate_admin_users_cache()
             
             return jsonify({"success": True, "message": "Permission removed successfully"}), 200
         
@@ -267,6 +311,7 @@ def update_user_admin_status(user_id: int):
             """, (is_admin, user_id))
             
             conn.commit()
+            _invalidate_admin_users_cache()
             
             return jsonify({"success": True, "message": "Admin status updated successfully"}), 200
         
@@ -317,9 +362,42 @@ def update_user_password(user_id: int):
             """, (new_password, user_id))
             
             conn.commit()
+            _invalidate_admin_users_cache()
             
             return jsonify({"success": True, "message": "Password updated successfully"}), 200
         
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
+@bp.route("/users/<int:user_id>/department", methods=["PUT"])
+@require_admin
+def update_user_department(user_id: int):
+    """
+    PUT /api/admin/users/{user_id}/department
+
+    Body: {
+        "department_id": 1
+    }
+    """
+    try:
+        data = request.get_json() or {}
+        if "department_id" not in data:
+            return jsonify({"success": False, "error": "department_id is required"}), 400
+
+        try:
+            department_id = int(data.get("department_id"))
+        except (TypeError, ValueError):
+            return jsonify({"success": False, "error": "department_id must be an integer"}), 400
+
+        updated = assign_user_department(user_id=user_id, department_id=department_id)
+        if not updated:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        _invalidate_admin_users_cache()
+        return jsonify({"success": True, "message": "Department updated successfully"}), 200
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
 
@@ -382,6 +460,7 @@ def delete_user(user_id: int):
             """, (user_id,))
             
             conn.commit()
+            _invalidate_admin_users_cache()
             
             return jsonify({
                 "success": True, 

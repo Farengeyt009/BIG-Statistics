@@ -67,6 +67,7 @@ def upload_attachment(task_id):
         # Сохраняем файл
         file.save(str(file_path))
         file_size = file_path.stat().st_size
+        mime_type = file.content_type or "application/octet-stream"
         
         # Создаем запись в БД с оригинальным именем (с кириллицей)
         attachment_id = AttachmentsService.create_attachment(
@@ -75,8 +76,12 @@ def upload_attachment(task_id):
             file_name=original_filename,  # Оригинальное имя с кириллицей
             file_path=str(file_path),
             file_size=file_size,
-            mime_type=file.content_type or "application/octet-stream"
+            mime_type=mime_type
         )
+
+        # Для изображений создаем миниатюру заранее, чтобы список файлов
+        # открывался быстро и без скачивания оригинала.
+        AttachmentsService.ensure_thumbnail(str(file_path), mime_type)
         
         return jsonify({
             "success": True,
@@ -138,6 +143,70 @@ def download_attachment(attachment_id):
             as_attachment=True,
             download_name=attachment['file_name'],
             mimetype=attachment['mime_type']
+        )
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/<int:attachment_id>/preview", methods=["GET"])
+def preview_attachment(attachment_id):
+    """Открыть вложение inline (для изображений) без скачивания"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+
+        attachment = AttachmentsService.get_attachment_by_id(attachment_id, user_data["user_id"])
+
+        if not attachment:
+            return jsonify({"success": False, "error": "Файл не найден"}), 404
+
+        file_path = Path(attachment['file_path'])
+        if not file_path.exists():
+            return jsonify({"success": False, "error": "Файл не найден на сервере"}), 404
+
+        mime_type = attachment.get('mime_type') or ''
+        if not mime_type.startswith('image/'):
+            return jsonify({"success": False, "error": "Предпросмотр доступен только для изображений"}), 400
+
+        return send_file(
+            file_path,
+            as_attachment=False,
+            download_name=attachment['file_name'],
+            mimetype=mime_type
+        )
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/<int:attachment_id>/thumbnail", methods=["GET"])
+def thumbnail_attachment(attachment_id):
+    """Получить миниатюру изображения"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+
+        attachment = AttachmentsService.get_attachment_by_id(attachment_id, user_data["user_id"])
+        if not attachment:
+            return jsonify({"success": False, "error": "Файл не найден"}), 404
+
+        mime_type = attachment.get('mime_type') or ''
+        if not mime_type.startswith('image/'):
+            return jsonify({"success": False, "error": "Thumbnail доступен только для изображений"}), 400
+
+        thumb = AttachmentsService.ensure_thumbnail(attachment['file_path'], mime_type)
+        if not thumb or not thumb.exists():
+            return jsonify({"success": False, "error": "Не удалось создать thumbnail"}), 500
+
+        return send_file(
+            thumb,
+            as_attachment=False,
+            mimetype="image/jpeg"
         )
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import AgGridGroupedExportButton from '../../../../components/AgGrid/GroupedExportButton';
 import FocusModeToggle from '../../../../components/focus/FocusModeToggle';
 import { FlagIcon } from '../../../../components/FlagIcon';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface RawData {
   Market: string;
@@ -77,11 +78,11 @@ const GroupedProductionTableByGroup: React.FC = () => {
       setError(null);
 
       try {
-        const response = await fetch('/api/orders/statistics/grouped-table', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        const result = await response.json();
+        const result = await fetchJsonGetDedup<any>(
+          '/api/orders/statistics/grouped-table',
+          token,
+          1200
+        );
         if (result.success) {
           setRawData(result.data || []);
         } else {

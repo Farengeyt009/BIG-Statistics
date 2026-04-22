@@ -5,6 +5,7 @@ import PlanVsFact from './PlanVsFact/PlanVsFact';
 import Details from './Details/Details';
 import YearPicker from '../../../components/DatePicker/YearPicker';
 import { createPortal } from 'react-dom';
+import { fetchJsonGetDedup } from '../../../utils/fetchDedup';
 
 type SalePlanProps = {
   startDate: Date | null;
@@ -23,8 +24,11 @@ export default function SalePlan({ startDate, endDate, onChangeDates }: SalePlan
   useEffect(() => {
     const loadYears = async () => {
       try {
-        const response = await fetch('/api/orders/saleplan/versions');
-        const data = await response.json();
+        const data = await fetchJsonGetDedup<any>(
+          '/api/orders/saleplan/versions',
+          undefined,
+          5000
+        );
         
         if (data.success) {
           const yearsSet = new Set<number>();

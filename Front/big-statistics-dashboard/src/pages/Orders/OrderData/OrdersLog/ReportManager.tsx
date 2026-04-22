@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../context/AuthContext';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface Field {
   name: string;
@@ -56,10 +57,11 @@ const ReportManager: React.FC<ReportManagerProps> = ({ isOpen, onClose, onReport
     const loadData = async () => {
       try {
         // Загружаем отчеты
-        const reportsResponse = await fetch('/api/orders/reports/list', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const reportsData = await reportsResponse.json();
+        const reportsData = await fetchJsonGetDedup<any>(
+          '/api/orders/reports/list',
+          token,
+          1200
+        );
         
         if (reportsData.success) {
           setReports(reportsData.reports);

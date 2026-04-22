@@ -42,6 +42,22 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
   const [isReadyToShow, setIsReadyToShow] = useState(false);
   const renderTimeoutRef = useRef<number | null>(null);
 
+  const refreshColumnSetFilterValues = useCallback((api: any, colId: string) => {
+    if (!api) return;
+
+    if (typeof api.getColumnFilterInstance === 'function') {
+      Promise.resolve(api.getColumnFilterInstance(colId))
+        .then((inst: any) => inst?.refreshFilterValues?.())
+        .catch(() => {});
+      return;
+    }
+
+    // Backward compatibility for older AG Grid API
+    if (typeof api.getFilterInstance === 'function') {
+      api.getFilterInstance(colId, (inst: any) => inst?.refreshFilterValues?.());
+    }
+  }, []);
+
   // После загрузки всех данных ждем завершения рендеринга
   useLayoutEffect(() => {
     if (loading) {
@@ -314,10 +330,10 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
     if (!gridApi || !processedData.length) return;
     gridApi.refreshClientSideRowModel('filter'); // пересчитать модель фильтра
     // если когда-то открывали фильтр — закрыть/сбросить его кэш:
-    gridApi.getFilterInstance('OnlyDate', (inst: any) => inst?.refreshFilterValues?.());
-    gridApi.getFilterInstance('WorkShopName_CH', (inst: any) => inst?.refreshFilterValues?.());
-    gridApi.getFilterInstance('WorkCenterGroup_CN', (inst: any) => inst?.refreshFilterValues?.());
-  }, [gridApi, processedData.length]); // только при изменении количества строк
+    refreshColumnSetFilterValues(gridApi, 'OnlyDate');
+    refreshColumnSetFilterValues(gridApi, 'WorkShopName_CH');
+    refreshColumnSetFilterValues(gridApi, 'WorkCenterGroup_CN');
+  }, [gridApi, processedData.length, refreshColumnSetFilterValues]); // только при изменении количества строк
 
   // Авторасчёт высоты в фокус-режиме
   useLayoutEffect(() => {
@@ -457,7 +473,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
       minWidth: 90,
       maxWidth: 150,
       cellClass: 'text-center',
-      exportAsDate: true,
+      context: { exportAsDate: true },
       filter: 'agSetColumnFilter',
       // как в Loss Table: значение фильтра берём в ISO-формате
       filterValueGetter: (p: any) => String(p?.data?.OnlyDateISO ?? ''),
@@ -817,8 +833,7 @@ const AgGridTable: React.FC<AgGridTableProps> = ({
           onGridSizeChanged={(p) => p.api.sizeColumnsToFit()} // подгоняем колонки при изменении контейнера
           animateRows={false}
           cellSelection={true}
-          suppressCopyRowsToClipboard={false}
-          rowSelection="multiple"
+          rowSelection={{ mode: 'multiRow', copySelectedRows: true, checkboxes: false, headerCheckbox: false } as any}
           getRowId={getRowId}
           sendToClipboard={sendToClipboard}
           onCellKeyDown={onCellKeyDown}

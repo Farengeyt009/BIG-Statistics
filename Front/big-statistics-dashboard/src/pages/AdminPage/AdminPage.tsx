@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { PageLayout } from '../../components/Layout';
 import { usePageView } from '../../hooks/usePageView';
+import { useTranslation } from 'react-i18next';
+import { fetchJsonGetDedup } from '../../utils/fetchDedup';
 
 interface User {
   user_id: number;
@@ -10,8 +12,23 @@ interface User {
   email: string;
   is_admin: boolean;
   is_active: boolean;
+  hr_is_active?: boolean | null;
+  department_id?: number | null;
+  department_name?: string | null;
+  department_name_en?: string | null;
+  department_name_zh?: string | null;
   created_at?: string;
   last_login?: string;
+}
+
+interface Department {
+  id: number;
+  name: string;
+  name_en?: string | null;
+  name_zh?: string | null;
+  code?: string | null;
+  is_active: boolean;
+  sort_order: number;
 }
 
 interface Page {
@@ -30,6 +47,7 @@ interface Permission {
 
 const AdminPage: React.FC = () => {
   const { token } = useAuth();
+  const { i18n } = useTranslation();
   
   // Логируем посещение страницы Admin
   usePageView('admin');
@@ -56,7 +74,32 @@ const AdminPage: React.FC = () => {
   const [selectedUserStats, setSelectedUserStats] = useState<any>(null);
   
   // State для вкладок
-  const [activeTab, setActiveTab] = useState<'users' | 'statistics' | 'migration'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'statistics' | 'migration' | 'departments'>('users');
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [unassignedUsers, setUnassignedUsers] = useState<User[]>([]);
+  const [departmentDraft, setDepartmentDraft] = useState({ name: '', code: '', sort_order: 0 });
+  const [departmentSaving, setDepartmentSaving] = useState(false);
+
+  const getHrBadge = (isActive: boolean | null | undefined) => {
+    if (isActive === true) {
+      return <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded">HR: Active</span>;
+    }
+    if (isActive === false) {
+      return <span className="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded">HR: Inactive</span>;
+    }
+    return <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded">HR: N/A</span>;
+  };
+
+  const getDepartmentLabel = React.useCallback((dep?: any) => {
+    if (!dep) return '—';
+    const nameEn = dep.name_en ?? dep.department_name_en;
+    const nameZh = dep.name_zh ?? dep.department_name_zh;
+    const baseName = dep.name ?? dep.department_name;
+    if (i18n.language.toLowerCase().startsWith('zh')) {
+      return nameZh || nameEn || baseName || '—';
+    }
+    return nameEn || baseName || nameZh || '—';
+  }, [i18n.language]);
 
   // State для вкладки Migration
   const [migrationScripts, setMigrationScripts] = useState<any[]>([]);
@@ -80,30 +123,26 @@ const AdminPage: React.FC = () => {
     const loadData = async () => {
       try {
         // Загружаем пользователей
-        const usersResponse = await fetch('/api/admin/users', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const usersData = await usersResponse.json();
+        const usersData = await fetchJsonGetDedup<any>('/api/admin/users', token, 1200);
         
         if (usersData.success) {
           setUsers(usersData.users);
         }
 
+        const departmentsData = await fetchJsonGetDedup<any>('/api/departments?all=1', token, 1200);
+        if (departmentsData.success) {
+          setDepartments(departmentsData.departments || []);
+        }
+
         // Загружаем страницы
-        const pagesResponse = await fetch('/api/admin/pages', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const pagesData = await pagesResponse.json();
+        const pagesData = await fetchJsonGetDedup<any>('/api/admin/pages', token, 1200);
         
         if (pagesData.success) {
           setPages(pagesData.pages);
         }
 
         // Загружаем статистику
-        const statsResponse = await fetch('/api/admin/statistics', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const statsData = await statsResponse.json();
+        const statsData = await fetchJsonGetDedup<any>('/api/admin/statistics', token, 1200);
         
         if (statsData.success) {
           setSystemStats(statsData.statistics);
@@ -114,6 +153,26 @@ const AdminPage: React.FC = () => {
     };
 
     loadData();
+  }, [token]);
+
+  const loadDepartmentsAndUnassigned = React.useCallback(async () => {
+    if (!token) return;
+    try {
+      const [depsRes, usersRes] = await Promise.all([
+        fetch('/api/departments?all=1', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch('/api/departments/unassigned-users', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+      ]);
+      const depsData = await depsRes.json();
+      const usersData = await usersRes.json();
+      if (depsData.success) setDepartments(depsData.departments || []);
+      if (usersData.success) setUnassignedUsers(usersData.users || []);
+    } catch (e) {
+      console.error('Failed loading departments/unassigned:', e);
+    }
   }, [token]);
 
   // ── Migration helpers ────────────────────────────────────────────────────
@@ -146,6 +205,11 @@ const AdminPage: React.FC = () => {
     const interval = setInterval(fetchMigrationStatus, 30000);
     return () => clearInterval(interval);
   }, [activeTab, fetchMigrationStatus]);
+
+  useEffect(() => {
+    if (activeTab !== 'departments') return;
+    loadDepartmentsAndUnassigned();
+  }, [activeTab, loadDepartmentsAndUnassigned]);
 
   const handleShowLogs = async (scriptId: string) => {
     setLogLoading(true);
@@ -250,6 +314,119 @@ const AdminPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error loading user data:', err);
+    }
+  };
+
+  const handleAssignUserDepartment = async (userId: number, departmentId: number) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/department`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ department_id: departmentId }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        setMessage({ type: 'error', text: data.error || 'Failed to update department' });
+        return;
+      }
+      setMessage({ type: 'success', text: 'Department updated successfully' });
+      await loadDepartmentsAndUnassigned();
+      const dep = departments.find((d) => d.id === departmentId);
+      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, department_id: departmentId, department_name: dep?.name || null } : u));
+      if (selectedUser?.user_id === userId) {
+        setSelectedUser((prev) => prev ? { ...prev, department_id: departmentId, department_name: dep?.name || null } : null);
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Connection error' });
+    }
+  };
+
+  const handleCreateDepartment = async () => {
+    if (!departmentDraft.name.trim()) {
+      setMessage({ type: 'error', text: 'Department name is required' });
+      return;
+    }
+    setDepartmentSaving(true);
+    try {
+      const response = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(departmentDraft),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        setMessage({ type: 'error', text: data.error || 'Failed to create department' });
+        return;
+      }
+      setDepartmentDraft({ name: '', code: '', sort_order: 0 });
+      setMessage({ type: 'success', text: 'Department created successfully' });
+      await loadDepartmentsAndUnassigned();
+    } catch {
+      setMessage({ type: 'error', text: 'Connection error' });
+    } finally {
+      setDepartmentSaving(false);
+    }
+  };
+
+  const handleToggleDepartment = async (department: Department, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/departments/${department.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_active: isActive }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        setMessage({ type: 'error', text: data.error || 'Failed to update department status' });
+        return;
+      }
+      setMessage({ type: 'success', text: isActive ? 'Department activated' : 'Department deactivated' });
+      await loadDepartmentsAndUnassigned();
+    } catch {
+      setMessage({ type: 'error', text: 'Connection error' });
+    }
+  };
+
+  const handleEditDepartment = async (department: Department) => {
+    const nextName = window.prompt('Department name', department.name);
+    if (nextName === null) return;
+    const nextCode = window.prompt('Department code (optional)', department.code || '');
+    if (nextCode === null) return;
+    const nextSortOrderRaw = window.prompt('Sort order', String(department.sort_order ?? 0));
+    if (nextSortOrderRaw === null) return;
+    const nextSortOrder = Number(nextSortOrderRaw);
+
+    try {
+      const response = await fetch(`/api/departments/${department.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: nextName.trim(),
+          code: nextCode.trim() || null,
+          sort_order: Number.isNaN(nextSortOrder) ? 0 : nextSortOrder,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        setMessage({ type: 'error', text: data.error || 'Failed to update department' });
+        return;
+      }
+      setMessage({ type: 'success', text: 'Department updated successfully' });
+      await loadDepartmentsAndUnassigned();
+    } catch {
+      setMessage({ type: 'error', text: 'Connection error' });
     }
   };
 
@@ -547,6 +724,21 @@ const AdminPage: React.FC = () => {
               <span>Migration</span>
             </div>
           </button>
+          <button
+            onClick={() => setActiveTab('departments')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'departments'
+                ? 'border-[#142143] text-[#142143]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+              </svg>
+              <span>Departments</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -590,6 +782,8 @@ const AdminPage: React.FC = () => {
                 >
                   <div className="font-medium text-gray-800">{user.username}</div>
                   <div className="text-sm text-gray-500">{user.full_name}</div>
+                  <div className="text-xs text-gray-400">{getDepartmentLabel(user) === '—' ? 'No department' : getDepartmentLabel(user)}</div>
+                  <div>{getHrBadge(user.hr_is_active)}</div>
                   {user.is_admin && (
                     <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
                       Admin
@@ -619,6 +813,8 @@ const AdminPage: React.FC = () => {
                 </h2>
                 <div className="flex items-center gap-4 mt-1">
                   <p className="text-xs text-gray-500">@{selectedUser.username}</p>
+                  <p className="text-xs text-gray-500">Department: {getDepartmentLabel(selectedUser) === '—' ? 'Not assigned' : getDepartmentLabel(selectedUser)}</p>
+                  <p className="text-xs text-gray-500">HR: {selectedUser.hr_is_active === true ? 'Active' : selectedUser.hr_is_active === false ? 'Inactive' : 'N/A'}</p>
                   {selectedUserStats && selectedUserStats.last_login && (
                     <>
                       <span className="text-gray-300">•</span>
@@ -647,6 +843,27 @@ const AdminPage: React.FC = () => {
 
               {/* Компактная панель управления */}
               <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-gray-700">Department</span>
+                  <select
+                    value={selectedUser.department_id ?? ''}
+                    onChange={(e) => {
+                      const departmentId = Number(e.target.value);
+                      if (!Number.isNaN(departmentId) && departmentId > 0) {
+                        handleAssignUserDepartment(selectedUser.user_id, departmentId);
+                      }
+                    }}
+                    className="px-2 py-1.5 border border-gray-300 rounded-md text-sm min-w-[200px]"
+                  >
+                    <option value="">Not assigned</option>
+                    {departments.filter(d => d.is_active).map((dep) => (
+                      <option key={dep.id} value={dep.id}>
+                        {getDepartmentLabel(dep)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Administrator Toggle - компактный */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1300,6 +1517,135 @@ const AdminPage: React.FC = () => {
               </div>
             ));
           })()}
+        </div>
+      )}
+
+      {/* Вкладка Departments */}
+      {activeTab === 'departments' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">Create Department</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <input
+                value={departmentDraft.name}
+                onChange={(e) => setDepartmentDraft((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Department name"
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <input
+                value={departmentDraft.code}
+                onChange={(e) => setDepartmentDraft((prev) => ({ ...prev, code: e.target.value }))}
+                placeholder="Code (optional)"
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <input
+                type="number"
+                value={departmentDraft.sort_order}
+                onChange={(e) => setDepartmentDraft((prev) => ({ ...prev, sort_order: Number(e.target.value) || 0 }))}
+                placeholder="Sort order"
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <button
+                onClick={handleCreateDepartment}
+                disabled={departmentSaving}
+                className="px-3 py-2 bg-[#142143] text-white rounded-md hover:bg-[#1d2f5c] disabled:opacity-50"
+              >
+                {departmentSaving ? 'Saving...' : 'Create'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Departments Directory</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Name</th>
+                  <th className="px-4 py-2 text-left">Code</th>
+                  <th className="px-4 py-2 text-left">Sort</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                  <th className="px-4 py-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {departments.map((dep) => (
+                  <tr key={dep.id} className="border-t border-gray-100">
+                    <td className="px-4 py-2">{getDepartmentLabel(dep)}</td>
+                    <td className="px-4 py-2">{dep.code || '—'}</td>
+                    <td className="px-4 py-2">{dep.sort_order}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${dep.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {dep.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => handleEditDepartment(dep)}
+                        className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 mr-2"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleDepartment(dep, !dep.is_active)}
+                        className={`px-2 py-1 rounded text-xs ${dep.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                      >
+                        {dep.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Users Without Department</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Username</th>
+                  <th className="px-4 py-2 text-left">Full Name</th>
+                  <th className="px-4 py-2 text-right">Assign</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unassignedUsers.map((u) => (
+                  <tr key={u.user_id} className="border-t border-gray-100">
+                    <td className="px-4 py-2">{u.username}</td>
+                    <td className="px-4 py-2">{u.full_name || '—'}</td>
+                    <td className="px-4 py-2 text-right">
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          const depId = Number(e.target.value);
+                          if (!Number.isNaN(depId) && depId > 0) {
+                            handleAssignUserDepartment(u.user_id, depId);
+                          }
+                        }}
+                        className="px-2 py-1 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Select department</option>
+                        {departments.filter(d => d.is_active).map((dep) => (
+                          <option key={dep.id} value={dep.id}>{getDepartmentLabel(dep)}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+                {unassignedUsers.length === 0 && (
+                  <tr>
+                    <td className="px-4 py-6 text-center text-gray-500" colSpan={3}>
+                      All users have departments assigned.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

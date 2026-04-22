@@ -1,5 +1,7 @@
 import pyodbc
 import json
+import time
+import threading
 from Back.config import DB_CONFIG
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
@@ -29,6 +31,32 @@ class WorkingCalendarService:
             f"TrustServerCertificate={DB_CONFIG['TrustServerCertificate']};"
             f"MARS_Connection=Yes;"
         )
+        self._schedules_cache: Dict[str, Dict[str, Any]] = {}
+        self._schedules_cache_ttl_sec = 5
+        self._cache_lock = threading.Lock()
+
+    def _schedules_cache_key(self, workshop_id: Optional[str], include_deleted: bool) -> str:
+        return f"workshop:{workshop_id or '__all__'}:deleted:{int(include_deleted)}"
+
+    def _get_cached_schedules(self, workshop_id: Optional[str], include_deleted: bool) -> Optional[List[Dict[str, Any]]]:
+        key = self._schedules_cache_key(workshop_id, include_deleted)
+        with self._cache_lock:
+            entry = self._schedules_cache.get(key)
+            if not entry:
+                return None
+            if time.time() - entry["ts"] > self._schedules_cache_ttl_sec:
+                self._schedules_cache.pop(key, None)
+                return None
+            return entry["data"]
+
+    def _set_cached_schedules(self, workshop_id: Optional[str], include_deleted: bool, data: List[Dict[str, Any]]) -> None:
+        key = self._schedules_cache_key(workshop_id, include_deleted)
+        with self._cache_lock:
+            self._schedules_cache[key] = {"ts": time.time(), "data": data}
+
+    def _invalidate_schedules_cache(self) -> None:
+        with self._cache_lock:
+            self._schedules_cache.clear()
 
     def get_work_centers(self) -> List[Dict[str, Any]]:
         """
@@ -149,6 +177,12 @@ class WorkingCalendarService:
         Получает список графиков работ с линиями
         """
         try:
+            # Для "боевого" сценария списка используем короткий TTL-кэш.
+            # Мутации сбрасывают этот кэш, поэтому логика остается корректной.
+            cached = self._get_cached_schedules(workshop_id, include_deleted)
+            if cached is not None:
+                return cached
+
             with pyodbc.connect(self.connection_string) as connection:
                 cursor = connection.cursor()
 
@@ -190,26 +224,36 @@ class WorkingCalendarService:
                     cursor.execute(header_query, (1 if include_deleted else 0,))
 
                 header_rows = cursor.fetchall()
+                if not header_rows:
+                    self._set_cached_schedules(workshop_id, include_deleted, [])
+                    return []
+
+                schedule_ids = [int(h[0]) for h in header_rows]
+                lines_by_schedule_id: Dict[int, List[Dict[str, Any]]] = {sid: [] for sid in schedule_ids}
+
+                placeholders = ",".join(["?"] * len(schedule_ids))
+                lines_query = f"""
+                SELECT ScheduleID, TypeID, StartTime, EndTime, CrossesMidnight, SpanMinutes, StartMin
+                FROM TimeLoss.Working_ScheduleType
+                WHERE ScheduleID IN ({placeholders})
+                ORDER BY ScheduleID, StartMin
+                """
+                cursor.execute(lines_query, tuple(schedule_ids))
+                for row in cursor.fetchall():
+                    sid = int(row[0])
+                    lines_by_schedule_id[sid].append({
+                        'typeId': row[1],
+                        'start': self._time_to_str(row[2]),
+                        'end': self._time_to_str(row[3]),
+                        'crossesMidnight': bool(row[4]),
+                        'spanMinutes': int(row[5]),
+                    })
+
                 schedules = []
 
                 for h in header_rows:
                     schedule_id = h[0]
-
-                    lines_query = """
-                    SELECT TypeID, StartTime, EndTime, CrossesMidnight, SpanMinutes, StartMin
-                    FROM TimeLoss.Working_ScheduleType
-                    WHERE ScheduleID = ?
-                    ORDER BY StartMin
-                    """
-                    cursor.execute(lines_query, (schedule_id,))
-                    rows = cursor.fetchall()
-                    lines = [{
-                        'typeId': r[0],
-                        'start': self._time_to_str(r[1]),
-                        'end': self._time_to_str(r[2]),
-                        'crossesMidnight': bool(r[3]),
-                        'spanMinutes': int(r[4])
-                    } for r in rows]
+                    lines = lines_by_schedule_id.get(int(schedule_id), [])
 
                     schedules.append({
                         'scheduleId': h[0],
@@ -227,6 +271,7 @@ class WorkingCalendarService:
                         'lines': lines
                     })
 
+                self._set_cached_schedules(workshop_id, include_deleted, schedules)
                 return schedules
         except Exception as e:
             print(f"Error in get_work_schedules: {str(e)}")
@@ -331,6 +376,7 @@ class WorkingCalendarService:
 
                 result = cursor.fetchone()
                 if result:
+                    self._invalidate_schedules_cache()
                     return {
                         'scheduleId': int(result[0]),
                         'scheduleCode': result[1],
@@ -416,6 +462,7 @@ class WorkingCalendarService:
                         new_schedule_id = int(result[0])
                         # ВАЖНО: никаких пересчётов здесь не делаем.
                         # Пересчёт выполняется там, где меняют назначения: WorkSchedules_ByDay_service.py
+                        self._invalidate_schedules_cache()
                         return {
                             'scheduleId': new_schedule_id,
                             'scheduleCode': result[1],
@@ -449,6 +496,7 @@ class WorkingCalendarService:
 
                 result = cursor.fetchone()
                 if result:
+                    self._invalidate_schedules_cache()
                     return {
                         'scheduleId': int(result[0]),
                         'scheduleCode': result[1],
@@ -477,6 +525,7 @@ class WorkingCalendarService:
                         @Actor = ?
                 """, (schedule_id, 'api'))
 
+                self._invalidate_schedules_cache()
                 return True
 
         except pyodbc.Error as e:
@@ -499,6 +548,7 @@ class WorkingCalendarService:
                         @Actor = ?
                 """, (schedule_id, 'api'))
 
+                self._invalidate_schedules_cache()
                 return True
 
         except pyodbc.Error as e:
@@ -524,6 +574,7 @@ class WorkingCalendarService:
 
                 result = cursor.fetchone()
                 if result:
+                    self._invalidate_schedules_cache()
                     return {
                         'scheduleId': int(result[0]),
                         'scheduleCode': result[1],

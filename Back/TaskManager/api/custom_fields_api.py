@@ -17,23 +17,30 @@ def get_current_user():
     return verify_jwt_token(token)
 
 
+def _perf_response(payload: dict, status_code: int, started: float, label: str):
+    _ = started
+    _ = label
+    return jsonify(payload), status_code
+
+
 # ============= УПРАВЛЕНИЕ ПОЛЯМИ =============
 
 @bp.route("/project/<int:project_id>", methods=["GET"])
 def get_project_fields(project_id):
     """Получить все кастомные поля проекта"""
+    started = None
     try:
         user_data = get_current_user()
         if not user_data:
-            return jsonify({"success": False, "error": "Не авторизован"}), 401
+            return _perf_response({"success": False, "error": "Не авторизован"}, 401, started, "GET /custom-fields/project/:id")
         
         active_only = request.args.get('active_only', 'false').lower() == 'true'
         fields = CustomFieldsService.get_project_fields(project_id, user_data["user_id"], active_only)
-        return jsonify({"success": True, "data": fields}), 200
+        return _perf_response({"success": True, "data": fields}, 200, started, "GET /custom-fields/project/:id")
     except PermissionError as e:
-        return jsonify({"success": False, "error": str(e)}), 403
+        return _perf_response({"success": False, "error": str(e)}, 403, started, "GET /custom-fields/project/:id")
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return _perf_response({"success": False, "error": str(e)}, 500, started, "GET /custom-fields/project/:id")
 
 
 @bp.route("/", methods=["POST"])
@@ -55,7 +62,6 @@ def create_field():
             field_name=data.get('field_name'),
             field_type=data.get('field_type'),
             field_options=data.get('field_options'),
-            is_required=data.get('is_required', False)
         )
         
         return jsonify({
@@ -86,7 +92,6 @@ def update_field(field_id):
             user_id=user_data["user_id"],
             field_name=data.get('field_name'),
             field_options=data.get('field_options'),
-            is_required=data.get('is_required'),
             is_active=data.get('is_active'),
             order_index=data.get('order_index')
         )
@@ -118,40 +123,39 @@ def delete_field(field_id):
 
 @bp.route("/task/<int:task_id>/values", methods=["GET"])
 def get_task_field_values(task_id):
-    """Получить значения кастомных полей для задачи"""
+    """Получить значения кастомных полей для задачи (multi-row)"""
+    started = None
     try:
         user_data = get_current_user()
         if not user_data:
-            return jsonify({"success": False, "error": "Не авторизован"}), 401
+            return _perf_response({"success": False, "error": "Не авторизован"}, 401, started, "GET /custom-fields/task/:id/values")
         
-        values = CustomFieldsService.get_task_field_values(task_id, user_data["user_id"])
-        return jsonify({"success": True, "data": values}), 200
+        result = CustomFieldsService.get_task_field_values(task_id, user_data["user_id"])
+        return _perf_response({"success": True, "data": result}, 200, started, "GET /custom-fields/task/:id/values")
     except PermissionError as e:
-        return jsonify({"success": False, "error": str(e)}), 403
+        return _perf_response({"success": False, "error": str(e)}, 403, started, "GET /custom-fields/task/:id/values")
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return _perf_response({"success": False, "error": str(e)}, 500, started, "GET /custom-fields/task/:id/values")
 
 
-@bp.route("/task/<int:task_id>/values", methods=["POST"])
-def set_field_value(task_id):
-    """Установить значение кастомного поля"""
+@bp.route("/task/<int:task_id>/rows", methods=["POST"])
+def save_task_rows(task_id):
+    """Сохранить все строки значений для задачи"""
     try:
         user_data = get_current_user()
         if not user_data:
             return jsonify({"success": False, "error": "Не авторизован"}), 401
         
         data = request.get_json()
-        if not data or not data.get('field_id'):
-            return jsonify({"success": False, "error": "field_id обязательно"}), 400
+        if not data or "rows" not in data:
+            return jsonify({"success": False, "error": "rows обязательно"}), 400
         
-        CustomFieldsService.set_field_value(
+        CustomFieldsService.save_task_rows(
             task_id=task_id,
-            field_id=data.get('field_id'),
-            value=data.get('value', ''),
-            user_id=user_data["user_id"]
+            user_id=user_data["user_id"],
+            rows=data["rows"]
         )
-        
-        return jsonify({"success": True, "message": "Значение сохранено"}), 200
+        return jsonify({"success": True, "message": "Строки сохранены"}), 200
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
     except Exception as e:

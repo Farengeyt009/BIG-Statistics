@@ -1,16 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ContentLayout } from '../../../components/Layout';
-import { WarningModal } from '../../../components/WarningModal/WarningModal';
 
 const KPI: React.FC = () => {
-  const [showWarningModal, setShowWarningModal] = useState(false);
-
-  useEffect(() => {
-    setShowWarningModal(true);
-  }, []);
-
   return (
-    <>
     <ContentLayout padding="py-8">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">KPI</h2>
@@ -34,12 +26,6 @@ const KPI: React.FC = () => {
         </div>
       </div>
     </ContentLayout>
-    
-    <WarningModal
-      isOpen={showWarningModal}
-      onClose={() => setShowWarningModal(false)}
-    />
-    </>
   );
 };
 

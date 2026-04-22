@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import TaskManagerTranslation from '../TaskManagerTranslation.json';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 interface WorkflowSettingsProps {
   projectId: number;
@@ -13,7 +14,6 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ projectId })
   const [hasWorkflowPermissions, setHasWorkflowPermissions] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Load translations for Task Manager
   React.useEffect(() => {
     const currentLang = i18n.language;
     if (TaskManagerTranslation[currentLang as keyof typeof TaskManagerTranslation]) {
@@ -25,10 +25,11 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ projectId })
     const fetchProject = async () => {
       try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE}/api/task-manager/projects/${projectId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const data = await response.json();
+        const data = await fetchJsonGetDedup<any>(
+          `${API_BASE}/api/task-manager/projects/${projectId}`,
+          token,
+          1000
+        );
         if (data.success && data.data) {
           setHasWorkflowPermissions(data.data.has_workflow_permissions || false);
         }
@@ -41,6 +42,8 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ projectId })
 
   const handleToggle = async () => {
     setLoading(true);
+    const next = !hasWorkflowPermissions;
+    setHasWorkflowPermissions(next);
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE}/api/task-manager/projects/${projectId}`, {
@@ -49,57 +52,46 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ projectId })
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ has_workflow_permissions: !hasWorkflowPermissions }),
+        body: JSON.stringify({ has_workflow_permissions: next }),
       });
-
       const data = await response.json();
-      if (data.success) {
-        setHasWorkflowPermissions(!hasWorkflowPermissions);
+      if (!data.success) {
+        setHasWorkflowPermissions(!next);
+      } else {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/projects/${projectId}`, token);
       }
-    } catch (err) {
-      console.error(t('workflowSettingsSaveError'), err);
+    } catch {
+      setHasWorkflowPermissions(!next);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-blue-50">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-gray-900">{t('workflowSettingsTitle')}</h4>
-            <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-              hasWorkflowPermissions ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-            }`}>
-              {hasWorkflowPermissions ? t('workflowSettingsEnabled') : t('workflowSettingsDisabled')}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            {hasWorkflowPermissions 
-              ? t('workflowSettingsEnabledDesc')
-              : t('workflowSettingsDisabledDesc')}
-          </p>
-        </div>
-        <button
-          onClick={handleToggle}
-          disabled={loading}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            hasWorkflowPermissions
-              ? 'bg-red-600 text-white hover:bg-red-700'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          } disabled:opacity-50`}
-        >
-          {hasWorkflowPermissions ? t('workflowSettingsDisable') : t('workflowSettingsEnable')}
-        </button>
+    <div className="flex justify-center">
+      <div className="w-full max-w-xl flex items-center justify-between py-2.5 px-4 border border-gray-200 rounded-xl bg-white">
+      <div>
+        <span className="text-sm font-medium text-gray-800">{t('workflowSettingsToggleLabel')}</span>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {hasWorkflowPermissions ? t('workflowSettingsEnabledDesc') : t('workflowSettingsDisabledDesc')}
+        </p>
       </div>
-      
-      {!hasWorkflowPermissions && (
-        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-          {t('workflowSettingsWarning')}
-        </div>
-      )}
+      <button
+        onClick={handleToggle}
+        disabled={loading}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+          hasWorkflowPermissions ? 'bg-blue-600' : 'bg-gray-200'
+        }`}
+        role="switch"
+        aria-checked={hasWorkflowPermissions}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+            hasWorkflowPermissions ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+      </div>
     </div>
   );
 };
-

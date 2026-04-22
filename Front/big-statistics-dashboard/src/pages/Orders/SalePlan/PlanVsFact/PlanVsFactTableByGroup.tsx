@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { FlagIcon } from '../../../../components/FlagIcon';
 import { useAuth } from '../../../../context/AuthContext';
 import AgGridGroupedExportButton from '../../../../components/AgGrid/GroupedExportButton';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface RawData {
   YearNum: number;
@@ -87,12 +88,11 @@ const PlanVsFactTableByGroup: React.FC<Props> = ({ selectedYear, leadTimeMonths 
       setError(null);
 
       try {
-        const response = await fetch(`/api/orders/saleplan/planvsfact/${selectedYear}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const result = await response.json();
+        const result = await fetchJsonGetDedup<any>(
+          `/api/orders/saleplan/planvsfact/${selectedYear}`,
+          token,
+          1200
+        );
         
         if (result.success) {
           // Сохраняем план и факт отдельно для обработки
@@ -464,7 +464,7 @@ const PlanVsFactTableByGroup: React.FC<Props> = ({ selectedYear, leadTimeMonths 
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         if (gridApi) {
           try {
-            gridApi.clearRangeSelection?.();
+            gridApi.clearCellSelection?.();
             gridApi.deselectAll?.();
           } catch {}
         }

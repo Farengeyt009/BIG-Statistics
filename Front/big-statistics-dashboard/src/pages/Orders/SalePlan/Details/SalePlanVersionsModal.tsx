@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, FileText, Calendar, User, Hash, FileSpreadsheet, ChevronRight, ChevronDown, Trash2, CheckCircle } from 'lucide-react';
 import ExportSalePlanButton from '../../../../components/AgGrid/ExportSalePlanButton';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../../utils/fetchDedup';
 
 interface Version {
   VersionID: number;
@@ -35,8 +36,11 @@ export default function SalePlanVersionsModal({ isOpen, onClose }: Props) {
     const loadVersions = async () => {
       setLoading(true);
       try {
-        const response = await fetch('/api/orders/saleplan/versions');
-        const data = await response.json();
+        const data = await fetchJsonGetDedup<any>(
+          '/api/orders/saleplan/versions',
+          undefined,
+          5000
+        );
         
         if (data.success) {
           setVersions(data.versions);
@@ -89,8 +93,11 @@ export default function SalePlanVersionsModal({ isOpen, onClose }: Props) {
     setAnalyticsLoading(true);
     setAnalytics(null);
     try {
-      const response = await fetch(`/api/orders/saleplan/versions/${versionId}/analytics`);
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(
+        `/api/orders/saleplan/versions/${versionId}/analytics`,
+        undefined,
+        5000
+      );
       
       if (data.success) {
         setAnalytics(data);
@@ -120,8 +127,12 @@ export default function SalePlanVersionsModal({ isOpen, onClose }: Props) {
       
       if (data.success) {
         // Перезагружаем список версий
-        const reloadResponse = await fetch('/api/orders/saleplan/versions');
-        const reloadData = await reloadResponse.json();
+        invalidateGetDedup('/api/orders/saleplan/versions');
+        const reloadData = await fetchJsonGetDedup<any>(
+          '/api/orders/saleplan/versions',
+          undefined,
+          5000
+        );
         if (reloadData.success) {
           setVersions(reloadData.versions);
           // Обновляем selectedVersion
@@ -155,8 +166,12 @@ export default function SalePlanVersionsModal({ isOpen, onClose }: Props) {
       
       if (data.success) {
         // Перезагружаем список версий
-        const reloadResponse = await fetch('/api/orders/saleplan/versions');
-        const reloadData = await reloadResponse.json();
+        invalidateGetDedup('/api/orders/saleplan/versions');
+        const reloadData = await fetchJsonGetDedup<any>(
+          '/api/orders/saleplan/versions',
+          undefined,
+          5000
+        );
         if (reloadData.success) {
           setVersions(reloadData.versions);
           setSelectedVersion(null);

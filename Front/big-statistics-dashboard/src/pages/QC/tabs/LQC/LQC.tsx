@@ -5,10 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { DateRangePickerPro } from '../../../../components/DatePicker';
 import LQCLog from './tabs/LQCLog/LQCLog';
 import LQCSummary from './tabs/LQCSummary/LQCSummary';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 const today = new Date();
-const sevenDaysAgo = new Date(today);
-sevenDaysAgo.setDate(today.getDate() - 6);
+const thirtyDaysAgo = new Date(today);
+thirtyDaysAgo.setDate(today.getDate() - 30);
 
 const toYmdLocal = (d: Date) => {
   const y = d.getFullYear();
@@ -36,7 +37,7 @@ const LQC: React.FC = () => {
       setActiveTab(subtabFromUrl as 'log' | 'summary');
     }
   }, [subtabFromUrl]);
-  const [startDate, setStartDate] = useState<Date | null>(sevenDaysAgo);
+  const [startDate, setStartDate] = useState<Date | null>(thirtyDaysAgo);
   const [endDate, setEndDate] = useState<Date | null>(today);
 
   const handleDateRangeApply = (from: Date, to?: Date) => {
@@ -47,13 +48,15 @@ const LQC: React.FC = () => {
   const { data = [], isLoading, isFetching, error } = useQuery<any[]>({
     queryKey: ['qc-lqc-journal', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled: Boolean(startDate && endDate),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('date_from', toYmdLocal(startDate));
       if (endDate)   params.append('date_to',   toYmdLocal(endDate));
-      const response = await fetch(`/api/qc/lqc-journal?${params.toString()}`, { signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
+      const result = await fetchJsonGetDedup<any>(
+        `/api/qc/lqc-journal?${params.toString()}`,
+        undefined,
+        1200
+      );
       return result?.data || [];
     },
     staleTime: 5 * 60 * 1000,

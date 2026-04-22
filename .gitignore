@@ -43,6 +43,9 @@ venv.bak/
 *.swo
 *~
 
+# Cursor MCP config (contains credentials)
+.cursor/mcp.json
+
 # Node.js Frontend
 node_modules/
 npm-debug.log*

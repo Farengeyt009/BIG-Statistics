@@ -2,6 +2,7 @@ import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../../../../config/api';
 import ShipmentStatisticsTable from './ShipmentStatisticsTable';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 type Props = { fromDate: Date; toDate: Date };
 type Row = Record<string, any>;
@@ -22,8 +23,11 @@ export default function Statistics({ fromDate, toDate }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_ENDPOINTS.ORDERS.SHIPMENT_PLAN_FACT}?year=${y}&month=${m}&to_year=${ty}&to_month=${tm}`);
-        const json = await res.json();
+        const json = await fetchJsonGetDedup<any>(
+          `${API_ENDPOINTS.ORDERS.SHIPMENT_PLAN_FACT}?year=${y}&month=${m}&to_year=${ty}&to_month=${tm}`,
+          undefined,
+          1200
+        );
         const data: any[] = Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
         setRows(data);
       } catch (e: any) {

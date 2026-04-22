@@ -27,7 +27,16 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "notSpecified": "Not specified",
     "notSet": "Not set",
-    "administrator": "Administrator"
+    "administrator": "Administrator",
+    "selectDepartment": "Select department",
+    "loadingDepartments": "Loading departments...",
+    "departmentRequiredPrompt": "Department is required. Please select one and save.",
+    "saveDepartment": "Save department"
+    ,
+    "preferredLanguage": "Preferred language",
+    "changePreferredLanguage": "Change Preferred Language",
+    "languageEnglish": "English",
+    "languageChinese": "Chinese"
   },
   "zh": {
     "pageTitle": "我的个人资料",
@@ -57,7 +66,15 @@
     "passwordTooShort": "密码至少需要6个字符",
     "notSpecified": "未指定",
     "notSet": "未设置",
-    "administrator": "管理员"
+    "administrator": "管理员",
+    "selectDepartment": "选择部门",
+    "loadingDepartments": "正在加载部门...",
+    "departmentRequiredPrompt": "必须绑定部门，请选择并保存。",
+    "saveDepartment": "保存部门",
+    "preferredLanguage": "首选语言",
+    "changePreferredLanguage": "修改首选语言",
+    "languageEnglish": "英文",
+    "languageChinese": "中文"
   },
   "ru": {
     "pageTitle": "Профиль пользователя",
@@ -87,6 +104,14 @@
     "passwordTooShort": "Пароль должен быть минимум 6 символов",
     "notSpecified": "Не указано",
     "notSet": "Не указан",
-    "administrator": "Администратор"
+    "administrator": "Администратор",
+    "selectDepartment": "Выберите отдел",
+    "loadingDepartments": "Загрузка отделов...",
+    "departmentRequiredPrompt": "Отдел обязателен: выберите отдел и сохраните.",
+    "saveDepartment": "Сохранить отдел",
+    "preferredLanguage": "Предпочитаемый язык",
+    "changePreferredLanguage": "Изменить предпочитаемый язык",
+    "languageEnglish": "Английский",
+    "languageChinese": "Китайский"
   }
 }

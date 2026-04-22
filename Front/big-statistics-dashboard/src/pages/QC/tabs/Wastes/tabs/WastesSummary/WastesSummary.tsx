@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import WastesSummaryTable from './WastesSummaryTable';
 import WastesSummaryChart from './WastesSummaryChart';
+import { fetchJsonGetDedup } from '../../../../../../utils/fetchDedup';
 
 const toYmdLocal = (d: Date) => {
   const y = d.getFullYear();
@@ -30,10 +31,12 @@ const WastesSummary: React.FC<Props> = ({ startDate, endDate }) => {
   const { data: stampingData = [], isLoading: stampingLoading, error: stampingError } = useQuery<any[]>({
     queryKey: ['wastes-summary-stamping', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled,
-    queryFn: async ({ signal }) => {
-      const res = await fetch(`/api/qc/stamping-wastes?${dateParams()}`, { signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+    queryFn: async () => {
+      const json = await fetchJsonGetDedup<any>(
+        `/api/qc/stamping-wastes?${dateParams()}`,
+        undefined,
+        1200
+      );
       return json?.data ?? [];
     },
     staleTime: 5 * 60 * 1000,
@@ -45,10 +48,12 @@ const WastesSummary: React.FC<Props> = ({ startDate, endDate }) => {
   const { data: injectionData = [], isLoading: injectionLoading, error: injectionError } = useQuery<any[]>({
     queryKey: ['wastes-summary-injection', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled,
-    queryFn: async ({ signal }) => {
-      const res = await fetch(`/api/qc/plastic-wastes?${dateParams()}`, { signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+    queryFn: async () => {
+      const json = await fetchJsonGetDedup<any>(
+        `/api/qc/plastic-wastes?${dateParams()}`,
+        undefined,
+        1200
+      );
       return json?.data ?? [];
     },
     staleTime: 5 * 60 * 1000,
@@ -60,10 +65,12 @@ const WastesSummary: React.FC<Props> = ({ startDate, endDate }) => {
   const { data: deptData = [], isLoading: deptLoading } = useQuery<any[]>({
     queryKey: ['defect-cards-by-dept', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled,
-    queryFn: async ({ signal }) => {
-      const res = await fetch(`/api/qc/defect-cards-by-dept?${dateParams()}`, { signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+    queryFn: async () => {
+      const json = await fetchJsonGetDedup<any>(
+        `/api/qc/defect-cards-by-dept?${dateParams()}`,
+        undefined,
+        1200
+      );
       return json?.data ?? [];
     },
     staleTime: 5 * 60 * 1000,

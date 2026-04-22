@@ -80,7 +80,7 @@ class CustomFieldsService:
     
     @staticmethod
     def create_field(project_id: int, user_id: int, field_name: str, field_type: str,
-                    field_options: Optional[str] = None, is_required: bool = False) -> int:
+                    field_options: Optional[str] = None) -> int:
         """
         Создать новое кастомное поле
         """
@@ -93,10 +93,10 @@ class CustomFieldsService:
         try:
             cursor.execute("""
                 INSERT INTO Task_Manager.custom_fields 
-                (project_id, field_name, field_type, field_options, is_required, created_by)
+                (project_id, field_name, field_type, field_options, created_by)
                 OUTPUT INSERTED.id
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (project_id, field_name, field_type, field_options, is_required, user_id))
+                VALUES (?, ?, ?, ?, ?)
+            """, (project_id, field_name, field_type, field_options, user_id))
             
             field_id = cursor.fetchone()[0]
             conn.commit()
@@ -112,7 +112,7 @@ class CustomFieldsService:
     
     @staticmethod
     def update_field(field_id: int, user_id: int, field_name: Optional[str] = None,
-                    field_options: Optional[str] = None, is_required: Optional[bool] = None,
+                    field_options: Optional[str] = None,
                     is_active: Optional[bool] = None, order_index: Optional[int] = None) -> bool:
         """
         Обновить кастомное поле
@@ -142,9 +142,6 @@ class CustomFieldsService:
             if field_options is not None:
                 updates.append("field_options = ?")
                 params.append(field_options)
-            if is_required is not None:
-                updates.append("is_required = ?")
-                params.append(is_required)
             if is_active is not None:
                 updates.append("is_active = ?")
                 params.append(is_active)
@@ -209,119 +206,139 @@ class CustomFieldsService:
     @staticmethod
     def get_task_field_values(task_id: int, user_id: int) -> List[Dict]:
         """
-        Получить значения кастомных полей для задачи
+        Получить значения кастомных полей для задачи (сгруппированные по строкам)
+        Возвращает: { fields: [...], rows: [{row_index, values: {field_id: value}}, ...] }
         """
         conn = get_connection()
         cursor = conn.cursor()
-        
-        # Получаем project_id задачи
-        cursor.execute("SELECT project_id FROM Task_Manager.tasks WHERE id = ?", (task_id,))
-        result = cursor.fetchone()
-        
-        if not result:
+
+        try:
+            cursor.execute("""
+                SELECT t.project_id
+                FROM Task_Manager.tasks t
+                INNER JOIN Task_Manager.project_members pm ON pm.project_id = t.project_id
+                WHERE t.id = ? AND pm.user_id = ?
+            """, (task_id, user_id))
+            result = cursor.fetchone()
+            if not result:
+                cursor.execute("SELECT 1 FROM Task_Manager.tasks WHERE id = ?", (task_id,))
+                if not cursor.fetchone():
+                    raise ValueError("Задача не найдена")
+                raise PermissionError("Нет доступа к проекту")
+
+            project_id = result[0]
+
+            # Получаем определения полей
+            cursor.execute("""
+                SELECT id as field_id, field_name, field_type, field_options, is_required
+                FROM Task_Manager.custom_fields
+                WHERE project_id = ? AND is_active = 1
+                ORDER BY order_index, id
+            """, (project_id,))
+            field_cols = [c[0] for c in cursor.description]
+            fields = [dict(zip(field_cols, row)) for row in cursor.fetchall()]
+
+            # Получаем все значения по строкам
+            cursor.execute("""
+                SELECT field_id, value, row_index
+                FROM Task_Manager.custom_field_values
+                WHERE task_id = ?
+                ORDER BY row_index, field_id
+            """, (task_id,))
+            raw_values = cursor.fetchall()
+        finally:
             cursor.close()
             conn.close()
-            raise ValueError("Задача не найдена")
         
-        project_id = result[0]
+        # Группируем по row_index
+        rows_map: dict = {}
+        for field_id, value, row_index in raw_values:
+            if row_index not in rows_map:
+                rows_map[row_index] = {}
+            rows_map[row_index][field_id] = value or ''
         
-        # Проверяем доступ
-        cursor.execute("""
-            SELECT 1 FROM Task_Manager.project_members WHERE project_id = ? AND user_id = ?
-        """, (project_id, user_id))
+        # Если нет ни одной строки — возвращаем одну пустую
+        if not rows_map and fields:
+            rows_map[0] = {}
         
-        if not cursor.fetchone():
-            cursor.close()
-            conn.close()
-            raise PermissionError("Нет доступа к проекту")
+        rows = [
+            {"row_index": ri, "values": rows_map[ri]}
+            for ri in sorted(rows_map.keys())
+        ]
         
-        query = """
-            SELECT 
-                cf.id as field_id,
-                cf.field_name,
-                cf.field_type,
-                cf.field_options,
-                cf.is_required,
-                COALESCE(cfv.value, '') as value,
-                cfv.id as value_id
-            FROM Task_Manager.custom_fields cf
-            LEFT JOIN Task_Manager.custom_field_values cfv ON cf.id = cfv.field_id AND cfv.task_id = ?
-            WHERE cf.project_id = ? AND cf.is_active = 1
-            ORDER BY cf.order_index, cf.id
-        """
-        
-        cursor.execute(query, (task_id, project_id))
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        cursor.close()
-        conn.close()
-        
-        return results
+        return {"fields": fields, "rows": rows}
     
     @staticmethod
-    def set_field_value(task_id: int, field_id: int, value: str, user_id: int) -> bool:
+    def get_all_task_values_for_project(project_id: int) -> Dict:
         """
-        Установить значение кастомного поля для задачи
+        Получить все значения кастомных полей для всех задач проекта одним запросом.
+        Возвращает: { task_id: { row_index: { field_id: value } } }
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT cfv.task_id, cfv.field_id, cfv.row_index, cfv.value
+            FROM Task_Manager.custom_field_values cfv
+            INNER JOIN Task_Manager.tasks t ON t.id = cfv.task_id
+            WHERE t.project_id = ?
+            ORDER BY cfv.task_id, cfv.row_index, cfv.field_id
+        """, (project_id,))
+
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        result: Dict = {}
+        for task_id, field_id, row_index, value in rows:
+            result.setdefault(task_id, {}).setdefault(row_index, {})[field_id] = value or ''
+
+        return result
+
+    @staticmethod
+    def save_task_rows(task_id: int, user_id: int,
+                       rows: List[Dict]) -> bool:
+        """
+        Сохранить все строки значений для задачи.
+        rows = [{"row_index": 0, "values": {field_id: value, ...}}, ...]
+        Полностью заменяет текущие значения.
         """
         conn = get_connection()
         cursor = conn.cursor()
         
         try:
-            # Проверяем доступ к задаче
             cursor.execute("""
                 SELECT t.project_id, pm.role
                 FROM Task_Manager.tasks t
                 INNER JOIN Task_Manager.project_members pm ON t.project_id = pm.project_id
                 WHERE t.id = ? AND pm.user_id = ?
             """, (task_id, user_id))
-            
             result = cursor.fetchone()
             if not result:
                 raise PermissionError("Нет доступа к задаче")
-            
-            role = result[1]
-            if role == 'viewer':
+            if result[1] == 'viewer':
                 raise PermissionError("Viewer не может редактировать поля")
             
-            # Проверяем существование поля
-            cursor.execute("""
-                SELECT 1 FROM Task_Manager.custom_fields 
-                WHERE id = ? AND is_active = 1
-            """, (field_id,))
+            # Удаляем все текущие значения
+            cursor.execute("DELETE FROM Task_Manager.custom_field_values WHERE task_id = ?", (task_id,))
             
-            if not cursor.fetchone():
-                raise ValueError("Поле не найдено или неактивно")
-            
-            # Проверяем существует ли уже значение
-            cursor.execute("""
-                SELECT id FROM Task_Manager.custom_field_values
-                WHERE task_id = ? AND field_id = ?
-            """, (task_id, field_id))
-            
-            existing = cursor.fetchone()
-            
-            if existing:
-                # Обновляем
-                cursor.execute("""
-                    UPDATE Task_Manager.custom_field_values
-                    SET value = ?, updated_at = GETDATE()
-                    WHERE id = ?
-                """, (value, existing[0]))
-            else:
-                # Создаем
-                cursor.execute("""
-                    INSERT INTO Task_Manager.custom_field_values (task_id, field_id, value)
-                    VALUES (?, ?, ?)
-                """, (task_id, field_id, value))
+            # Вставляем новые
+            for row in rows:
+                row_index = row.get("row_index", 0)
+                values = row.get("values", {})
+                for field_id, value in values.items():
+                    if value is not None and value != '':
+                        cursor.execute("""
+                            INSERT INTO Task_Manager.custom_field_values
+                                (task_id, field_id, value, row_index)
+                            VALUES (?, ?, ?, ?)
+                        """, (task_id, int(field_id), value, row_index))
             
             conn.commit()
             return True
-            
         except Exception as e:
             conn.rollback()
             raise e
         finally:
-            cursor.close()
-            conn.close()
+            cursor.close(); conn.close()
 

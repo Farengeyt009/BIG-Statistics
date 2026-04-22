@@ -30,8 +30,9 @@ import {
 import LanguageSwitcher from "../LanguageSwitcher";
 import FocusModeToggle from "../focus/FocusModeToggle";
 import { useTranslation } from 'react-i18next';
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { fetchJsonGetDedup } from "../../utils/fetchDedup";
 
 import chart from "../../assets/chart.png";
 import logo from "../../assets/logo_big_statistics.png";
@@ -66,10 +67,11 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
             }
             
             try {
-                const response = await fetch('/api/users/avatar', {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                const data = await response.json();
+                const data = await fetchJsonGetDedup<any>(
+                    '/api/users/avatar',
+                    token,
+                    1200
+                );
                 
                 if (data.success && data.filename) {
                     setAvatarSrc(`/${data.filename}?t=${Date.now()}`);
@@ -196,38 +198,56 @@ export default function Sidebar({ expanded, toggleSidebar }: SidebarProps) {
 
                 {/* 🔹 Иконки */}
                 <div className="flex flex-col mt-4 space-y-2 w-full">
-                    <Link to="/" className="block">
-                        <SidebarIcon icon={<Home className={iconClass} />} label={t('home')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
-                    <Link to="/orders" className="block">
-                        <SidebarIcon icon={<ShoppingCart className={iconClass} />} label={t('orders')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
-                    <Link to="/plan" className="block">
-                        <SidebarIcon icon={<Calendar className={iconClass} />} label={t('plan')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
+                    <NavLink to="/" end className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<Home className={iconClass} />} label={t('home')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
+                    <NavLink to="/orders" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<ShoppingCart className={iconClass} />} label={t('orders')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
+                    <NavLink to="/plan" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<Calendar className={iconClass} />} label={t('plan')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
                     {/* Показываем KPI только если у пользователя есть право на просмотр */}
                     {user?.is_admin || permissions.some(p => p.page_key === 'kpi' && p.can_view) ? (
-                        <Link to="/kpi" className="block">
-                            <SidebarIcon icon={<LineChart className={iconClass} />} label={t('kpi')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                        </Link>
+                        <NavLink to="/kpi" className="block">
+                            {({ isActive }) => (
+                                <SidebarIcon icon={<LineChart className={iconClass} />} label={t('kpi')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                            )}
+                        </NavLink>
                     ) : null}
-                    <Link to="/production" className="block">
-                        <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
-                    <Link to="/tv" className="block">
-                        <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
-                    <Link to="/task-manager" className="block">
-                        <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
-                    <Link to="/qc" className="block">
-                        <SidebarIcon icon={<ShieldCheck className={iconClass} />} label={t('qc')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                    </Link>
+                    <NavLink to="/production" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<Factory className={iconClass} />} label={t('mes')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
+                    <NavLink to="/tv" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<Tv className={iconClass} />} label={t('tv')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
+                    <NavLink to="/task-manager" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<CircleCheckBig className={iconClass} />} label={t('tasks')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
+                    <NavLink to="/qc" className="block">
+                        {({ isActive }) => (
+                            <SidebarIcon icon={<ShieldCheck className={iconClass} />} label={t('qc')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                        )}
+                    </NavLink>
                     {/* Показываем Admin только для администраторов */}
                     {user?.is_admin && (
-                        <Link to="/admin" className="block">
-                            <SidebarIcon icon={<Settings className={iconClass} />} label={t('admin')} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
-                        </Link>
+                        <NavLink to="/admin" className="block">
+                            {({ isActive }) => (
+                                <SidebarIcon icon={<Settings className={iconClass} />} label={t('admin')} isActive={isActive} shiftIcons={sidebarFullyExpanded} showLabel={showText} onShiftEnd={handleIconsAnimationComplete} isCollapsed={isCollapsed} />
+                            )}
+                        </NavLink>
                     )}
                 </div>
 

@@ -34,6 +34,7 @@ from Back.orders.api.SalePlan.SalePlan_api import init_app as saleplan_init_app
 from Back.Users.api.auth_api import init_app as auth_init_app
 from Back.Users.api.users_api import init_app as users_init_app
 from Back.Users.api.admin_api import init_app as admin_init_app
+from Back.Users.api.departments_api import init_app as departments_init_app
 from Back.TaskManager.api.projects_api import init_app as task_manager_projects_init_app
 from Back.TaskManager.api.tasks_api import init_app as task_manager_tasks_init_app
 from Back.TaskManager.api.workflow_api import init_app as task_manager_workflow_init_app
@@ -66,6 +67,7 @@ CORS(app)  # Разрешаем кросс-доменные запросы (CORS
 auth_init_app(app)
 users_init_app(app)
 admin_init_app(app)
+departments_init_app(app)
 migration_init_app(app)
 
 # Task Manager API

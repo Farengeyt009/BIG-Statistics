@@ -5,7 +5,9 @@ export default function LanguageSwitcher({ expanded = true }: { expanded?: boole
   const { i18n } = useTranslation();
 
   const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
+    const normalized = lng.startsWith('zh') ? 'zh' : 'en';
+    sessionStorage.setItem('languageOverride', normalized);
+    i18n.changeLanguage(normalized);
   };
 
   if (!expanded) {

@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { ContentLayout } from '../../../../components/Layout';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 // Форматирование локальной даты без сдвига часового пояса
 const toYmdLocal = (d: Date) => {
@@ -29,12 +30,11 @@ const DailyPlanFact: React.FC = () => {
   const { data: rqData, isLoading, isFetching, error } = useQuery({
     queryKey: ['efficiency', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled: Boolean(startDate && endDate),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const startFormatted = toYmdLocal(startDate!);
       const endFormatted = toYmdLocal(endDate!);
-      const response = await fetch(`/api/Production/Efficiency?start_date=${startFormatted}&end_date=${endFormatted}`, { signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
+      const url = `/api/Production/Efficiency?start_date=${startFormatted}&end_date=${endFormatted}`;
+      const result = await fetchJsonGetDedup<any>(url, undefined, 1500);
       return result?.data || [];
     },
     staleTime: 5 * 60 * 1000, // 5 минут

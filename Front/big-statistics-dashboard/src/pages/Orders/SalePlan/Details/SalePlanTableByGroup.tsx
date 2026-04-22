@@ -6,6 +6,7 @@ import '@ag-grid-community/styles/ag-theme-quartz.css';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 import { FlagIcon } from '../../../../components/FlagIcon';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface RawData {
   YearNum: number;
@@ -77,8 +78,11 @@ const SalePlanTableByGroup: React.FC<Props> = ({ selectedYear }) => {
       setError(null);
 
       try {
-        const response = await fetch(`/api/orders/saleplan/year/${selectedYear}`);
-        const result = await response.json();
+        const result = await fetchJsonGetDedup<any>(
+          `/api/orders/saleplan/year/${selectedYear}`,
+          undefined,
+          1200
+        );
         
         if (result.success) {
           setRawData(result.data || []);
@@ -251,7 +255,7 @@ const SalePlanTableByGroup: React.FC<Props> = ({ selectedYear }) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         if (gridApi) {
           try {
-            gridApi.clearRangeSelection?.();
+            gridApi.clearCellSelection?.();
             gridApi.deselectAll?.();
           } catch {}
         }

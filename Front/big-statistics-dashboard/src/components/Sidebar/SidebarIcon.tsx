@@ -62,18 +62,11 @@ export function SidebarIcon({
   return (
     <motion.div
       layout
+      animate={!staticCenter ? { backgroundColor: isActive ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0)" } : undefined}
       whileHover={!staticCenter ? { backgroundColor: "rgba(255,255,255,0.10)" } : undefined}
       transition={{ duration: 0.18 }}
       className="group w-full flex items-center rounded-xl cursor-pointer py-3 relative mx-0"
     >
-      {/* вертикальная полоска «активен» */}
-      {isActive && (
-        <motion.div
-          layoutId="sidebarActive"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r"
-        />
-      )}
-
       {/* сама иконка */}
       <motion.div
         /* staticCenter 👉 всегда держим центр, но без анимации влево */

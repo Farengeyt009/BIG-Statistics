@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 const API_BASE = '';
 
@@ -11,6 +12,8 @@ interface WorkflowStatus {
   is_final: boolean;
   is_system: boolean;
   order_index: number;
+  status_group: 'new' | 'in_progress' | 'done' | 'canceled';
+  task_count?: number;
 }
 
 export const useWorkflow = (projectId: number) => {
@@ -23,14 +26,11 @@ export const useWorkflow = (projectId: number) => {
     setLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(
+      const data = await fetchJsonGetDedup<any>(
         `${API_BASE}/api/task-manager/workflow/projects/${projectId}/statuses`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
+        token,
+        500
       );
-
-      const data = await response.json();
       if (data.success) {
         setStatuses(data.data);
       }
@@ -44,8 +44,7 @@ export const useWorkflow = (projectId: number) => {
   const createStatus = useCallback(async (statusData: {
     name: string;
     color: string;
-    is_initial?: boolean;
-    is_final?: boolean;
+    status_group: 'new' | 'in_progress' | 'done' | 'canceled';
   }) => {
     try {
       const token = getToken();
@@ -60,6 +59,7 @@ export const useWorkflow = (projectId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/workflow/projects/${projectId}/statuses`, token);
         await fetchStatuses();
         return true;
       }
@@ -91,6 +91,7 @@ export const useWorkflow = (projectId: number) => {
       if (data.success) {
         // Не перезагружаем сразу - оптимистичное обновление уже сработало
         // Только для синхронизации через некоторое время
+        invalidateGetDedup(`${API_BASE}/api/task-manager/workflow/projects/${projectId}/statuses`, token);
         setTimeout(() => fetchStatuses(), 500);
         return true;
       } else {
@@ -116,6 +117,7 @@ export const useWorkflow = (projectId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/workflow/projects/${projectId}/statuses`, token);
         await fetchStatuses();
         return true;
       } else {

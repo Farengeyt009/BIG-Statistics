@@ -59,7 +59,8 @@ export default function AgGridExportButton({ api, fileName = 'table', variant = 
 
         // Если колонка дата — возвращаем excel-дату (Date)
         const isDateCol = String((def as any)?.cellDataType || '').toLowerCase() === 'date'
-          || (def as any)?.exportAsDate === true;
+          || (def as any)?.context?.exportAsDate === true
+          || (def as any)?.exportAsDate === true; // backward compatibility
         if (isDateCol) {
           dateColIndices.add(colIdx);
           const s = String(raw ?? '');

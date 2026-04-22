@@ -8,23 +8,23 @@ from typing import List, Dict, Optional
 class TagsService:
     
     @staticmethod
-    def check_project_access(project_id: int, user_id: int) -> bool:
+    def check_project_access(project_id: int, user_id: int) -> str:
         """
-        Проверить доступ к проекту
+        Проверить доступ к проекту. Возвращает роль или пустую строку если нет доступа.
         """
         conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT 1 FROM Task_Manager.project_members WHERE project_id = ? AND user_id = ?
+            SELECT role FROM Task_Manager.project_members WHERE project_id = ? AND user_id = ?
         """, (project_id, user_id))
         
-        has_access = cursor.fetchone() is not None
+        row = cursor.fetchone()
         
         cursor.close()
         conn.close()
         
-        return has_access
+        return row[0] if row else ''
     
     @staticmethod
     def get_project_tags(project_id: int, user_id: int) -> List[Dict]:
@@ -32,7 +32,7 @@ class TagsService:
         Получить все теги проекта
         """
         if not TagsService.check_project_access(project_id, user_id):
-            raise PermissionError("Нет доступа к проекту")
+            raise PermissionError("noProjectAccess")
         
         conn = get_connection()
         cursor = conn.cursor()
@@ -64,8 +64,11 @@ class TagsService:
         """
         Создать новый тег
         """
-        if not TagsService.check_project_access(project_id, user_id):
-            raise PermissionError("Нет доступа к проекту")
+        role = TagsService.check_project_access(project_id, user_id)
+        if not role:
+            raise PermissionError("noProjectAccess")
+        if role == 'viewer':
+            raise PermissionError("viewerCannotEdit")
         
         conn = get_connection()
         cursor = conn.cursor()
@@ -108,8 +111,11 @@ class TagsService:
             
             project_id = result[0]
             
-            if not TagsService.check_project_access(project_id, user_id):
-                raise PermissionError("Нет доступа к проекту")
+            role = TagsService.check_project_access(project_id, user_id)
+            if not role:
+                raise PermissionError("noProjectAccess")
+            if role == 'viewer':
+                raise PermissionError("viewerCannotEdit")
             
             updates = []
             params = []
@@ -154,8 +160,11 @@ class TagsService:
             
             project_id = result[0]
             
-            if not TagsService.check_project_access(project_id, user_id):
-                raise PermissionError("Нет доступа к проекту")
+            role = TagsService.check_project_access(project_id, user_id)
+            if not role:
+                raise PermissionError("noProjectAccess")
+            if role == 'viewer':
+                raise PermissionError("viewerCannotEdit")
             
             # Удаляем связи с задачами
             cursor.execute("DELETE FROM Task_Manager.task_tags WHERE tag_id = ?", (tag_id,))

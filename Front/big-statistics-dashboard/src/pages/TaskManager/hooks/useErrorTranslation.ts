@@ -9,12 +9,15 @@ export const useErrorTranslation = () => {
       'uploadFileRequired',
       'insufficientUser',
       'transitionNotAllowed',
+      'transitionAlreadyExists',
       'noProjectAccess',
       'viewerCannotCreate',
       'viewerCannotEdit',
       'onlyOwnerAdminCanDelete',
       'noInitialStatus',
-      'taskNotFound'
+      'taskNotFound',
+      'statusEditRestricted',
+      'cannotCreateInStatus',
     ];
     
     if (simpleKeys.includes(errorMessage)) {
@@ -32,6 +35,11 @@ export const useErrorTranslation = () => {
       const required = parts[1];
       const current = parts[2];
       return t('validation.insufficientApprovals', { required, current });
+    }
+
+    if (errorMessage.startsWith('requiredFieldsMissing:')) {
+      const fields = errorMessage.split(':')[1];
+      return t('validation.requiredFieldsMissing', { fields });
     }
     
     return errorMessage;

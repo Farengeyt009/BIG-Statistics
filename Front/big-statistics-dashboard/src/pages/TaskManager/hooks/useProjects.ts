@@ -18,7 +18,12 @@ interface Project {
   created_at: string;
   updated_at: string;
   members?: Array<{ user_id: number; username: string; full_name: string }>;
+  is_favorite?: boolean;
 }
+
+const PROJECTS_CACHE_TTL_MS = 5000;
+let projectsCache: { data: Project[]; ts: number } | null = null;
+let projectsInFlight: Promise<Project[]> | null = null;
 
 export const useProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -30,29 +35,46 @@ export const useProjects = () => {
   };
 
   const fetchProjects = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
+      const now = Date.now();
+      if (projectsCache && now - projectsCache.ts < PROJECTS_CACHE_TTL_MS) {
+        setProjects(projectsCache.data);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      if (projectsInFlight) {
+        const deduped = await projectsInFlight;
+        setProjects(deduped);
+        return;
+      }
+
       const token = getToken();
-      const response = await fetch(`${API_BASE}/api/task-manager/projects/`, {
+      const requestPromise: Promise<Project[]> = fetch(`${API_BASE}/api/task-manager/projects/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки проектов');
+        }
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Ошибка загрузки проектов');
+        }
+        return data.data as Project[];
       });
 
-      if (!response.ok) {
-        throw new Error('Ошибка загрузки проектов');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setProjects(data.data);
-      } else {
-        throw new Error(data.error || 'Ошибка загрузки проектов');
-      }
+      projectsInFlight = requestPromise;
+      const rows = await requestPromise;
+      projectsCache = { data: rows, ts: Date.now() };
+      setProjects(rows);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
+      projectsInFlight = null;
       setLoading(false);
     }
   }, []);
@@ -76,6 +98,7 @@ export const useProjects = () => {
 
       const data = await response.json();
       if (data.success) {
+        projectsCache = null;
         await fetchProjects();
         return true;
       } else {
@@ -87,6 +110,40 @@ export const useProjects = () => {
     }
   }, [fetchProjects]);
 
+  const toggleFavorite = useCallback(async (projectId: number, isFavorite: boolean) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_BASE}/api/task-manager/projects/${projectId}/favorite`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_favorite: isFavorite }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Ошибка обновления избранного');
+      }
+
+      setProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? { ...p, is_favorite: isFavorite } : p))
+      );
+      if (projectsCache) {
+        projectsCache = {
+          ...projectsCache,
+          data: projectsCache.data.map((p) =>
+            p.id === projectId ? { ...p, is_favorite: isFavorite } : p
+          ),
+        };
+      }
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
@@ -97,6 +154,7 @@ export const useProjects = () => {
     error,
     fetchProjects,
     createProject,
+    toggleFavorite,
   };
 };
 

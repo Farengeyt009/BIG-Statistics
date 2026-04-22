@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchJsonGetDedup } from '../../../utils/fetchDedup';
 
 const API_BASE = '';
 
@@ -25,14 +26,11 @@ export const useTransitions = (projectId: number) => {
     setLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(
+      const data = await fetchJsonGetDedup<any>(
         `${API_BASE}/api/task-manager/workflow/projects/${projectId}/transitions`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
+        token,
+        500
       );
-
-      const data = await response.json();
       if (data.success) {
         setTransitions(data.data);
       }
@@ -51,8 +49,8 @@ export const useTransitions = (projectId: number) => {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
-      const data = await response.json();
-      if (data.success) {
+      const data = await response.json().catch(() => ({ success: false }));
+      if (response.ok && data.success) {
         await fetchTransitions();
         return true;
       }

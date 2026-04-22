@@ -31,6 +31,8 @@ def get_project_statuses(project_id):
         return jsonify({"success": True, "data": statuses}), 200
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -53,6 +55,7 @@ def create_status():
             name=data.get('name'),
             color=data.get('color', '#3b82f6'),
             order_index=data.get('order_index', 0),
+            status_group=data.get('status_group', 'in_progress'),
             is_initial=data.get('is_initial', False),
             is_final=data.get('is_final', False)
         )
@@ -64,6 +67,8 @@ def create_status():
         }), 201
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -86,6 +91,7 @@ def update_status(status_id):
             name=data.get('name'),
             color=data.get('color'),
             order_index=data.get('order_index'),
+            status_group=data.get('status_group'),
             is_initial=data.get('is_initial'),
             is_final=data.get('is_final')
         )
@@ -93,6 +99,8 @@ def update_status(status_id):
         return jsonify({"success": True, "message": "Статус обновлен"}), 200
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -129,6 +137,8 @@ def get_project_transitions(project_id):
         return jsonify({"success": True, "data": transitions}), 200
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -166,7 +176,10 @@ def create_transition():
             requires_approvals=data.get('requires_approvals', False),
             required_approvals_count=data.get('required_approvals_count', 0),
             required_approvers=data.get('required_approvers'),
-            auto_transition=data.get('auto_transition', False)
+            auto_transition=data.get('auto_transition', False),
+            approval_mode=data.get('approval_mode', 'count'),
+            approver_departments=data.get('approver_departments'),
+            required_fields=data.get('required_fields'),
         )
         
         return jsonify({
@@ -176,6 +189,8 @@ def create_transition():
         }), 201
     except PermissionError as e:
         return jsonify({"success": False, "error": str(e)}), 403
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -204,7 +219,10 @@ def update_transition(transition_id):
             requires_approvals=data.get('requires_approvals'),
             required_approvals_count=data.get('required_approvals_count'),
             required_approvers=data.get('required_approvers'),
-            auto_transition=data.get('auto_transition')
+            auto_transition=data.get('auto_transition'),
+            approval_mode=data.get('approval_mode'),
+            approver_departments=data.get('approver_departments'),
+            required_fields=data.get('required_fields'),
         )
         
         return jsonify({"success": True, "message": "Переход обновлен"}), 200
@@ -230,6 +248,125 @@ def delete_transition(transition_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+# ──────────────────────────────────────────────────────────────
+# Status-level edit permissions
+# ──────────────────────────────────────────────────────────────
+
+@bp.route('/status-permissions/<int:project_id>', methods=['GET'])
+def get_status_permissions(project_id):
+    """Получить настройки прав по статусам"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+        data = WorkflowService.get_status_permissions(project_id)
+        return jsonify({"success": True, "data": data}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route('/status-permissions/<int:project_id>/toggle', methods=['PUT'])
+def toggle_status_permissions(project_id):
+    """Включить / выключить кастомные права"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+        data = request.get_json()
+        if data is None or 'enabled' not in data:
+            return jsonify({"success": False, "error": "enabled обязателен"}), 400
+        WorkflowService.set_status_permissions_toggle(project_id, user_data["user_id"], bool(data['enabled']))
+        return jsonify({"success": True}), 200
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route('/status-permissions/<int:project_id>/status/<int:status_id>', methods=['PUT'])
+def save_status_permission(project_id, status_id):
+    """Сохранить (upsert) права для конкретного статуса"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+        data = request.get_json() or {}
+        WorkflowService.save_status_permission(
+            project_id=project_id,
+            user_id=user_data["user_id"],
+            status_id=status_id,
+            user_ids=data.get('user_ids'),
+            department_ids=data.get('department_ids'),
+        )
+        return jsonify({"success": True}), 200
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route('/status-permissions/<int:project_id>/status/<int:status_id>', methods=['DELETE'])
+def delete_status_permission(project_id, status_id):
+    """Удалить ограничения для статуса"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+        WorkflowService.delete_status_permission(project_id, user_data["user_id"], status_id)
+        return jsonify({"success": True}), 200
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 def init_app(app):
     """Регистрация blueprint в приложении"""
+
+    @bp.route('/creation-restriction/<int:project_id>', methods=['GET'])
+    def get_creation_restriction(project_id):
+        """Получить состояние флага ограничения создания задач"""
+        try:
+            user_data = get_current_user()
+            if not user_data:
+                return jsonify({"success": False, "error": "Не авторизован"}), 401
+            enabled = WorkflowService.get_creation_restriction(project_id)
+            return jsonify({"success": True, "enabled": enabled}), 200
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @bp.route('/creation-restriction/<int:project_id>/toggle', methods=['PUT'])
+    def toggle_creation_restriction(project_id):
+        """Включить / выключить ограничение создания по is_initial"""
+        try:
+            user_data = get_current_user()
+            if not user_data:
+                return jsonify({"success": False, "error": "Не авторизован"}), 401
+            data = request.get_json()
+            if data is None or 'enabled' not in data:
+                return jsonify({"success": False, "error": "enabled обязателен"}), 400
+            WorkflowService.set_creation_restriction_toggle(project_id, user_data["user_id"], bool(data['enabled']))
+            return jsonify({"success": True}), 200
+        except PermissionError as e:
+            return jsonify({"success": False, "error": str(e)}), 403
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    @bp.route('/creation-restriction/<int:project_id>/status/<int:status_id>', methods=['PUT'])
+    def set_status_is_initial(project_id, status_id):
+        """Задать флаг is_initial для статуса (включая системные)"""
+        try:
+            user_data = get_current_user()
+            if not user_data:
+                return jsonify({"success": False, "error": "Не авторизован"}), 401
+            data = request.get_json()
+            if data is None or 'is_initial' not in data:
+                return jsonify({"success": False, "error": "is_initial обязателен"}), 400
+            WorkflowService.set_status_is_initial(project_id, user_data["user_id"], status_id, bool(data['is_initial']))
+            return jsonify({"success": True}), 200
+        except PermissionError as e:
+            return jsonify({"success": False, "error": str(e)}), 403
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
+
     app.register_blueprint(bp)

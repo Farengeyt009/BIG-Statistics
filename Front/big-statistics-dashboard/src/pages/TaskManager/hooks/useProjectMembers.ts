@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 const API_BASE = '';
 
@@ -34,11 +35,8 @@ export const useProjectMembers = (projectId: number) => {
     setLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(`${API_BASE}/api/task-manager/projects/${projectId}/members`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      const data = await response.json();
+      const url = `${API_BASE}/api/task-manager/projects/${projectId}/members`;
+      const data = await fetchJsonGetDedup<any>(url, token, 500);
       if (data.success) {
         setMembers(data.data);
       }
@@ -52,11 +50,7 @@ export const useProjectMembers = (projectId: number) => {
   const fetchAllUsers = useCallback(async () => {
     try {
       const token = getToken();
-      const response = await fetch(`${API_BASE}/api/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(`${API_BASE}/api/admin/users`, token, 60000);
       
       if (data.success) {
         setAllUsers(data.users || []);
@@ -83,6 +77,7 @@ export const useProjectMembers = (projectId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/projects/${projectId}/members`, token);
         await fetchMembers();
         return true;
       } else {
@@ -111,6 +106,7 @@ export const useProjectMembers = (projectId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/projects/${projectId}/members`, token);
         await fetchMembers();
         return true;
       } else {
@@ -135,6 +131,7 @@ export const useProjectMembers = (projectId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/projects/${projectId}/members`, token);
         await fetchMembers();
         return true;
       } else {

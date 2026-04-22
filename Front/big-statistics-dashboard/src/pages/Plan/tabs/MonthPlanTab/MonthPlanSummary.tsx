@@ -9,6 +9,7 @@ import ProgressCell from '../../../../components/DataTableCustomColumn/ProgressC
 import PlanCumulativeChart from './components/PlanCumulativeChart';
 import { MetricCard, DonutChart } from '../../../../components/KPICards';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 // Компонент-обертка для объединения карточки и диаграммы (только для этой страницы)
 interface KPICardWithChartProps {
@@ -433,11 +434,11 @@ const MonthPlanSummary: React.FC<MonthPlanSummaryProps> = ({ year, month }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/MonthPlanFactSummary?year=${year}&month=${month}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(
+        `/api/MonthPlanFactSummary?year=${year}&month=${month}`,
+        undefined,
+        1200
+      );
       setData1(data.table1 || []);
       setData2(data.table2 || []);
     } catch (err) {

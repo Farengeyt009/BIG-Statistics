@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { logPageViewDedup } from '../utils/pageViewLogger';
 
 interface RequirePermissionProps {
   children: ReactNode;
@@ -24,18 +25,7 @@ export const RequirePermission: React.FC<RequirePermissionProps> = ({
   // Логируем посещение страницы
   useEffect(() => {
     if (isAuthenticated && hasPermission(pageKey, permissionType) && token) {
-      // Отправляем запрос на логирование page_view
-      fetch('/api/auth/log-page-view', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ page_key: pageKey }),
-      }).catch(err => {
-        // Игнорируем ошибки логирования
-        console.log('Page view logging failed:', err);
-      });
+      logPageViewDedup(pageKey, token);
     }
   }, [pageKey, isAuthenticated, token]); // Логируем при смене страницы
 

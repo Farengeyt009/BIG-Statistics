@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import i18n from '../i18n';
 
 interface User {
   user_id: number;
@@ -7,7 +8,12 @@ interface User {
   email: string | null;
   is_admin: boolean;
   birthday?: string;
+  department_id?: number | null;
+  department_name?: string | null;
+  department_name_en?: string | null;
+  department_name_zh?: string | null;
   department?: string;
+  preferred_language?: 'en' | 'zh';
 }
 
 interface Permission {
@@ -30,34 +36,72 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const PROFILE_CACHE_TTL_MS = 10000;
+const profileCache = new Map<string, { user: User | null; ts: number }>();
+const profileInFlight = new Map<string, Promise<{ user: User | null; isTokenValid: boolean }>>();
+const normalizePreferredLanguage = (value?: string | null): 'en' | 'zh' =>
+  value && value.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const buildSessionStartKey = (value: string) => `session_started:${value.slice(0, 16)}`;
+  const applyUserLanguage = (profile: User | null) => {
+    if (!profile) return;
+    const override = sessionStorage.getItem('languageOverride');
+    const nextLang = override ? normalizePreferredLanguage(override) : normalizePreferredLanguage(profile.preferred_language);
+    localStorage.setItem('preferredLanguage', normalizePreferredLanguage(profile.preferred_language));
+    if (i18n.language !== nextLang) {
+      i18n.changeLanguage(nextLang);
+    }
+  };
+
   // Функция для загрузки полных данных профиля
   const loadFullProfile = async (token: string): Promise<{ user: User | null; isTokenValid: boolean }> => {
+    const now = Date.now();
+    const cached = profileCache.get(token);
+    if (cached && now - cached.ts < PROFILE_CACHE_TTL_MS) {
+      return { user: cached.user, isTokenValid: true };
+    }
+
+    const inFlight = profileInFlight.get(token);
+    if (inFlight) {
+      return inFlight;
+    }
+
     try {
-      const response = await fetch('/api/users/profile', {
+      const requestPromise = fetch('/api/users/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      });
-      
-      // Если токен истек или невалиден - возвращаем флаг
-      if (response.status === 401) {
-        return { user: null, isTokenValid: false };
-      }
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          return { user: data.user, isTokenValid: true };
+      }).then(async (response) => {
+        // Если токен истек или невалиден - возвращаем флаг
+        if (response.status === 401) {
+          return { user: null, isTokenValid: false };
         }
-      }
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const result = { user: data.user as User, isTokenValid: true };
+            profileCache.set(token, { user: result.user, ts: Date.now() });
+            return result;
+          }
+        }
+
+        return { user: null, isTokenValid: true };
+      });
+
+      profileInFlight.set(token, requestPromise);
+      const result = await requestPromise;
+      profileInFlight.delete(token);
+      return result;
     } catch (error) {
+      profileInFlight.delete(token);
       console.error('Error loading full profile:', error);
     }
     return { user: null, isTokenValid: true }; // Ошибка сети, но токен может быть валидным
@@ -77,6 +121,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!isTokenValid) {
           // Токен истек - очищаем все данные
           console.log('Token expired, logging out...');
+          profileCache.delete(storedToken);
+          profileInFlight.delete(storedToken);
           localStorage.removeItem('authToken');
           localStorage.removeItem('userData');
           localStorage.removeItem('userPermissions');
@@ -95,21 +141,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (fullProfile) {
           setUser(fullProfile);
           localStorage.setItem('userData', JSON.stringify(fullProfile));
+          applyUserLanguage(fullProfile);
         } else {
           // Если профиль не загрузился, используем данные из localStorage
-          setUser(JSON.parse(storedUser));
+          const fallbackUser = JSON.parse(storedUser) as User;
+          setUser(fallbackUser);
+          applyUserLanguage(fallbackUser);
         }
         
         // Логируем начало сессии (Backend проверит дубликаты по времени)
-        fetch('/api/auth/session-start', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${storedToken}`,
-          },
-        }).catch(err => {
-          // Игнорируем ошибки логирования
-          console.log('Session start logging failed:', err);
-        });
+        const sessionStartKey = buildSessionStartKey(storedToken);
+        if (!sessionStorage.getItem(sessionStartKey)) {
+          sessionStorage.setItem(sessionStartKey, '1');
+          fetch('/api/auth/session-start', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+            },
+          }).catch(err => {
+            // Игнорируем ошибки логирования, но разрешаем повторить позже
+            sessionStorage.removeItem(sessionStartKey);
+            console.log('Session start logging failed:', err);
+          });
+        }
       }
       
       setIsLoading(false);
@@ -135,12 +189,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(data.token);
         setUser(data.user);
         setPermissions(data.permissions || []);
+        applyUserLanguage(data.user as User);
 
         // Загружаем полные данные профиля
         const { user: fullProfile } = await loadFullProfile(data.token);
         if (fullProfile) {
           setUser(fullProfile);
           localStorage.setItem('userData', JSON.stringify(fullProfile));
+          applyUserLanguage(fullProfile);
         } else {
           localStorage.setItem('userData', JSON.stringify(data.user));
         }
@@ -164,6 +220,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Логируем выход перед очисткой данных
     const storedToken = localStorage.getItem('authToken');
     if (storedToken) {
+      profileCache.delete(storedToken);
+      profileInFlight.delete(storedToken);
+      sessionStorage.removeItem(buildSessionStartKey(storedToken));
       fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -183,6 +242,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('userData');
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('isAuth');
+    sessionStorage.removeItem('languageOverride');
     
     // Перенаправляем на страницу логина
     window.location.href = '/login';

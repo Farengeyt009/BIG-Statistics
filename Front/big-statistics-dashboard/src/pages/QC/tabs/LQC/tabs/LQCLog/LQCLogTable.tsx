@@ -406,8 +406,13 @@ const LQCLogTable: React.FC<LQCLogTableProps> = ({ data, loading, error, onTable
           onGridReady={onGridReady}
           animateRows={false}
           cellSelection={true}
-          suppressCopyRowsToClipboard={false}
-          rowSelection="multiple"
+          rowSelection={{
+            mode: 'multiRow',
+            copySelectedRows: true,
+            enableClickSelection: false,
+            checkboxes: false,
+            headerCheckbox: false,
+          }}
           getRowId={getRowId}
           sendToClipboard={sendToClipboard}
           onCellKeyDown={onCellKeyDown}

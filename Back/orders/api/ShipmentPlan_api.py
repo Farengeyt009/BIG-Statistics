@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from typing import Any, Dict
 
 from ..service.ShipmentPlan_service import upsert_shipment_plan
+from ..service.ShipmentPlan_Fact_service import clear_shipment_plan_fact_cache
 
 bp = Blueprint("orders_shipment_plan", __name__, url_prefix="/api")
 
@@ -27,9 +28,11 @@ def upsert_shipment_plan_endpoint():
     try:
         if isinstance(body, list):
             result = [handle_one(item) for item in body]
+            clear_shipment_plan_fact_cache()
             return jsonify({"updated": len(result), "data": result}), 200
         else:
             result = handle_one(body)
+            clear_shipment_plan_fact_cache()
             return jsonify({"updated": 1, "data": result}), 200
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400

@@ -2,6 +2,7 @@ import { useEffect, useState, useLayoutEffect, useRef } from 'react';
 import ShipmentLogTable from './ShipmentLogTable';
 import { API_ENDPOINTS } from '../../../../config/api';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 function toYmdLocal(d: Date) {
   const y = d.getFullYear();
@@ -40,8 +41,11 @@ export default function ShipmentLog({ startDate, endDate, reloadToken, rowsOverr
       try {
         const start = toYmdLocal(startDate);
         const end = toYmdLocal(endDate);
-        const res = await fetch(`${API_ENDPOINTS.ORDERS.SHIPMENT}?start_date=${start}&end_date=${end}`);
-        const json = await res.json();
+        const json = await fetchJsonGetDedup<any>(
+          `${API_ENDPOINTS.ORDERS.SHIPMENT}?start_date=${start}&end_date=${end}`,
+          undefined,
+          1200
+        );
         let arr: any[] = [];
         if (Array.isArray(json)) {
           arr = json;

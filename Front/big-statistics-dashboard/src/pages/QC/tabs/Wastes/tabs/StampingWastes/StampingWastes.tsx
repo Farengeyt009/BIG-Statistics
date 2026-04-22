@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import StampingWastesTable from './StampingWastesTable';
+import { fetchJsonGetDedup } from '../../../../../../utils/fetchDedup';
 
 interface Props {
   startDate: Date | null;
@@ -24,9 +25,7 @@ const StampingWastes: React.FC<Props> = ({ startDate, endDate }) => {
       const params = new URLSearchParams();
       if (dateFrom) params.set('date_from', dateFrom);
       if (dateTo)   params.set('date_to',   dateTo);
-      const res = await fetch(`/api/qc/stamping-wastes?${params}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+      const json = await fetchJsonGetDedup<any>(`/api/qc/stamping-wastes?${params.toString()}`, undefined, 1200);
       if (!json.success) throw new Error(json.error || 'Unknown error');
       return json.data as any[];
     },

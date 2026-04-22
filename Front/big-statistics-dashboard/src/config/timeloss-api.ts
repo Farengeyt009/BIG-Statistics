@@ -1,25 +1,24 @@
 import { API_BASE_URL } from './api';
 import { TimeLossRow } from '../pages/Production/tabs/TimeLoss/TimeLossTable';
+import { fetchJsonGetDedup } from '../utils/fetchDedup';
 
 const BASE_URL = `${API_BASE_URL}/timeloss`;
 
 export async function apiGetRows(date: string): Promise<TimeLossRow[]> {
-  const r = await fetch(`${BASE_URL}/entries?date=${encodeURIComponent(date)}`);
-  if (!r.ok) {
-    const error = await r.json();
-    throw new Error(error.error || error.message || 'Failed to load entries');
-  }
-  return r.json();
+  return fetchJsonGetDedup<TimeLossRow[]>(
+    `${BASE_URL}/entries?date=${encodeURIComponent(date)}`,
+    undefined,
+    1200
+  );
 }
 
 export async function apiGetRowsRange(startDate: string, endDate: string): Promise<TimeLossRow[]> {
   const params = new URLSearchParams({ startDate, endDate });
-  const r = await fetch(`${BASE_URL}/entries?${params.toString()}`);
-  if (!r.ok) {
-    const error = await r.json();
-    throw new Error(error.error || error.message || 'Failed to load entries');
-  }
-  return r.json();
+  return fetchJsonGetDedup<TimeLossRow[]>(
+    `${BASE_URL}/entries?${params.toString()}`,
+    undefined,
+    1200
+  );
 }
 
 export async function apiGetRowsRangeWithLimit(startDate: string, endDate: string, limit: number, extra?: { workshop?: string; workcenter?: string }): Promise<TimeLossRow[]> {
@@ -35,12 +34,7 @@ export async function apiGetRowsRangeWithLimit(startDate: string, endDate: strin
 }
 
 export async function apiGetDicts() {
-  const r = await fetch(`${BASE_URL}/dicts`);
-  if (!r.ok) {
-    const error = await r.json();
-    throw new Error(error.error || error.message || 'Failed to load dictionaries');
-  }
-  return r.json();
+  return fetchJsonGetDedup<any>(`${BASE_URL}/dicts`, undefined, 60000);
 }
 
 // Daily Staffing
@@ -60,12 +54,11 @@ export type DailyStaffingRow = {
 
 export async function apiGetDailyStaffing(dateFrom: string, dateTo: string): Promise<DailyStaffingRow[]> {
   const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
-  const r = await fetch(`${API_BASE_URL}/timeloss/daily-staffing?${params.toString()}`);
-  if (!r.ok) {
-    const error = await r.json().catch(() => ({}));
-    throw new Error(error?.detail || error?.error || `Failed to load daily staffing`);
-  }
-  return r.json();
+  return fetchJsonGetDedup<DailyStaffingRow[]>(
+    `${API_BASE_URL}/timeloss/daily-staffing?${params.toString()}`,
+    undefined,
+    1200
+  );
 }
 
 export async function apiPatchCell(id: number, field: keyof TimeLossRow, value: any, rowver?: string) {
@@ -134,10 +127,9 @@ export type OrderTailRow = {
 };
 
 export async function apiGetOrderTails(): Promise<OrderTailRow[]> {
-  const r = await fetch(`${API_BASE_URL}/order-tails`);
-  if (!r.ok) {
-    const error = await r.json().catch(() => ({}));
-    throw new Error(error?.detail || error?.error || 'Failed to load order tails');
-  }
-  return r.json();
+  return fetchJsonGetDedup<OrderTailRow[]>(
+    `${API_BASE_URL}/order-tails`,
+    undefined,
+    5000
+  );
 }

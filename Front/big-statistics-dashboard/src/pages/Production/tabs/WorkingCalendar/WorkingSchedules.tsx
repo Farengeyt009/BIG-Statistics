@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AddWorkingSchedule from './AddWorkingSchedule';
 import { API_ENDPOINTS } from '../../../../config/api';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../../utils/fetchDedup';
 
 interface WorkCenter {
   id: string;
@@ -36,6 +37,7 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
   const [schedules, setSchedules] = useState<any[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [scheduleError, setScheduleError] = useState<string>('');
+  const schedulesListUrl = `${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES}?includeDeleted=false`;
 
   // ✅ ЦВЕТА ДЛЯ КАРТОЧЕК (по ТЗ)
   const cardColors = [
@@ -60,9 +62,9 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
     
     try {
       
-      // ✅ ВРЕМЕННО: Загружаем все графики
-      const response = await fetch(`${API_ENDPOINTS.WORKING_CALENDAR.WORK_SCHEDULES}?includeDeleted=false`);
-      const data = await response.json();
+      // Оставляем текущую бизнес-логику (получаем список и фильтруем на клиенте),
+      // но убираем повторные in-flight/частые дубли через короткий dedup-кэш.
+      const data = await fetchJsonGetDedup<any>(schedulesListUrl, undefined, 2000);
       
       
       if (data.success) {
@@ -131,6 +133,7 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
         });
         
         if (response.ok) {
+          invalidateGetDedup(schedulesListUrl);
           // ✅ Обновляем список после удаления
           if (selectedWorkCenter) {
             loadSchedules(selectedWorkCenter.id);
@@ -163,6 +166,7 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
       });
       
       if (response.ok) {
+        invalidateGetDedup(schedulesListUrl);
         // ✅ Обновляем список после изменения
         if (selectedWorkCenter) {
           loadSchedules(selectedWorkCenter.id);
@@ -198,6 +202,7 @@ const WorkingSchedules: React.FC<WorkingSchedulesProps> = ({ isOpen, onClose, wo
         editMode={!!selectedScheduleForEdit}
         scheduleToEdit={selectedScheduleForEdit}
         onScheduleUpdated={() => {
+          invalidateGetDedup(schedulesListUrl);
           if (selectedWorkCenter) {
             loadSchedules(selectedWorkCenter.id);
           }

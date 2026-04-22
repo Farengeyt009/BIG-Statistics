@@ -10,10 +10,12 @@ from ..service.auth_service import (
     get_user_permissions,
     check_page_permission,
     check_username_available,
-    register_user
+    register_user,
+    normalize_preferred_language,
 )
 from ..service.audit_service import log_action
 from ..service.skud_service import check_empcode_in_skud
+from ..service.departments_service import ensure_departments_schema, validate_active_department
 from ...database.db_connector import get_connection
 
 def get_translated_message(key: str, language: str = 'en') -> str:
@@ -115,6 +117,7 @@ def login():
                 "username": user_data['Username'],
                 "full_name": user_data['FullName'],
                 "email": user_data['Email'],
+                "preferred_language": normalize_preferred_language(user_data.get('preferred_language')),
                 "is_admin": user_data['IsAdmin']
             },
             "permissions": permissions
@@ -532,13 +535,32 @@ def register():
         empcode = data.get('empcode')
         username = data.get('username')
         password = data.get('password')
+        department_id = data.get('department_id')
         email = data.get('email')
+        preferred_language = normalize_preferred_language(data.get('preferred_language'))
         
         # Валидация
-        if not empcode or not username or not password:
+        if not empcode or not username or not password or department_id is None:
             return jsonify({
                 "success": False,
-                "error": "empcode, username and password are required"
+                "error": "empcode, username, password and department_id are required"
+            }), 400
+
+        ensure_departments_schema()
+
+        try:
+            department_id = int(department_id)
+        except (TypeError, ValueError):
+            return jsonify({
+                "success": False,
+                "error": "department_id must be an integer"
+            }), 400
+
+        department = validate_active_department(department_id)
+        if not department:
+            return jsonify({
+                "success": False,
+                "error": "Department not found or inactive"
             }), 400
         
         # Проверяем что empcode есть в СКУД
@@ -558,7 +580,15 @@ def register():
         
         # Регистрируем пользователя
         full_name = str(skud_data.get('empname', ''))
-        new_user = register_user(empcode, username, password, full_name, email)
+        new_user = register_user(
+            empcode=empcode,
+            username=username,
+            password=password,
+            full_name=full_name,
+            department_id=department_id,
+            email=email,
+            preferred_language=preferred_language,
+        )
         
         if not new_user:
             return jsonify({
@@ -598,6 +628,9 @@ def register():
                 "empcode": new_user['empcode'],
                 "full_name": new_user['FullName'],
                 "email": new_user['Email'],
+                "department_id": new_user['department_id'],
+                "department_name": department["name"],
+                "preferred_language": normalize_preferred_language(new_user.get('preferred_language')),
                 "is_admin": new_user['IsAdmin']
             },
             "permissions": permissions

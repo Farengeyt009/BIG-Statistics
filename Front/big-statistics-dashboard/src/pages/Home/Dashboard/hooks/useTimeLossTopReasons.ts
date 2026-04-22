@@ -11,6 +11,10 @@ interface TimeLossData {
   fact_time: number;
 }
 
+const TIME_LOSS_CACHE_TTL_MS = 10000;
+const timeLossCache = new Map<string, { data: TimeLossData; ts: number }>();
+const timeLossInFlight = new Map<string, Promise<TimeLossData>>();
+
 export const useTimeLossTopReasons = () => {
   const [data, setData] = useState<TimeLossData>({ reasons: [], fact_time: 0 });
   const [loading, setLoading] = useState(true);
@@ -22,15 +26,35 @@ export const useTimeLossTopReasons = () => {
       setError(null);
       
       try {
-        const response = await fetch('/api/Dashboard/TimeLossTopReasons');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const cacheKey = 'time_loss_top_reasons';
+        const now = Date.now();
+        const cached = timeLossCache.get(cacheKey);
+        if (cached && now - cached.ts < TIME_LOSS_CACHE_TTL_MS) {
+          setData(cached.data);
+          return;
         }
-        
-        const result = await response.json();
+
+        const inFlight = timeLossInFlight.get(cacheKey);
+        if (inFlight) {
+          const sharedData = await inFlight;
+          setData(sharedData);
+          return;
+        }
+
+        const requestPromise = fetch('/api/Dashboard/TimeLossTopReasons').then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json() as Promise<TimeLossData>;
+        });
+
+        timeLossInFlight.set(cacheKey, requestPromise);
+        const result = await requestPromise;
+        timeLossInFlight.delete(cacheKey);
+        timeLossCache.set(cacheKey, { data: result, ts: Date.now() });
         setData(result);
       } catch (err) {
+        timeLossInFlight.delete('time_loss_top_reasons');
         console.error('Error fetching time loss top reasons:', err);
         setError(err instanceof Error ? err.message : 'Error loading data');
       } finally {

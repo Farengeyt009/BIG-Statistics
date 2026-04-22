@@ -7,6 +7,7 @@ import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { PageLayout, ContentLayout } from '../../components/Layout';
 import { useTranslation } from 'react-i18next';
 import UserPageTranslation from './UserPageTranslation.json';
+import { fetchJsonGetDedup } from '../../utils/fetchDedup';
 
 const UserPage: React.FC = () => {
   const { user, token } = useAuth();
@@ -24,6 +25,9 @@ const UserPage: React.FC = () => {
   }, [i18n]);
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [preferredLanguage, setPreferredLanguage] = useState<'en' | 'zh'>(
+    user?.preferred_language === 'zh' ? 'zh' : 'en'
+  );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -31,7 +35,7 @@ const UserPage: React.FC = () => {
   const [avatarSrc, setAvatarSrc] = useState('/avatar.png');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editingField, setEditingField] = useState<'name' | 'email' | 'password' | null>(null);
+  const [editingField, setEditingField] = useState<'name' | 'email' | 'password' | 'language' | null>(null);
   const [showWeChatModal, setShowWeChatModal] = useState(false);
   const { binding, getBinding, unbindWeChat } = useWeChatBinding();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,12 +46,11 @@ const UserPage: React.FC = () => {
       if (!user?.user_id || !token) return;
       
       try {
-        const response = await fetch('/api/users/avatar', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
+        const data = await fetchJsonGetDedup<any>(
+          '/api/users/avatar',
+          token,
+          1200
+        );
         
         if (data.success && data.filename) {
           setAvatarSrc(`/${data.filename}?t=${Date.now()}`);
@@ -63,6 +66,18 @@ const UserPage: React.FC = () => {
     
     loadAvatar();
   }, [user?.user_id, token]);
+
+  React.useEffect(() => {
+    setPreferredLanguage(user?.preferred_language === 'zh' ? 'zh' : 'en');
+  }, [user?.preferred_language]);
+
+  const departmentLabel = React.useMemo(() => {
+    if (!user) return '';
+    if (i18n.language.startsWith('zh')) {
+      return user.department_name_zh || user.department_name_en || user.department_name || user.department || '';
+    }
+    return user.department_name_en || user.department_name || user.department_name_zh || user.department || '';
+  }, [i18n.language, user]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -125,13 +140,13 @@ const UserPage: React.FC = () => {
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateProfile = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
     setMessage(null);
     setLoading(true);
 
     try {
-      const updateData: { full_name?: string; email?: string; password?: string } = {};
+      const updateData: { full_name?: string; email?: string; password?: string; preferred_language?: 'en' | 'zh' } = {};
 
       // Если имя изменилось
       if (fullName && fullName !== user?.full_name) {
@@ -156,6 +171,10 @@ const UserPage: React.FC = () => {
           return;
         }
         updateData.password = password;
+      }
+
+      if (preferredLanguage !== (user?.preferred_language === 'zh' ? 'zh' : 'en')) {
+        updateData.preferred_language = preferredLanguage;
       }
 
       if (Object.keys(updateData).length === 0) {
@@ -184,7 +203,15 @@ const UserPage: React.FC = () => {
           const userData = JSON.parse(storedUser);
           userData.full_name = data.user.full_name;
           userData.email = data.user.email;
+          userData.preferred_language = data.user.preferred_language;
           localStorage.setItem('userData', JSON.stringify(userData));
+        }
+
+        const savedLanguage = data.user.preferred_language === 'zh' ? 'zh' : 'en';
+        localStorage.setItem('preferredLanguage', savedLanguage);
+        sessionStorage.removeItem('languageOverride');
+        if (i18n.language !== savedLanguage) {
+          i18n.changeLanguage(savedLanguage);
         }
 
         // Очищаем поля пароля
@@ -205,7 +232,7 @@ const UserPage: React.FC = () => {
     }
   };
 
-  const handleFieldEdit = (field: 'name' | 'email' | 'password') => {
+  const handleFieldEdit = (field: 'name' | 'email' | 'password' | 'language') => {
     setEditingField(field);
     setEditMode(true);
   };
@@ -215,6 +242,7 @@ const UserPage: React.FC = () => {
     setEditMode(false);
     setPassword('');
     setConfirmPassword('');
+    setPreferredLanguage(user?.preferred_language === 'zh' ? 'zh' : 'en');
   };
 
   const handleWeChatQRGenerated = (qrData: string) => {
@@ -302,11 +330,14 @@ const UserPage: React.FC = () => {
                     <span className="font-medium">{t('birthday')}:</span> {new Date(user.birthday).toLocaleDateString('ru-RU')}
                   </p>
                 )}
-                {user?.department && (
+                {departmentLabel && (
                   <p className="text-base text-gray-500">
-                    <span className="font-medium">{t('department')}:</span> {user.department}
+                    <span className="font-medium">{t('department')}:</span> {departmentLabel}
                   </p>
                 )}
+                <p className="text-base text-gray-500">
+                  <span className="font-medium">{t('preferredLanguage')}:</span> {preferredLanguage === 'zh' ? t('languageChinese') : t('languageEnglish')}
+                </p>
             </div>
           </div>
         </div>
@@ -469,6 +500,48 @@ const UserPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          <div
+            onClick={() => handleFieldEdit('language')}
+            className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1 13-4-4m0 0 4-4m-4 4h12m-6 6h8" />
+                </svg>
+              </div>
+              <span className="text-sm font-medium text-gray-700">{t('changePreferredLanguage')}</span>
+            </div>
+          </div>
+
+          {editingField === 'language' && (
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-3">
+                <select
+                  value={preferredLanguage}
+                  onChange={(e) => setPreferredLanguage(e.target.value === 'zh' ? 'zh' : 'en')}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="en">{t('languageEnglish')}</option>
+                  <option value="zh">{t('languageChinese')}</option>
+                </select>
+                <button
+                  onClick={handleUpdateProfile}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  {t('save')}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  {t('cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+
 
           {/* WeChat Integration */}
           {binding ? (

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useComments } from '../hooks/useComments';
 import { Avatar } from './ui/Avatar';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
 
 interface CommentsSectionProps {
   taskId: number;
@@ -11,6 +13,13 @@ interface CommentsSectionProps {
 }
 
 export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, currentUserId, onCountChange }) => {
+  const { t, i18n } = useTranslation('taskManager');
+  React.useEffect(() => {
+    const lang = i18n.language;
+    if (TaskManagerTranslation[lang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(lang, 'taskManager', TaskManagerTranslation[lang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
   const { comments, loading, createComment, updateComment, deleteComment } = useComments(taskId);
 
   // Обновляем счетчик только после первой загрузки данных
@@ -48,7 +57,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
   };
 
   const handleDelete = async (commentId: number) => {
-    if (confirm('Удалить комментарий?')) {
+    if (confirm(t('commentsDeleteConfirm'))) {
       await deleteComment(commentId);
     }
   };
@@ -61,7 +70,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
   if (loading && comments.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-gray-500 text-sm">Загрузка комментариев...</div>
+        <div className="text-gray-500 text-sm">{t('commentsLoading')}</div>
       </div>
     );
   }
@@ -72,8 +81,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
       <div className="space-y-4">
         {comments.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            <p className="text-sm">Пока нет комментариев</p>
-            <p className="text-xs mt-1">Будьте первым!</p>
+            <p className="text-sm">{t('commentsEmpty')}</p>
+            <p className="text-xs mt-1">{t('commentsBeFirst')}</p>
           </div>
         ) : (
           comments.map((comment) => (
@@ -95,7 +104,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
                     {format(new Date(comment.created_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
                   </span>
                   {comment.updated_at !== comment.created_at && (
-                    <span className="text-xs text-gray-400">(изменено)</span>
+                    <span className="text-xs text-gray-400">{t('commentsEdited')}</span>
                   )}
                 </div>
 
@@ -115,7 +124,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
                         disabled={isSubmitting}
                         className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
                       >
-                        Сохранить
+                        {t('commentsSave')}
                       </button>
                       <button
                         onClick={() => {
@@ -124,7 +133,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
                         }}
                         className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200"
                       >
-                        Отмена
+                        {t('taskModalCancel')}
                       </button>
                     </div>
                   </div>
@@ -140,13 +149,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
                           onClick={() => startEdit(comment)}
                           className="text-xs text-gray-500 hover:text-gray-700"
                         >
-                          Редактировать
+                          {t('commentsEdit')}
                         </button>
                         <button
                           onClick={() => handleDelete(comment.id)}
                           className="text-xs text-gray-500 hover:text-red-600"
                         >
-                          Удалить
+                          {t('commentsDelete')}
                         </button>
                       </div>
                     )}
@@ -162,7 +171,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
       <div className="border-t pt-4">
         <div className="flex gap-3">
           <Avatar 
-            name="Вы" 
+            name={t('commentsYou')} 
             imageUrl={`/avatar_${currentUserId}.png`}
             size="sm" 
           />
@@ -172,7 +181,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
               onChange={(e) => setNewComment(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
               rows={3}
-              placeholder="Добавить комментарий..."
+              placeholder={t('commentsPlaceholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                   handleSubmit();
@@ -181,14 +190,14 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ taskId, curren
             />
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-gray-500">
-                Ctrl+Enter для отправки
+                {t('commentsCtrlEnter')}
               </span>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !newComment.trim()}
                 className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Отправка...' : 'Комментировать'}
+                {isSubmitting ? t('commentsSending') : t('commentsSubmit')}
               </button>
             </div>
           </div>

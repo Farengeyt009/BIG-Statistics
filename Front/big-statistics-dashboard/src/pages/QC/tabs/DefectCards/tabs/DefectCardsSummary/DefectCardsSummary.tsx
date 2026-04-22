@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import DefectCardsSummaryTable from './DefectCardsSummaryTable';
 import DefectCardsSummaryChart from './DefectCardsSummaryChart';
+import { fetchJsonGetDedup } from '../../../../../../utils/fetchDedup';
 
 const toYmdLocal = (d: Date) => {
   const y = d.getFullYear();
@@ -21,13 +22,15 @@ const DefectCardsSummary: React.FC<Props> = ({ startDate, endDate }) => {
   const { data = [], isLoading, isFetching, error } = useQuery<any[]>({
     queryKey: ['qc-defect-cards-summary-table', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled: Boolean(startDate && endDate),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('date_from', toYmdLocal(startDate));
       if (endDate)   params.append('date_to',   toYmdLocal(endDate));
-      const response = await fetch(`/api/qc/defect-cards?${params.toString()}`, { signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
+      const result = await fetchJsonGetDedup<any>(
+        `/api/qc/defect-cards?${params.toString()}`,
+        undefined,
+        1200
+      );
       return result?.data || [];
     },
     staleTime: 5 * 60 * 1000,

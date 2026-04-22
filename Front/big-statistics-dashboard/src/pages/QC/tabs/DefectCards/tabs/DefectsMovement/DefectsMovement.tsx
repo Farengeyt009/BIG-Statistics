@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import MovementTable from './MovementTable';
+import { fetchJsonGetDedup } from '../../../../../../utils/fetchDedup';
 
 const toYmdLocal = (d: Date) => {
   const y = d.getFullYear();
@@ -18,13 +19,15 @@ const DefectsMovement: React.FC<DefectsMovementProps> = ({ startDate, endDate })
   const { data = [], isLoading, isFetching, error } = useQuery<any[]>({
     queryKey: ['qc-defects-movement', startDate ? toYmdLocal(startDate) : null, endDate ? toYmdLocal(endDate) : null],
     enabled: Boolean(startDate && endDate),
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('date_from', toYmdLocal(startDate));
       if (endDate) params.append('date_to', toYmdLocal(endDate));
-      const response = await fetch(`/api/qc/defects-movement?${params.toString()}`, { signal });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
+      const result = await fetchJsonGetDedup<any>(
+        `/api/qc/defects-movement?${params.toString()}`,
+        undefined,
+        1200
+      );
       return result?.data || [];
     },
     staleTime: 5 * 60 * 1000,

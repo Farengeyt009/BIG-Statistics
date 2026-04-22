@@ -311,7 +311,7 @@ const ShipmentLogTable: React.FC<Props> = ({ rows: externalRows = [], suppressLo
           getRowId={(p: any) => makeRowId(p.data)}
           onGridReady={(p) => { setGridApi(p.api); }}
           animateRows={false}
-          rowSelection="multiple"
+          rowSelection={{ mode: 'multiRow', copySelectedRows: true, enableClickSelection: false, checkboxes: false, headerCheckbox: false } as any}
           cellSelection={true}
           statusBar={{ statusPanels: [{ statusPanel: 'agAggregationComponent', align: 'left' }] }}
           sendToClipboard={() => {

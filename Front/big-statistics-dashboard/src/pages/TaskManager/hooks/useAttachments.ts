@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 const API_BASE = '';
 
@@ -26,11 +27,8 @@ export const useAttachments = (taskId: number) => {
     setError(null);
     try {
       const token = getToken();
-      const response = await fetch(`${API_BASE}/api/task-manager/attachments/task/${taskId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      const data = await response.json();
+      const url = `${API_BASE}/api/task-manager/attachments/task/${taskId}`;
+      const data = await fetchJsonGetDedup<any>(url, token, 500);
       if (data.success) {
         setAttachments(data.data);
         // Уведомляем о количестве
@@ -63,6 +61,7 @@ export const useAttachments = (taskId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/attachments/task/${taskId}`, token);
         await fetchAttachments();
         return true;
       } else {
@@ -105,6 +104,42 @@ export const useAttachments = (taskId: number) => {
       });
   }, []);
 
+  const previewImage = useCallback(async (attachmentId: number): Promise<string | null> => {
+    try {
+      const token = getToken();
+      const url = `${API_BASE}/api/task-manager/attachments/${attachmentId}/preview`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Ошибка предпросмотра файла');
+      }
+      const blob = await response.blob();
+      return window.URL.createObjectURL(blob);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+      return null;
+    }
+  }, []);
+
+  const fetchThumbnail = useCallback(async (attachmentId: number): Promise<string | null> => {
+    try {
+      const token = getToken();
+      const url = `${API_BASE}/api/task-manager/attachments/${attachmentId}/thumbnail`;
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const blob = await response.blob();
+      return window.URL.createObjectURL(blob);
+    } catch {
+      return null;
+    }
+  }, []);
+
   const deleteAttachment = useCallback(async (attachmentId: number) => {
     try {
       const token = getToken();
@@ -115,6 +150,7 @@ export const useAttachments = (taskId: number) => {
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/attachments/task/${taskId}`, token);
         await fetchAttachments();
         return true;
       } else {
@@ -143,6 +179,8 @@ export const useAttachments = (taskId: number) => {
     fetchAttachments,
     uploadFile,
     downloadFile,
+    previewImage,
+    fetchThumbnail,
     deleteAttachment,
   };
 };

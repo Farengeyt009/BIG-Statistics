@@ -771,7 +771,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
   }, [getFilterKey, filteredRows, rows]);
 
   const columns = useMemo<ColDef<LocalRow>[]>(() => [
-    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', exportAsDate: true, width: 160,
+    { field: 'OnlyDate', headerName: t('timeLossTable.date') as string, editable: (p: any) => canEditFull && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', context: { exportAsDate: true }, width: 160,
       cellEditorParams: {
         maxDate: getMaxAllowedDate(),
       },
@@ -908,10 +908,6 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
         },
       },
       valueParser: p => parseNumberFromText(p.newValue),
-      clipboardValueGetter: (p: any) => {
-        const n = Number(p?.data?.ManHours);
-        return Number.isFinite(n) ? n : null;
-      },
       valueFormatter: params => {
         const v = params.value;
         if (v === null || v === undefined || v === '') return '';
@@ -930,7 +926,7 @@ const TimeLossTable: React.FC<Props> = ({ date, startDate, endDate, initialWorkS
       filterParams: { includeBlanksInFilter: true, refreshValuesOnOpen: true, values: (params: any) => collectFilterValuesIgnoringSelf(params, 'Responsible', (a, b) => a.localeCompare(b)) },
       valueFormatter: p => { const v = p.value; if (v == null || v === '') return ''; const s = String(v).trim(); return s.toLowerCase() === 'nan' ? '' : s; },
     },
-    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', exportAsDate: true, width: 160,
+    { field: 'CompletedDate', headerName: t('timeLossTable.completedDate') as string, editable: (p: any) => (canEditFull || canEditLimited) && (editMode || !!(p?.data as any)?._isNew), cellEditor: 'agDateStringCellEditor', context: { exportAsDate: true }, width: 160,
       filter: 'agSetColumnFilter',
       filterValueGetter: (p: any) => String(normalizeDate(p?.data?.CompletedDate) ?? ''),
       filterParams: {

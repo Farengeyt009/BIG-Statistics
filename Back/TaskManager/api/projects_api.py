@@ -129,6 +129,30 @@ def delete_project(project_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@bp.route("/<int:project_id>/favorite", methods=["PUT"])
+def set_project_favorite(project_id):
+    """Пометить/снять проект как избранный для текущего пользователя"""
+    try:
+        user_data = get_current_user()
+        if not user_data:
+            return jsonify({"success": False, "error": "Не авторизован"}), 401
+
+        data = request.get_json() or {}
+        if "is_favorite" not in data:
+            return jsonify({"success": False, "error": "is_favorite обязательно"}), 400
+
+        ProjectsService.set_project_favorite(
+            project_id=project_id,
+            user_id=user_data["user_id"],
+            is_favorite=bool(data.get("is_favorite"))
+        )
+        return jsonify({"success": True, "message": "Избранное обновлено"}), 200
+    except PermissionError as e:
+        return jsonify({"success": False, "error": str(e)}), 403
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ============= ENDPOINTS - КАТЕГОРИИ =============
 
 @bp.route("/categories/all", methods=["GET"])

@@ -4,9 +4,15 @@ Fetches data from QC.Stamping_Weight_Summary.
 """
 from __future__ import annotations
 
+import threading
+import time
 from typing import Any, Dict, List, Optional
 
 from ...database.db_connector import get_connection
+
+_CACHE_TTL_SEC = 10.0
+_cache_lock = threading.Lock()
+_cache: Dict[tuple, tuple[float, List[Dict[str, Any]]]] = {}
 
 
 def _fetch_query(conn, sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
@@ -31,6 +37,13 @@ def fetch_stamping_wastes(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
+    cache_key = (date_from or "", date_to or "")
+    now = time.time()
+    with _cache_lock:
+        cached = _cache.get(cache_key)
+        if cached and (now - cached[0]) < _CACHE_TTL_SEC:
+            return cached[1]
+
     conditions: list = []
     params: list = []
 
@@ -65,4 +78,17 @@ def fetch_stamping_wastes(
     """
 
     with get_connection() as conn:
-        return _fetch_query(conn, sql, tuple(params))
+        result = _fetch_query(conn, sql, tuple(params))
+
+    with _cache_lock:
+        _cache[cache_key] = (time.time(), result)
+        # Keep cache compact in long-running process.
+        if len(_cache) > 256:
+            keys_to_delete = [
+                key for key, (ts, _) in _cache.items()
+                if (time.time() - ts) >= _CACHE_TTL_SEC
+            ]
+            for key in keys_to_delete:
+                _cache.pop(key, None)
+
+    return result

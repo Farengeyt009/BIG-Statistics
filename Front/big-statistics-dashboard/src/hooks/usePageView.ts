@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { logPageViewDedup } from '../utils/pageViewLogger';
 
 /**
  * Хук для логирования посещения страницы
@@ -15,18 +16,7 @@ export const usePageView = (pageKey: string) => {
 
   useEffect(() => {
     if (isAuthenticated && token && pageKey) {
-      // Отправляем запрос на логирование page_view
-      fetch('/api/auth/log-page-view', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ page_key: pageKey }),
-      }).catch(err => {
-        // Игнорируем ошибки логирования (не мешаем работе приложения)
-        console.log('Page view logging failed:', err);
-      });
+      logPageViewDedup(pageKey, token);
     }
   }, [pageKey, isAuthenticated, token]);
 };

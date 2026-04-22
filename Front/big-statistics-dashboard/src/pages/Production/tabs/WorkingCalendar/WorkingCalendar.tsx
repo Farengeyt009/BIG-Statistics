@@ -9,6 +9,7 @@ import { API_ENDPOINTS } from '../../../../config/api';
 import { YearMonthPicker } from '../../../../components/DatePicker';
 import { useCalendarQuery } from './apiHooks';
 import { useAuth } from '../../../../context/AuthContext';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 interface WorkCenter {
   id: string;
@@ -108,8 +109,11 @@ const WorkingCalendar: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_WORKSHOPS);
-        const json = await res.json();
+        const json = await fetchJsonGetDedup<any>(
+          API_ENDPOINTS.WORKING_CALENDAR.CALENDAR_WORKSHOPS,
+          undefined,
+          5000
+        );
         const items: WorkshopOption[] = (json?.data || []).map((w: any) => ({
           id: String(w.workShopId || w.WorkShop_CustomWS || w.WorkShopId),
           name: currentLanguage === 'zh' ? (w.WorkShopName_ZH || w.WorkShopName_EN || w.workShopId) : (currentLanguage === 'en' ? (w.WorkShopName_EN || w.WorkShopName_ZH || w.workShopId) : (w.WorkShopName_EN || w.WorkShopName_ZH || w.workShopId))

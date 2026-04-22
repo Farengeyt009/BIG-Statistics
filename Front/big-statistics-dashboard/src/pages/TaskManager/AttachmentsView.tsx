@@ -7,10 +7,6 @@ import TaskManagerTranslation from './TaskManagerTranslation.json';
 
 interface AttachmentsViewProps {
   projectId: number;
-  onBackToProjects?: () => void;
-  onOpenSettings?: () => void;
-  viewType?: 'list' | 'grid' | 'attachments';
-  onViewTypeChange?: (viewType: 'list' | 'grid' | 'attachments') => void;
   onTaskClick?: (taskId: number) => void;
 }
 

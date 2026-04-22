@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssigneeSelector } from './AssigneeSelector';
 import TaskManagerTranslation from '../TaskManagerTranslation.json';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 interface DefaultAssigneesSettingsProps {
   projectId: number;
@@ -30,10 +31,11 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
     const fetchProject = async () => {
       try {
         const token = getToken();
-        const response = await fetch(`${API_BASE}/api/task-manager/projects/${projectId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        const data = await response.json();
+        const data = await fetchJsonGetDedup<any>(
+          `${API_BASE}/api/task-manager/projects/${projectId}`,
+          token,
+          1000
+        );
         if (data.success && data.data) {
           setDefaultAssignee(data.data.default_assignee_id || null);
           setDefaultSubtaskAssignee(data.data.default_subtask_assignee_id || null);
@@ -63,6 +65,7 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
 
       const data = await response.json();
       if (data.success) {
+        invalidateGetDedup(`${API_BASE}/api/task-manager/projects/${projectId}`, token);
         alert(t('defaultAssigneesSettingsSaved'));
       }
     } catch (err) {
@@ -74,51 +77,56 @@ export const DefaultAssigneesSettings: React.FC<DefaultAssigneesSettingsProps> =
   };
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('defaultAssigneesTitle')}</h3>
-      <p className="text-sm text-gray-600 mb-6">
-        {t('defaultAssigneesDescription')}
-      </p>
+    <div className="flex justify-center">
+      <div className="w-full max-w-xl space-y-3">
 
-      <div className="space-y-6 max-w-md">
-        {/* Исполнитель для основных задач */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('defaultAssigneesMainTask')}
-          </label>
-          <AssigneeSelector
-            projectId={projectId}
-            assigneeId={defaultAssignee || undefined}
-            assigneeName={undefined}
-            onUpdate={setDefaultAssignee}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {t('defaultAssigneesMainTaskDesc')}
-          </p>
+        {/* Assignees card */}
+        <div className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+          <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+            <span className="text-sm font-semibold text-gray-700">{t('defaultAssigneesTitle')}</span>
+          </div>
+          <div className="divide-y divide-gray-100">
+
+            {/* Main task assignee */}
+            <div className="px-4 py-3.5 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-800">{t('defaultAssigneesMainTask')}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{t('defaultAssigneesMainTaskDesc')}</div>
+              </div>
+              <div className="shrink-0 w-48">
+                <AssigneeSelector
+                  projectId={projectId}
+                  assigneeId={defaultAssignee || undefined}
+                  assigneeName={undefined}
+                  onUpdate={setDefaultAssignee}
+                />
+              </div>
+            </div>
+
+            {/* Subtask assignee */}
+            <div className="px-4 py-3.5 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-800">{t('defaultAssigneesSubtask')}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{t('defaultAssigneesSubtaskDesc')}</div>
+              </div>
+              <div className="shrink-0 w-48">
+                <AssigneeSelector
+                  projectId={projectId}
+                  assigneeId={defaultSubtaskAssignee || undefined}
+                  assigneeName={undefined}
+                  onUpdate={setDefaultSubtaskAssignee}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Исполнитель для подзадач */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('defaultAssigneesSubtask')}
-          </label>
-          <AssigneeSelector
-            projectId={projectId}
-            assigneeId={defaultSubtaskAssignee || undefined}
-            assigneeName={undefined}
-            onUpdate={setDefaultSubtaskAssignee}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {t('defaultAssigneesSubtaskDesc')}
-          </p>
-        </div>
-
-        {/* Кнопка сохранения */}
-        <div className="pt-4 border-t">
+        {/* Save button */}
+        <div className="flex justify-end">
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {isSaving ? t('defaultAssigneesSaving') : t('defaultAssigneesSaveSettings')}
           </button>

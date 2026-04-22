@@ -3,7 +3,7 @@ Flask API: управление профилем пользователя
 """
 
 from flask import Blueprint, jsonify, request
-from ..service.auth_service import verify_jwt_token
+from ..service.auth_service import verify_jwt_token, normalize_preferred_language
 from ..service.users_service import update_user_profile, get_user_by_id
 from ..service.avatar_service import save_avatar, get_avatar_path
 
@@ -86,8 +86,13 @@ def update_profile():
         
         full_name = data.get('full_name')
         password = data.get('password')
+        email = data.get('email') if 'email' in data else None
+        preferred_language = (
+            normalize_preferred_language(data.get('preferred_language'))
+            if 'preferred_language' in data else None
+        )
         
-        if not full_name and not password:
+        if full_name is None and password is None and email is None and preferred_language is None:
             return jsonify({"success": False, "error": "Укажите хотя бы одно поле для обновления"}), 400
         
         # Валидация пароля (минимум 6 символов)
@@ -97,7 +102,9 @@ def update_profile():
         updated_user = update_user_profile(
             user_id=user_data['user_id'],
             full_name=full_name,
-            password=password
+            password=password,
+            email=email,
+            preferred_language=preferred_language,
         )
         
         return jsonify({"success": True, "user": updated_user, "message": "Профиль обновлен успешно"}), 200

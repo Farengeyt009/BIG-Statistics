@@ -34,49 +34,61 @@ class CommentsService:
         """
         Получить все комментарии задачи
         """
-        if not CommentsService.check_task_access(task_id, user_id):
-            raise PermissionError("Нет доступа к задаче")
-        
         conn = get_connection()
         cursor = conn.cursor()
-        
-        query = """
-            SELECT 
-                c.id,
-                c.task_id,
-                c.user_id,
-                u.Username,
-                u.FullName,
-                c.comment,
-                c.created_at,
-                c.updated_at
-            FROM Task_Manager.task_comments c
-            INNER JOIN Users.users u ON c.user_id = u.UserID
-            WHERE c.task_id = ?
-            ORDER BY c.created_at ASC
-        """
-        
-        cursor.execute(query, (task_id,))
-        columns = [column[0] for column in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        cursor.close()
-        conn.close()
-        
-        return results
+
+        try:
+            cursor.execute("""
+                SELECT 1 
+                FROM Task_Manager.tasks t
+                INNER JOIN Task_Manager.project_members pm ON t.project_id = pm.project_id
+                WHERE t.id = ? AND pm.user_id = ?
+            """, (task_id, user_id))
+
+            if not cursor.fetchone():
+                raise PermissionError("Нет доступа к задаче")
+
+            query = """
+                SELECT 
+                    c.id,
+                    c.task_id,
+                    c.user_id,
+                    u.Username,
+                    u.FullName,
+                    c.comment,
+                    c.created_at,
+                    c.updated_at
+                FROM Task_Manager.task_comments c
+                INNER JOIN Users.users u ON c.user_id = u.UserID
+                WHERE c.task_id = ?
+                ORDER BY c.created_at ASC
+            """
+
+            cursor.execute(query, (task_id,))
+            columns = [column[0] for column in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+            conn.close()
     
     @staticmethod
     def create_comment(task_id: int, user_id: int, comment: str) -> int:
         """
         Создать комментарий
         """
-        if not CommentsService.check_task_access(task_id, user_id):
-            raise PermissionError("Нет доступа к задаче")
-        
         conn = get_connection()
         cursor = conn.cursor()
         
         try:
+            cursor.execute("""
+                SELECT 1 
+                FROM Task_Manager.tasks t
+                INNER JOIN Task_Manager.project_members pm ON t.project_id = pm.project_id
+                WHERE t.id = ? AND pm.user_id = ?
+            """, (task_id, user_id))
+            if not cursor.fetchone():
+                raise PermissionError("Нет доступа к задаче")
+
             cursor.execute("""
                 INSERT INTO Task_Manager.task_comments (task_id, user_id, comment)
                 OUTPUT INSERTED.id
@@ -118,7 +130,7 @@ class CommentsService:
             
             cursor.execute("""
                 UPDATE Task_Manager.task_comments 
-                SET comment = ?, updated_at = GETDATE()
+                SET comment = ?, updated_at = GETUTCDATE()
                 WHERE id = ?
             """, (comment, comment_id))
             

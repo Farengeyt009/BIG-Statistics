@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { fetchJsonGetDedup } from '../utils/fetchDedup';
 
 interface WeChatBinding {
   id: number;
@@ -24,13 +25,11 @@ export const useWeChatBinding = () => {
       setError(null);
       
       const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:5000/api/wechat/binding', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(
+        'http://localhost:5000/api/wechat/binding',
+        token,
+        1200
+      );
       
       if (data.success) {
         setBinding(data.data);

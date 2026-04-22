@@ -4,9 +4,30 @@
 from Back.database.db_connector import get_connection
 from typing import List, Dict, Optional
 import json
+import time
 
 
 class ProjectsService:
+    _members_cache_ttl_sec = 30
+    _members_cache: Dict[int, Dict] = {}
+
+    @staticmethod
+    def _get_cached_members(project_id: int) -> Optional[List[Dict]]:
+        entry = ProjectsService._members_cache.get(project_id)
+        if not entry:
+            return None
+        if time.time() - entry['ts'] > ProjectsService._members_cache_ttl_sec:
+            ProjectsService._members_cache.pop(project_id, None)
+            return None
+        return entry['members']
+
+    @staticmethod
+    def _set_cached_members(project_id: int, members: List[Dict]) -> None:
+        ProjectsService._members_cache[project_id] = {'ts': time.time(), 'members': members}
+
+    @staticmethod
+    def _invalidate_members_cache(project_id: int) -> None:
+        ProjectsService._members_cache.pop(project_id, None)
     
     @staticmethod
     def get_user_projects(user_id: int) -> List[Dict]:
@@ -27,6 +48,7 @@ class ProjectsService:
                 p.owner_id,
                 u.Username as owner_name,
                 pm.role as user_role,
+                pm.is_favorite,
                 p.has_workflow_permissions,
                 p.created_at,
                 p.updated_at,
@@ -43,33 +65,71 @@ class ProjectsService:
         cursor.execute(query, (user_id,))
         columns = [column[0] for column in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        # Получаем участников для каждого проекта
-        for project in results:
-            cursor.execute("""
-                SELECT TOP 4
+
+        # Получаем участников всех проектов одним запросом (без N+1)
+        if results:
+            project_ids = [project['id'] for project in results]
+            placeholders = ','.join(['?'] * len(project_ids))
+            cursor.execute(f"""
+                SELECT
+                    pm.project_id,
                     pm.user_id,
                     u.Username as username,
                     u.FullName as full_name
                 FROM Task_Manager.project_members pm
                 INNER JOIN Users.users u ON pm.user_id = u.UserID
-                WHERE pm.project_id = ?
-                ORDER BY 
+                WHERE pm.project_id IN ({placeholders})
+                ORDER BY
+                    pm.project_id,
                     CASE pm.role
                         WHEN 'owner' THEN 1
                         WHEN 'admin' THEN 2
                         WHEN 'member' THEN 3
                         WHEN 'viewer' THEN 4
                     END
-            """, (project['id'],))
-            
-            members_columns = [column[0] for column in cursor.description]
-            project['members'] = [dict(zip(members_columns, row)) for row in cursor.fetchall()]
+            """, project_ids)
+
+            members_by_project = {project_id: [] for project_id in project_ids}
+            for project_id, member_user_id, member_username, member_full_name in cursor.fetchall():
+                members_by_project[project_id].append({
+                    'user_id': member_user_id,
+                    'username': member_username,
+                    'full_name': member_full_name
+                })
+
+            for project in results:
+                project['members'] = members_by_project.get(project['id'], [])
         
         cursor.close()
         conn.close()
         
         return results
+
+    @staticmethod
+    def set_project_favorite(project_id: int, user_id: int, is_favorite: bool) -> bool:
+        """
+        Установить/снять флаг избранного проекта для конкретного пользователя.
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE Task_Manager.project_members
+                SET is_favorite = ?
+                WHERE project_id = ? AND user_id = ?
+            """, (1 if is_favorite else 0, project_id, user_id))
+
+            if cursor.rowcount == 0:
+                raise PermissionError("Нет доступа к проекту")
+
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            cursor.close()
+            conn.close()
     
     @staticmethod
     def get_project_by_id(project_id: int, user_id: int) -> Optional[Dict]:
@@ -139,19 +199,18 @@ class ProjectsService:
             
             # Создаем дефолтные статусы
             default_statuses = [
-                ('Новая', '#94a3b8', 0, True, False),
-                ('В работе', '#3b82f6', 1, False, False),
-                ('На проверке', '#f59e0b', 2, False, False),
-                ('Завершена', '#10b981', 3, False, True),
-                ('Отменена', '#ef4444', 4, False, True),
+                ('Новая',    '#94a3b8', 0, True,  False, 'new',         True),
+                ('В работе', '#3b82f6', 1, False, False, 'in_progress', True),
+                ('Завершена','#10b981', 2, False, True,  'done',        True),
+                ('Отменена', '#ef4444', 3, False, True,  'canceled',    True),
             ]
-            
-            for status_name, color, order_idx, is_initial, is_final in default_statuses:
+
+            for status_name, color, order_idx, is_initial, is_final, status_group, is_system in default_statuses:
                 cursor.execute("""
-                    INSERT INTO Task_Manager.workflow_statuses 
-                    (project_id, name, color, order_index, is_initial, is_final)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (project_id, status_name, color, order_idx, is_initial, is_final))
+                    INSERT INTO Task_Manager.workflow_statuses
+                    (project_id, name, color, order_index, is_initial, is_final, status_group, is_system)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (project_id, status_name, color, order_idx, is_initial, is_final, status_group, is_system))
             
             conn.commit()
             return project_id
@@ -210,7 +269,7 @@ class ProjectsService:
                 params.append(default_subtask_assignee_id)
 
             if updates:
-                updates.append("updated_at = GETDATE()")
+                updates.append("updated_at = GETUTCDATE()")
                 params.append(project_id)
                 
                 query = f"UPDATE Task_Manager.projects SET {', '.join(updates)} WHERE id = ?"
@@ -382,6 +441,10 @@ class ProjectsService:
         """
         Получить список участников проекта
         """
+        cached = ProjectsService._get_cached_members(project_id)
+        if cached is not None:
+            return cached
+
         conn = get_connection()
         cursor = conn.cursor()
         
@@ -401,12 +464,13 @@ class ProjectsService:
                 pm.user_id,
                 u.Username as username,
                 u.FullName as full_name,
-                u.empcode as department,
+                d.Name as department,
                 pm.role,
                 pm.added_at,
                 added_by_user.Username as added_by_name
             FROM Task_Manager.project_members pm
             INNER JOIN Users.users u ON pm.user_id = u.UserID
+            LEFT JOIN Users.Departments d ON u.department_id = d.DepartmentID
             LEFT JOIN Users.users added_by_user ON pm.added_by = added_by_user.UserID
             WHERE pm.project_id = ?
             ORDER BY 
@@ -425,7 +489,7 @@ class ProjectsService:
         
         cursor.close()
         conn.close()
-        
+        ProjectsService._set_cached_members(project_id, results)
         return results
     
     @staticmethod
@@ -454,6 +518,7 @@ class ProjectsService:
             """, (project_id, new_member_id, role, user_id))
             
             conn.commit()
+            ProjectsService._invalidate_members_cache(project_id)
             return True
             
         except Exception as e:
@@ -499,6 +564,7 @@ class ProjectsService:
             """, (new_role, project_id, member_id))
             
             conn.commit()
+            ProjectsService._invalidate_members_cache(project_id)
             return True
             
         except Exception as e:
@@ -519,7 +585,7 @@ class ProjectsService:
         try:
             # Проверяем права
             cursor.execute("""
-                SELECT role FROM project_members 
+                SELECT role FROM Task_Manager.project_members 
                 WHERE project_id = ? AND user_id = ?
             """, (project_id, user_id))
             
@@ -543,6 +609,7 @@ class ProjectsService:
             """, (project_id, member_id))
             
             conn.commit()
+            ProjectsService._invalidate_members_cache(project_id)
             return True
             
         except Exception as e:

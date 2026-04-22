@@ -9,7 +9,6 @@ import ShipmentFilterModal from './Shipment/ShipmentFilterModal';
 import OrderData from './OrderData/OrderData';
 import SalePlan from './SalePlan/SalePlan';
 import { usePageView } from '../../hooks/usePageView';
-import { WarningModal } from '../../components/WarningModal/WarningModal';
 
 export default function Orders() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -27,7 +26,6 @@ export default function Orders() {
     // Логируем посещение страницы Orders
     usePageView('orders');
     const [isShipmentFilterOpen, setShipmentFilterOpen] = useState(false);
-    const [showWarningModal, setShowWarningModal] = useState(false);
     const [startDate, setStartDate] = useState<Date | null>(() => {
         const to = new Date();
         const from = new Date();

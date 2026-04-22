@@ -6,14 +6,12 @@ sys.path.insert(0, _MIG_ROOT)
 sys.path.insert(0, os.path.dirname(__file__))
 
 import uuid
-from datetime import date as dt_date
 from core.base import BaseMigration
 from core.db import get_1c_connection, get_target_connection
-from sql import QUERY_QC_CARDS_WINDOW_TEMPLATE
+from sql import QUERY_QC_CARDS_TEMPLATE
 
 TABLE_STAGING  = "Import_1C.stg_QC_Cards"
 DATE_FIELDS    = ['Create_Date', 'Status_Date', 'Work_FinishDate']
-START_4025     = "4025-01-01 00:00:00"
 
 
 def _shift_minus_2000(v):
@@ -37,13 +35,7 @@ class QCCardsFullSync(BaseMigration):
             cur_t   = conn_t.cursor()
             cur_t.execute("SET XACT_ABORT ON; SET LOCK_TIMEOUT 120000;")
 
-            today    = dt_date.today()
-            end_4025 = f"{today.year + 2000}-{today.month:02d}-{today.day:02d} 23:59:59"
-
-            query = QUERY_QC_CARDS_WINDOW_TEMPLATE.format(
-                date_from=START_4025, date_to=end_4025
-            )
-            cur_1c.execute(query)
+            cur_1c.execute(QUERY_QC_CARDS_TEMPLATE)
             columns_1c = [c[0] for c in cur_1c.description]
             rows_1c    = cur_1c.fetchall()
 

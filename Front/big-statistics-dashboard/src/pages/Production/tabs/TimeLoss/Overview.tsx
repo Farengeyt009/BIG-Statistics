@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../../../../config/api';
 import SimpleGrid from '../../../../components/AgGrid/SimpleGrid';
 import { createColumnsFromConfig } from './OverviewColumnConfig';
 import type { ColDef } from '@ag-grid-community/core';
+import { fetchJsonGetDedup } from '../../../../utils/fetchDedup';
 
 // Лёгкий debounce без внешних зависимостей
 function debounce<T extends (...args: any[]) => void>(fn: T, wait = 60) {
@@ -74,12 +75,7 @@ const Overview: React.FC<Props> = ({ startDate, endDate, suppressLocalLoaders, o
       setError(null);
       try {
         const url = `${API_BASE_URL}/timeloss/dashboard?date_from=${dateFrom}&date_to=${dateTo}`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(j?.detail || j?.error || `HTTP ${res.status}`);
-        }
-        const j = await res.json();
+        const j = await fetchJsonGetDedup<any>(url, undefined, 1500);
         setWorkshops(j.workshops || []);
         setSummary(j.summary || []);
         setReasons(j.reasons || []);

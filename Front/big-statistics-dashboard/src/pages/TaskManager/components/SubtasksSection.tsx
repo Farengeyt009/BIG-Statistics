@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PrioritySelector } from './PrioritySelector';
 import { format } from 'date-fns';
+import TaskManagerTranslation from '../TaskManagerTranslation.json';
+import { fetchJsonGetDedup, invalidateGetDedup } from '../../../utils/fetchDedup';
 
 interface SubtasksSectionProps {
   taskId: number;
@@ -17,6 +20,13 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
   statuses,
   onCountChange,
 }) => {
+  const { t, i18n } = useTranslation('taskManager');
+  React.useEffect(() => {
+    const lang = i18n.language;
+    if (TaskManagerTranslation[lang as keyof typeof TaskManagerTranslation]) {
+      i18n.addResourceBundle(lang, 'taskManager', TaskManagerTranslation[lang as keyof typeof TaskManagerTranslation], true, true);
+    }
+  }, [i18n]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -30,19 +40,13 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
   }, [subtasks.length, loading]);
 
   const getToken = () => localStorage.getItem('authToken');
+  const getSubtasksUrl = () => `${API_BASE}/api/task-manager/tasks/project/${projectId}?parent_task_id=${taskId}`;
 
   const fetchSubtasks = async () => {
     setLoading(true);
     try {
       const token = getToken();
-      const response = await fetch(
-        `${API_BASE}/api/task-manager/tasks/project/${projectId}?parent_task_id=${taskId}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
-      );
-
-      const data = await response.json();
+      const data = await fetchJsonGetDedup<any>(getSubtasksUrl(), token, 500);
       if (data.success) {
         setSubtasks(data.data);
       }
@@ -75,6 +79,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
       const data = await response.json();
       if (data.success) {
         setNewSubtaskTitle('');
+        invalidateGetDedup(getSubtasksUrl(), token);
         await fetchSubtasks();
       }
     } catch (err) {
@@ -85,28 +90,22 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
   };
 
   const toggleSubtaskComplete = async (subtask: any) => {
-    // Находим финальный статус
-    const finalStatus = statuses.find((s) => s.is_final && !s.name.includes('Отмена'));
-    const initialStatus = statuses.find((s) => s.is_initial);
-
-    if (!finalStatus || !initialStatus) return;
-
-    const newStatusId = subtask.status_id === finalStatus.id ? initialStatus.id : finalStatus.id;
-    
-    // Обновляем через API напрямую
+    // Переключаем через специальный endpoint, который не упирается в workflow transitions
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/task-manager/tasks/${subtask.id}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/task-manager/tasks/subtasks/${subtask.id}/toggle-complete`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ status_id: newStatusId }),
       });
       
       if (response.ok) {
+        invalidateGetDedup(getSubtasksUrl(), token);
         await fetchSubtasks();
+      } else {
+        const errorText = await response.text();
+        console.error('Не удалось обновить статус подзадачи:', response.status, errorText);
       }
     } catch (err) {
       console.error('Ошибка обновления подзадачи:', err);
@@ -120,7 +119,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
   if (loading && subtasks.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-gray-500 text-sm">Загрузка подзадач...</div>
+        <div className="text-gray-500 text-sm">{t('subtasksLoading')}</div>
       </div>
     );
   }
@@ -192,6 +191,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
                           },
                           body: JSON.stringify({ priority }),
                         });
+                        invalidateGetDedup(getSubtasksUrl(), token);
                         await fetchSubtasks();
                       } catch (err) {
                         console.error('Ошибка обновления приоритета:', err);
@@ -216,13 +216,14 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
                 {/* Удалить */}
                 <button
                   onClick={async () => {
-                    if (confirm('Удалить подзадачу?')) {
+                    if (confirm(t('subtasksDeleteConfirm'))) {
                       try {
                         const token = localStorage.getItem('authToken');
                         await fetch(`/api/task-manager/tasks/${subtask.id}`, {
                           method: 'DELETE',
                           headers: { 'Authorization': `Bearer ${token}` },
                         });
+                        invalidateGetDedup(getSubtasksUrl(), token);
                         await fetchSubtasks();
                       } catch (err) {
                         console.error('Ошибка удаления подзадачи:', err);
@@ -251,7 +252,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
                           ? 'text-red-600 bg-red-50'
                           : 'text-gray-700'
                       }`}
-                      title="Изменить срок"
+                      title={t('subtasksChangeDue')}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -264,12 +265,12 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
                         e.currentTarget.nextElementSibling?.querySelector('input')?.showPicker();
                       }}
                       className="flex items-center gap-1 px-2 py-0.5 rounded hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-700"
-                      title="Установить срок"
+                      title={t('subtasksSetDue')}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Срок
+                      {t('subtasksDue')}
                     </button>
                   )}
                   <div className="absolute opacity-0 pointer-events-none">
@@ -287,6 +288,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
                             },
                             body: JSON.stringify({ due_date: e.target.value || null }),
                           });
+                          invalidateGetDedup(getSubtasksUrl(), token);
                           await fetchSubtasks();
                         } catch (err) {
                           console.error('Ошибка установки срока:', err);
@@ -328,7 +330,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
               createSubtask();
             }
           }}
-          placeholder="Добавить подзадачу..."
+          placeholder={t('subtasksAddPlaceholder')}
           className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
         />
         <button
@@ -336,7 +338,7 @@ export const SubtasksSection: React.FC<SubtasksSectionProps> = ({
           disabled={isCreating || !newSubtaskTitle.trim()}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
         >
-          {isCreating ? 'Создание...' : 'Добавить'}
+          {isCreating ? t('subtasksCreating') : t('subtasksAdd')}
         </button>
       </div>
     </div>

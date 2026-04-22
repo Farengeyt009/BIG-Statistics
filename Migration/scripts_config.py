@@ -204,6 +204,23 @@ SCRIPTS = [
         "time":          "05:40",
     },
 
+    # ── Excel / continuous ────────────────────────────────────────────────────
+
+    {
+        "id":               "excel_plan_month",
+        "name":             "Month Plan Excel Sync",
+        "category":         "continuous",
+        "script":           "modules/Excel/plan_month/copy_script.py",
+        "interval_seconds": 60,
+    },
+    {
+        "id":               "excel_product_time",
+        "name":             "Product Time Excel Sync",
+        "category":         "continuous",
+        "script":           "modules/Excel/product_time/copy_script.py",
+        "interval_seconds": 60,
+    },
+
     # ── SKUD / continuous ─────────────────────────────────────────────────────
 
     {

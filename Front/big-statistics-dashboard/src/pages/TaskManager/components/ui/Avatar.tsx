@@ -3,11 +3,12 @@ import React from 'react';
 interface AvatarProps {
   name: string;
   imageUrl?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 const sizeClasses = {
+  xs: 'w-5 h-5 text-[10px]',
   sm: 'w-6 h-6 text-xs',
   md: 'w-8 h-8 text-sm',
   lg: 'w-10 h-10 text-base',
@@ -59,7 +60,7 @@ export const Avatar: React.FC<AvatarProps> = ({ name, imageUrl, size = 'md', cla
 interface AvatarGroupProps {
   users: Array<{ name: string; imageUrl?: string }>;
   max?: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({ users, max = 3, size = 'sm' }) => {

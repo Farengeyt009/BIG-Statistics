@@ -67,11 +67,27 @@ const resources = {
   }
 };
 
+const normalizeAppLanguage = (value?: string | null): 'en' | 'zh' => {
+  if (!value) return 'en';
+  return value.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+};
+
+const getInitialLanguage = (): 'en' | 'zh' => {
+  if (typeof window === 'undefined') return 'en';
+  const override = sessionStorage.getItem('languageOverride');
+  if (override) return normalizeAppLanguage(override);
+
+  const preferred = localStorage.getItem('preferredLanguage');
+  if (preferred) return normalizeAppLanguage(preferred);
+
+  return normalizeAppLanguage(navigator.language);
+};
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en', // default language
+    lng: getInitialLanguage(),
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false // React already escapes values
